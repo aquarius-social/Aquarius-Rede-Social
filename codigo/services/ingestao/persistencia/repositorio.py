@@ -191,6 +191,28 @@ def salvar_partidos(
     return len(aprovados)
 
 
+def salvar_perfis_coletivos(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    *,
+    source: str,
+    source_url: str = BASE_CAMARA,
+) -> int:
+    """Persiste perfis coletivos seguíveis (comissão, frente) — só `profiles`,
+    sem tabela de domínio nem id_externo. Upsert por `slug`."""
+    for p in aprovados:
+        cliente.upsert("profiles", [{
+            "tipo": p["tipo"],
+            "nome": p["nome"],
+            "sigla": p.get("sigla"),
+            "slug": p["slug"],
+            "ativo": p.get("ativo", True),
+            "source": source,
+            "source_url": source_url,
+        }], conflito="slug")
+    return len(aprovados)
+
+
 def lookup_partido_por_sigla(cliente: ClienteBanco):
     """Fábrica do lookup de partido por sigla atual → `partido.id` (o alvo da FK
     `vinculo_temporal.partido_id`). Devolve None para sigla desconhecida

@@ -10,6 +10,7 @@ import unittest
 from camara.deputados import transformar_deputado
 from camara.proposicoes import transformar_proposicao
 from camara.votacoes import VotoNominalResolvido, transformar_votacao
+from camara.coletivos import transformar_comissao, transformar_frente
 from camara.partidos import transformar_partido
 from camara.tramitacoes import transformar_tramitacao
 from persistencia.repositorio import (
@@ -18,6 +19,7 @@ from persistencia.repositorio import (
     salvar_bronze,
     salvar_deputados,
     salvar_partidos,
+    salvar_perfis_coletivos,
     salvar_proposicoes,
     salvar_tramitacoes,
     salvar_vinculos_temporais,
@@ -194,6 +196,23 @@ class TestPartidos(unittest.TestCase):
         self.assertEqual(lookup("PT"), partido_id)
         self.assertIsNone(lookup("S.PART."))   # sigla desconhecida → None
         self.assertIsNone(lookup(None))
+
+
+class TestPerfisColetivos(unittest.TestCase):
+    def test_comissao_e_frente_viram_profiles_por_tipo(self):
+        banco = FakeBanco()
+        n1 = salvar_perfis_coletivos(
+            banco, [transformar_comissao({"id": 2003, "sigla": "CCJC", "nome": "CCJC"})],
+            source="camara.orgaos")
+        n2 = salvar_perfis_coletivos(
+            banco, [transformar_frente({"id": 55703, "titulo": "Frente X"})],
+            source="camara.frentes")
+        self.assertEqual((n1, n2), (1, 1))
+        tipos = {p["tipo"] for p in banco.tabelas["profiles"]}
+        self.assertEqual(tipos, {"comissao", "frente"})
+        # comissão carrega sigla; frente não
+        com = next(p for p in banco.tabelas["profiles"] if p["tipo"] == "comissao")
+        self.assertEqual(com["sigla"], "CCJC")
 
 
 class TestVinculosTemporais(unittest.TestCase):

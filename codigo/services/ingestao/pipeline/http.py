@@ -65,6 +65,7 @@ class ClienteHttpUrllib:
             # 4xx/5xx: devolve o status para o obter_com_retry classificar.
             bruto = e.read().decode("utf-8", "ignore")
             status = e.code
+            e.close()  # fecha o fp da resposta de erro (socket em prod)
         # URLError, timeout e afins NÃO são capturados: sobem como erro de
         # transporte, que o obter_com_retry trata como instabilidade.
 

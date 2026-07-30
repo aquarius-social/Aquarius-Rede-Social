@@ -117,6 +117,12 @@ def _mundo(deputados_resp=None):
             "links": []}),
         f"{BASE}/partidos/10": _Resp(200, {"dados": {
             "id": 10, "numeroEleitoral": 13, "status": {"situacao": "Ativo"}}}),
+        f"{BASE}/orgaos": _Resp(200, {"dados": [
+            {"id": 2003, "sigla": "CCJC", "nome": "Comissão CCJC", "codTipoOrgao": 2}],
+            "links": []}),
+        f"{BASE}/frentes": _Resp(200, {"dados": [
+            {"id": 55703, "titulo": "Frente Parlamentar X", "idLegislatura": 57}],
+            "links": []}),
         f"{BASE}/deputados": dep_list,
         f"{BASE}/deputados/1": _Resp(200, {"dados": _dep_det(1)}),
         f"{BASE}/deputados/2": _Resp(200, {"dados": _dep_det(2)}),
@@ -152,6 +158,12 @@ class TestOrquestrador(unittest.TestCase):
 
         # partidos canônicos ingeridos (profile tipo=partido + partido)
         self.assertEqual(r.partidos_salvos, 1)
+
+        # perfis coletivos: comissão + frente (polimórficos, mesma tabela)
+        self.assertEqual(r.comissoes_salvas, 1)
+        self.assertEqual(r.frentes_salvas, 1)
+        tipos = {p["tipo"] for p in banco.tabelas["profiles"]}
+        self.assertTrue({"comissao", "frente", "partido", "parlamentar"} <= tipos)
 
         # vínculos temporais (um titular por pessoa, em aberto) — camada §4
         self.assertEqual(r.vinculos_salvos, 2)

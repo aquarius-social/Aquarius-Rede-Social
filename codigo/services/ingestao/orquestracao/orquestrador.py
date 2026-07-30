@@ -37,6 +37,9 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from camara import proposicoes as prop_mod
+from camara.coletivos import (
+    FONTE_COMISSOES, FONTE_FRENTES, rodada_comissoes, rodada_frentes,
+)
 from camara.deputados import rodada_deputados, ResultadoRodadaDeputados
 from camara.mandatos import rodada_historico
 from camara.partidos import rodada_partidos
@@ -51,6 +54,7 @@ from persistencia.repositorio import (
     salvar_bronze,
     salvar_deputados,
     salvar_partidos,
+    salvar_perfis_coletivos,
     salvar_proposicoes,
     salvar_tramitacoes,
     salvar_vinculos_temporais,
@@ -67,6 +71,8 @@ class LinhasBase:
     """Linhas de base de campos por área para o teste de contrato (§19). None em
     todas na primeira rodada — o baseline é aprendido depois."""
     partidos: frozenset[str] | None = None
+    comissoes: frozenset[str] | None = None
+    frentes: frozenset[str] | None = None
     deputados: frozenset[str] | None = None
     proposicoes: frozenset[str] | None = None
     votacoes: frozenset[str] | None = None
@@ -80,6 +86,8 @@ class ResultadoIngestao:
     proposicoes: ResultadoRodada
     votacoes: ResultadoRodadaVotacoes
     partidos_salvos: int = 0
+    comissoes_salvas: int = 0
+    frentes_salvas: int = 0
     perfis_salvos: int = 0
     vinculos_salvos: int = 0
     proposicoes_salvas: int = 0
@@ -127,6 +135,25 @@ def ingerir(
     if part.estado in _PROCESSAVEL and part.prata is not None:
         partidos_salvos = salvar_partidos(banco, part.prata.aprovados)
     lookup_partido = lookup_partido_por_sigla(banco)
+
+    # -- 0b. Perfis coletivos: comissões + frentes (§12, Concepção §7) -------
+    com = rodada_comissoes(
+        cliente_http, canario_validado=canario_validado,
+        linha_base=base.comissoes, politica=politica)
+    bronze_salvo += salvar_bronze(banco, com.bronze)
+    comissoes_salvas = 0
+    if com.estado in _PROCESSAVEL and com.prata is not None:
+        comissoes_salvas = salvar_perfis_coletivos(
+            banco, com.prata.aprovados, source=FONTE_COMISSOES)
+
+    fre = rodada_frentes(
+        cliente_http, canario_validado=canario_validado,
+        linha_base=base.frentes, politica=politica)
+    bronze_salvo += salvar_bronze(banco, fre.bronze)
+    frentes_salvas = 0
+    if fre.estado in _PROCESSAVEL and fre.prata is not None:
+        frentes_salvas = salvar_perfis_coletivos(
+            banco, fre.prata.aprovados, source=FONTE_FRENTES)
 
     # -- 1. Deputados: bronze + profiles + id_externo ------------------------
     dep = rodada_deputados(
@@ -235,6 +262,8 @@ def ingerir(
     return ResultadoIngestao(
         deputados=dep, proposicoes=prop, votacoes=vot,
         partidos_salvos=partidos_salvos,
+        comissoes_salvas=comissoes_salvas,
+        frentes_salvas=frentes_salvas,
         perfis_salvos=perfis,
         vinculos_salvos=vinculos_salvos,
         proposicoes_salvas=proposicoes_salvas,
