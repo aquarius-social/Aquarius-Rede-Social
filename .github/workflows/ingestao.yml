@@ -1,0 +1,51 @@
+name: Ingestão diária da Câmara
+
+# Extrai das APIs abertas, trata pela metodologia (bronze → prata) e persiste
+# no Supabase. Mantém a base fresca — a leitura na plataforma é sempre da nossa
+# base, nunca da fonte ao vivo (princípio da Metodologia).
+#
+# Cron do GitHub Actions é em UTC. Duas vezes ao dia:
+#   09:00 UTC = 06:00 em São Paulo (UTC-3) — manhã
+#   21:00 UTC = 18:00 em São Paulo          — fim de tarde
+# A janela móvel de 30 dias cobre a defasagem de publicação da fonte (§3.3),
+# então não há problema em reprocessar: bronze é append-only e a prata faz upsert.
+on:
+  schedule:
+    - cron: '0 9 * * *'
+    - cron: '0 21 * * *'
+  workflow_dispatch: {}   # permite disparar manualmente pela aba Actions
+
+# Uma rodada por vez: não deixa duas ingestões concorrerem.
+concurrency:
+  group: ingestao-camara
+  cancel-in-progress: false
+
+jobs:
+  ingerir:
+    name: Rodar a ingestão
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codigo/services/ingestao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências de runtime
+        run: pip install -r requirements.txt
+      - name: Ingestão
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AQUARIUS_JANELA_DIAS: '30'
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::notice::Secrets do Supabase ausentes — ingestão pulada (workflow segue verde). Configure SUPABASE_URL e SUPABASE_SERVICE_KEY em Settings › Secrets and variables › Actions."
+            exit 0
+          fi
+          python run_ingestao.py
+
+# PRÉ-REQUISITO (uma vez, fora deste workflow): aplicar as migrations 0001–0005
+# ao projeto Supabase — via Supabase CLI (`supabase db push`) ou pelo painel.
+# Este job assume o schema já criado.

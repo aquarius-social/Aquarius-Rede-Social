@@ -1,0 +1,7 @@
+# Dependências de RUNTIME da ingestão (deploy).
+# A suíte de testes NÃO precisa destas — roda só com a biblioteca padrão,
+# porque HTTP e banco são injetados e os testes usam dubles.
+#
+# supabase-py v2: a API fluente usada em persistencia/supabase_adapter.py
+# (.table().upsert(on_conflict=...).execute()). Pinado à major v2.
+supabase>=2,<3
