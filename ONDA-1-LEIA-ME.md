@@ -17,6 +17,7 @@ supabase/migrations/
   0004_placar_nao_extraido.sql placar da votação nulável (None = não extraído)
   0005_vinculo_upsert.sql      alvo de upsert idempotente do vinculo_temporal
   0006_camada_ouro.sql         views servidas (ouro) — proveniência/frescor, sem PII
+  0007_ouro_coletivos.sql      views ouro de comissão e frente
 services/ingestao/
   pipeline/
     camadas.py       bronze, portão bronze→prata, verificadores reutilizáveis
@@ -31,6 +32,7 @@ services/ingestao/
     deputados.py     coletor — perfis parlamentares (dedup §12 + enriquecimento §5.3)
     mandatos.py      coletor — histórico → vinculo_temporal (partido na data, §4/§12)
     partidos.py      coletor — partidos canônicos (profile tipo=partido, §4)
+    coletivos.py     coletor — comissões e frentes (profiles tipo=comissao/frente)
     tramitacoes.py   coletor — tramitações (Área D, §11; monotonicidade §5.2)
   persistencia/
     repositorio.py       upsert bronze/prata + lookup real (porta injetável)
@@ -47,7 +49,7 @@ Verificar tudo (o interpretador aqui é `py`, não `python`):
 cd services/ingestao && py -m unittest discover -s . -t .
 ```
 
-Resultado atual: **173 testes passando**, todos sem rede.
+Resultado atual: **182 testes passando**, todos sem rede.
 
 ---
 
@@ -111,7 +113,7 @@ fonte real. Foi reformado (itens V1–V4 de `ANALISE-Metodologia-vs-Codigo.md`):
   versão anterior deste próprio documento) mapeava `Artigo 17 → obstrucao`, o
   que contradiz a autoridade. Agora ele vai para `ResultadoVotos.presidencia`,
   fora do enum de posição.
-- **V4** — o placar vive no TEXTO da descrição (formatos distintos de plenário e
+- **V4** — o placar vive no TE**182 testes passando**TO da descrição (formatos distintos de plenário e
   comissão); é extraído por parsing e reconciliado contra a soma dos nominais
   (§5.2: soma == placar; votantes ≤ 513). Descrição sem número → placar `None`,
   nunca 0. O parser foi validado contra amostras vivas dos dois tipos.

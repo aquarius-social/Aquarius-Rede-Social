@@ -29,7 +29,12 @@ do `CLAUDE.md`.
   atuais (profile tipo=partido + `partido`); o vínculo resolve `partido_id` por
   sigla. Validado ao vivo: 22 partidos atuais; das siglas do Danilo Forte,
   PSB/PSDB/UNIÃO/PP resolvem, PMDB/DEM/S.PART. ficam null (siglas históricas e
-  linhagem de fusões = curadoria, §4 — etapa própria). Comissões (§12 D5): falta.
+  linhagem de fusões = curadoria, §4 — etapa própria).
+- Perfis coletivos (comissão + frente): **prontos** — `camara/coletivos.py`
+  popula os tipos `comissao` (comissões permanentes, `/orgaos?codTipoOrgao=2`) e
+  `frente` (`/frentes`) da tabela polimórfica `profiles`. Views ouro na 0007.
+  Validado ao vivo: 30 comissões permanentes, 100+ frentes. **4 dos 6 tipos de
+  perfil populados** (parlamentar, partido, comissão, frente); faltam bloco/órgão.
 - Tramitações: **coletor pronto** — `camara/tramitacoes.py`, por proposição,
   com a identidade §5.2 de sequência monotônica (por data de calendário — a
   fonte viva mostrou tramitações com hora `00:00`, e comparar por instante
@@ -120,8 +125,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **173 passando** (72 → … → 154 histórico → 164 partidos
-canônicos → 173 adaptador Supabase + cliente HTTP; +101 no total), sem rede.
+Base de testes: **182 passando** (+9 dos coletores de comissão e frente), sem rede.
 
 ### 3b. Coletor de deputados — primeiro passe ✅
 
@@ -158,7 +162,7 @@ Falta neste coletor (etapas próprias, não feitas):
   que o app/Prometeus leem. Verificado: todas as colunas existem, nenhuma PII
   projetada. (SQL validado no deploy, como as demais migrations.)
 - **Deploy / infra operacional** — o que falta para a base ficar viva:
-  1. provisionar o projeto Supabase + aplicar migrations 0001–0006;
+  1. provisionar o projeto Supabase + aplicar migrations 0001–0007;
   2. pôr `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` nos secrets do repo (aí o
      agendador começa a rodar sozinho, 2×/dia).
 - **Linhagem de partidos (§4)** — siglas históricas (PMDB→MDB) e fusões
