@@ -146,11 +146,16 @@ Falta neste coletor (etapas próprias, não feitas):
 
 ### 4. Depois do orquestrador
 
-- **Deploy** — `pip install supabase`, definir `SUPABASE_URL`/
-  `SUPABASE_SERVICE_KEY` (ver `.env.example`), aplicar migrations 0001–0005 e
-  rodar `run_ingestao.py`. O adaptador, o cliente HTTP e o entrypoint já estão
-  escritos e testados; falta só o pacote e as credenciais, que não existem
-  neste ambiente.
+- **CI + agendador diário: prontos** — `.github/workflows/ci.yml` roda os 173
+  testes + type-check TS a cada push (fecha o "CI verde" da Onda 0);
+  `.github/workflows/ingestao.yml` agenda `run_ingestao.py` 2×/dia (06h/18h BRT)
+  + disparo manual, e pula com verde enquanto os secrets Supabase não existirem.
+- **Deploy / infra operacional** — o que falta para a base ficar viva:
+  1. provisionar o projeto Supabase + aplicar migrations 0001–0005;
+  2. pôr `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` nos secrets do repo (aí o
+     agendador começa a rodar sozinho);
+  3. **construir a camada ouro** (views servidas com proveniência/frescor) — é
+     a peça que o app/Prometeus lê, ainda não existe.
 - **Linhagem de partidos (§4)** — siglas históricas (PMDB→MDB) e fusões
   (DEM/PSL→UNIÃO) precisam de `partido_sigla_historico` + `partido_linhagem`
   por curadoria; sem fonte de curadoria, o `partido_id` de períodos antigos
