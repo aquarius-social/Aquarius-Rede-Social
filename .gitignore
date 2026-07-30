@@ -1,0 +1,50 @@
+# -----------------------------------------------------------------------------
+# Dependências e artefatos de build
+# -----------------------------------------------------------------------------
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+dist/
+build/
+.next/
+.expo/
+
+# -----------------------------------------------------------------------------
+# Segredos — NUNCA versionar
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+supabase/.temp/
+
+# -----------------------------------------------------------------------------
+# Documentos-fonte e material proprietário (binários grandes).
+# Não versionados por padrão: decks, metodologia/concepção, protótipo, imagens.
+# Se quiser versioná-los, remova as linhas abaixo (ideal: Git LFS para binários).
+# -----------------------------------------------------------------------------
+*.docx
+*.pptx
+*.pdf
+*.zip
+*.png
+*.jpg
+*.jpeg
+/*.html
+
+# -----------------------------------------------------------------------------
+# Config local de ferramentas (por máquina, não compartilhar)
+# -----------------------------------------------------------------------------
+.claude/settings.local.json
+
+# -----------------------------------------------------------------------------
+# Sistema operacional / editores
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
