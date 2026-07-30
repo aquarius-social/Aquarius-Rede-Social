@@ -48,7 +48,7 @@ cd codigo/services/ingestao
 python -m unittest discover -s . -t .
 ```
 
-Devem passar **182 testes** com `OK`. (Em ambiente Windows onde `python` é o
+Devem passar **190 testes** com `OK`. (Em ambiente Windows onde `python` é o
 alias da Microsoft Store, use `py` no lugar de `python`.)
 
 ### Rodar a ingestão de verdade (deploy)
@@ -66,7 +66,7 @@ python run_ingestao.py
 - **`ingestao.yml`** — agenda a ingestão 2×/dia (06h/18h BRT) + disparo manual.
   Basta pôr `SUPABASE_URL` e `SUPABASE_SERVICE_KEY` em *Settings › Secrets and
   variables › Actions*; sem eles, o job pula sem quebrar. Aplicar as migrations
-  0001–0007 no Supabase é pré-requisito (uma vez, via CLI ou painel).
+  0001–0008 no Supabase é pré-requisito (uma vez, via CLI ou painel).
 
 Type-check dos pacotes TypeScript:
 

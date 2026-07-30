@@ -18,6 +18,7 @@ supabase/migrations/
   0005_vinculo_upsert.sql      alvo de upsert idempotente do vinculo_temporal
   0006_camada_ouro.sql         views servidas (ouro) — proveniência/frescor, sem PII
   0007_ouro_coletivos.sql      views ouro de comissão e frente
+  0008_despesas_ceap.sql       Área A — despesas/CEAP (tabela + view ouro)
 services/ingestao/
   pipeline/
     camadas.py       bronze, portão bronze→prata, verificadores reutilizáveis
@@ -33,6 +34,7 @@ services/ingestao/
     mandatos.py      coletor — histórico → vinculo_temporal (partido na data, §4/§12)
     partidos.py      coletor — partidos canônicos (profile tipo=partido, §4)
     coletivos.py     coletor — comissões e frentes (profiles tipo=comissao/frente)
+    despesas.py      coletor — despesas/CEAP (Área A, §8; identidade §5.2)
     tramitacoes.py   coletor — tramitações (Área D, §11; monotonicidade §5.2)
   persistencia/
     repositorio.py       upsert bronze/prata + lookup real (porta injetável)
@@ -49,7 +51,10 @@ Verificar tudo (o interpretador aqui é `py`, não `python`):
 cd services/ingestao && py -m unittest discover -s . -t .
 ```
 
-Resultado atual: **182 testes passando**, todos sem rede.
+Resultado atual: **190 testes passando**, todos sem rede.
+
+Áreas de dado da Câmara: **5 de 9** (proposições, votações, tramitações,
+parlamentares, despesas/CEAP). Faltam emendas, discursos, eventos e o Senado.
 
 ---
 

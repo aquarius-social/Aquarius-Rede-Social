@@ -40,6 +40,12 @@ do `CLAUDE.md`.
   fonte viva mostrou tramitações com hora `00:00`, e comparar por instante
   gritava à toa) e a ressalva bicameral da §11 (`casa` explícito). Persistido
   e wireado no orquestrador. Validado ao vivo (PL 736/2015, 64 tramitações).
+- Despesas / CEAP (Área A, §8): **coletor pronto** — `camara/despesas.py`, por
+  parlamentar/ano, com a identidade §5.2 (`documento − glosa = líquido`) no
+  portão. Tabela `despesa` + view ouro (0008). Achado ao vivo: valor negativo é
+  **estorno legítimo** (satisfaz a identidade) — a regra "não-negativo" era
+  falso-positivo e foi removida (100 aprovados/0 quarentena após o fix). **5 de
+  9 áreas de dado da Câmara prontas.**
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -125,7 +131,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **182 passando** (+9 dos coletores de comissão e frente), sem rede.
+Base de testes: **190 passando** (+9 dos coletores de comissão e frente), sem rede.
 
 ### 3b. Coletor de deputados — primeiro passe ✅
 
