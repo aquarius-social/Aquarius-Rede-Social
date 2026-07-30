@@ -22,21 +22,11 @@ build/
 supabase/.temp/
 
 # -----------------------------------------------------------------------------
-# Documentos-fonte e material proprietário (binários grandes).
-# Não versionados por padrão: decks, metodologia/concepção, protótipo, imagens.
-# Se quiser versioná-los, remova as linhas abaixo (ideal: Git LFS para binários).
+# Material proprietário (binários): versionado via Git LFS (ver .gitattributes)
+# — documentos de autoridade, decks, one-pagers, protótipo (.zip) e imagens.
+# Exceção: os protótipos standalone em HTML ficam FORA (grandes e redundantes
+# com o .zip do protótipo).
 # -----------------------------------------------------------------------------
-*.docx
-# Exceção: os DOIS documentos de autoridade (fonte de verdade do projeto) são
-# versionados via Git LFS. Ver .gitattributes.
-!Aquarius_Metodologia_de_Dados.docx
-!Aquarius_Concepcao_do_Produto.docx
-*.pptx
-*.pdf
-*.zip
-*.png
-*.jpg
-*.jpeg
 /*.html
 
 # -----------------------------------------------------------------------------
