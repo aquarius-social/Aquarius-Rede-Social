@@ -312,6 +312,49 @@ def salvar_proposicoes(
 
 
 # -----------------------------------------------------------------------------
+# Despesas / CEAP — resolve o perfil (uuid) a partir do id do deputado na fonte
+# -----------------------------------------------------------------------------
+
+def salvar_despesas(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    lookup,
+    *,
+    source: str = "camara.despesas",
+    source_url: str = BASE_CAMARA,
+) -> int:
+    """Persiste despesas da cota parlamentar. Resolve `perfil_id` pelo lookup de
+    id_externo (mesmo dos votos); sem o parlamentar ingerido, pula sem inventar.
+    Upsert por (perfil_id, cod_documento, parcela)."""
+    salvas = 0
+    for d in aprovados:
+        perfil_id = lookup("camara", d["deputado_id_fonte"])
+        if perfil_id is None:
+            continue
+        cliente.upsert("despesa", [{
+            "perfil_id": perfil_id,
+            "ano": d["ano"], "mes": d["mes"],
+            "tipo_despesa": d.get("tipo_despesa"),
+            "tipo_documento": d.get("tipo_documento"),
+            "cod_documento": d.get("cod_documento"),
+            "cod_lote": d.get("cod_lote"),
+            "num_documento": d.get("num_documento"),
+            "num_ressarcimento": d.get("num_ressarcimento"),
+            "parcela": d.get("parcela"),
+            "data_documento": d.get("data_documento"),
+            "valor_documento": d.get("valor_documento"),
+            "valor_glosa": d.get("valor_glosa"),
+            "valor_liquido": d.get("valor_liquido"),
+            "fornecedor_nome": d.get("fornecedor_nome"),
+            "fornecedor_cnpj_cpf": d.get("fornecedor_cnpj_cpf"),
+            "url_documento": d.get("url_documento"),
+            "source": source, "source_url": source_url,
+        }], conflito="perfil_id,cod_documento,parcela")
+        salvas += 1
+    return salvas
+
+
+# -----------------------------------------------------------------------------
 # Tramitações — resolve a proposição (uuid) a partir do id da fonte
 # -----------------------------------------------------------------------------
 

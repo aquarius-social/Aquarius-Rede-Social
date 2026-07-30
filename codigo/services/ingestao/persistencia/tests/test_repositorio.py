@@ -11,6 +11,7 @@ from camara.deputados import transformar_deputado
 from camara.proposicoes import transformar_proposicao
 from camara.votacoes import VotoNominalResolvido, transformar_votacao
 from camara.coletivos import transformar_comissao, transformar_frente
+from camara.despesas import transformar_despesa
 from camara.partidos import transformar_partido
 from camara.tramitacoes import transformar_tramitacao
 from persistencia.repositorio import (
@@ -18,6 +19,7 @@ from persistencia.repositorio import (
     lookup_partido_por_sigla,
     salvar_bronze,
     salvar_deputados,
+    salvar_despesas,
     salvar_partidos,
     salvar_perfis_coletivos,
     salvar_proposicoes,
@@ -196,6 +198,29 @@ class TestPartidos(unittest.TestCase):
         self.assertEqual(lookup("PT"), partido_id)
         self.assertIsNone(lookup("S.PART."))   # sigla desconhecida → None
         self.assertIsNone(lookup(None))
+
+
+class TestDespesas(unittest.TestCase):
+    def _desp(self, did="204379"):
+        return transformar_despesa({
+            "ano": 2025, "mes": 12, "tipoDespesa": "DIVULGAÇÃO",
+            "codDocumento": 123, "parcela": 0, "dataDocumento": "2025-12-15",
+            "valorDocumento": 2000.0, "valorGlosa": 0.0, "valorLiquido": 2000.0,
+            "nomeFornecedor": "F", "cnpjCpfFornecedor": "00000000000191"}, did)
+
+    def test_prende_ao_perfil_do_parlamentar(self):
+        banco = FakeBanco()
+        [pid] = salvar_deputados(banco, [transformar_deputado(_dep(204379))])
+        lookup = lookup_id_externo(banco)
+        n = salvar_despesas(banco, [self._desp("204379")], lookup)
+        self.assertEqual(n, 1)
+        self.assertEqual(banco.tabelas["despesa"][0]["perfil_id"], pid)
+        self.assertEqual(banco.tabelas["despesa"][0]["valor_liquido"], 2000.0)
+
+    def test_sem_perfil_nao_inventa(self):
+        banco = FakeBanco()
+        lookup = lookup_id_externo(banco)
+        self.assertEqual(salvar_despesas(banco, [self._desp("000")], lookup), 0)
 
 
 class TestPerfisColetivos(unittest.TestCase):

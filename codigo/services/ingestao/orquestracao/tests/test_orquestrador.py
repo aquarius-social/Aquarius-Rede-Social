@@ -106,6 +106,12 @@ def _hist(did):
             "siglaPartido": "PT", "siglaUf": "SP",
             "condicaoEleitoral": "Titular", "situacao": "Exercício"}
 
+def _desp(did):
+    return {"ano": 2023, "mes": 6, "tipoDespesa": "COMBUSTÍVEIS",
+            "codDocumento": 1000 + did, "parcela": 0, "dataDocumento": "2023-06-10",
+            "valorDocumento": 500.0, "valorGlosa": 0.0, "valorLiquido": 500.0,
+            "nomeFornecedor": "Posto X", "cnpjCpfFornecedor": "00000000000191"}
+
 
 def _mundo(deputados_resp=None):
     """Fábrica do fake HTTP com o mundo inteiro programado."""
@@ -128,6 +134,8 @@ def _mundo(deputados_resp=None):
         f"{BASE}/deputados/2": _Resp(200, {"dados": _dep_det(2)}),
         f"{BASE}/deputados/1/historico": _Resp(200, {"dados": [_hist(1)]}),
         f"{BASE}/deputados/2/historico": _Resp(200, {"dados": [_hist(2)]}),
+        f"{BASE}/deputados/1/despesas": _Resp(200, {"dados": [_desp(1)], "links": []}),
+        f"{BASE}/deputados/2/despesas": _Resp(200, {"dados": [_desp(2)], "links": []}),
         f"{BASE}/proposicoes": _Resp(200, {"dados": [_prop("100")], "links": []}),
         f"{BASE}/proposicoes/100/tramitacoes": _Resp(200, {"dados": [
             {"sequencia": 1, "dataHora": "2015-03-12T18:32", "siglaOrgao": "PLEN",
@@ -164,6 +172,10 @@ class TestOrquestrador(unittest.TestCase):
         self.assertEqual(r.frentes_salvas, 1)
         tipos = {p["tipo"] for p in banco.tabelas["profiles"]}
         self.assertTrue({"comissao", "frente", "partido", "parlamentar"} <= tipos)
+
+        # despesas / CEAP por parlamentar (§8) — uma por pessoa
+        self.assertEqual(r.despesas_salvas, 2)
+        self.assertEqual(len(banco.tabelas["despesa"]), 2)
 
         # vínculos temporais (um titular por pessoa, em aberto) — camada §4
         self.assertEqual(r.vinculos_salvos, 2)

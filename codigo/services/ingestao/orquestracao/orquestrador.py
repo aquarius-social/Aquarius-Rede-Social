@@ -8,6 +8,7 @@ disciplina de identidade. A ordem NÃO é arbitrária:
     2. (lookups: id_externo e partido-por-sigla, montados do banco)
     2b. Histórico  → bronze + vinculo_temporal (partido/UF/ocupação por vigência;
                      partido_id resolvido por sigla)
+    2c. Despesas   → bronze + despesa (CEAP por parlamentar; o passo mais volumoso)
     3. Proposições → bronze + proposicao
     3b. Tramitações→ bronze + tramitacao (uma rodada por proposição; resolve proposicao_id)
     4. Votações    → bronze + votacao (resolve proposicao_id)
@@ -41,6 +42,7 @@ from camara.coletivos import (
     FONTE_COMISSOES, FONTE_FRENTES, rodada_comissoes, rodada_frentes,
 )
 from camara.deputados import rodada_deputados, ResultadoRodadaDeputados
+from camara.despesas import rodada_despesas
 from camara.mandatos import rodada_historico
 from camara.partidos import rodada_partidos
 from camara.proposicoes import ResultadoRodada
@@ -53,6 +55,7 @@ from persistencia.repositorio import (
     lookup_partido_por_sigla,
     salvar_bronze,
     salvar_deputados,
+    salvar_despesas,
     salvar_partidos,
     salvar_perfis_coletivos,
     salvar_proposicoes,
@@ -78,6 +81,7 @@ class LinhasBase:
     votacoes: frozenset[str] | None = None
     tramitacoes: frozenset[str] | None = None
     historico: frozenset[str] | None = None
+    despesas: frozenset[str] | None = None
 
 
 @dataclass
@@ -90,6 +94,7 @@ class ResultadoIngestao:
     frentes_salvas: int = 0
     perfis_salvos: int = 0
     vinculos_salvos: int = 0
+    despesas_salvas: int = 0
     proposicoes_salvas: int = 0
     tramitacoes_salvas: int = 0
     votacoes_salvas: int = 0
@@ -110,6 +115,8 @@ def ingerir(
     linhas_base: LinhasBase | None = None,
     enriquecer_deputados: bool = True,
     coletar_historico: bool = True,
+    coletar_despesas: bool = True,
+    ano_despesas: int | None = None,
     politica: PoliticaRetry = PoliticaRetry(),
 ) -> ResultadoIngestao:
     """Executa uma rodada completa de ingestão da Câmara.
@@ -200,6 +207,25 @@ def ingerir(
                     lookup_partido=lookup_partido,
                 )
 
+    # -- 2c. Despesas / CEAP por parlamentar (§8) — o passo mais volumoso ----
+    despesas_salvas = 0
+    if (coletar_despesas and dep.estado in _PROCESSAVEL
+            and dep.prata is not None):
+        ano = ano_despesas or ate.year
+        for d in dep.prata.aprovados:
+            rd = rodada_despesas(
+                cliente_http, d["id_fonte"], ano=ano,
+                canario_validado=canario_validado,
+                linha_base=base.despesas, politica=politica)
+            # Bronze de despesa: id composto deputado:documento:parcela.
+            bronze_salvo += salvar_bronze(
+                banco, rd.bronze,
+                id_na_fonte_de=lambda r, did=d["id_fonte"]: (
+                    f"{did}:{r.payload.get('codDocumento')}:{r.payload.get('parcela')}"
+                ))
+            if rd.estado in _PROCESSAVEL and rd.prata is not None:
+                despesas_salvas += salvar_despesas(banco, rd.prata.aprovados, lookup)
+
     # -- 3. Proposições: bronze + proposicao ---------------------------------
     prop = prop_mod.rodada(
         cliente_http,
@@ -266,6 +292,7 @@ def ingerir(
         frentes_salvas=frentes_salvas,
         perfis_salvos=perfis,
         vinculos_salvos=vinculos_salvos,
+        despesas_salvas=despesas_salvas,
         proposicoes_salvas=proposicoes_salvas,
         tramitacoes_salvas=tramitacoes_salvas,
         votacoes_salvas=votacoes_salvas,
