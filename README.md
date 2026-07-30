@@ -8,14 +8,16 @@ repositório trata.
 
 ## Estado atual
 
-**Onda 1 — Ingestão da Câmara dos Deputados: completa em lógica**, testada sem
-rede e verificada contra a API viva. Cobre proposições, votações (com votos
-nominais), deputados (com enriquecimento), o histórico de mandatos
+**Onda 1 — Ingestão da Câmara dos Deputados: completa e pronta para deploy**,
+testada sem rede e verificada contra a API viva. Cobre proposições, votações
+(com votos nominais), deputados (com enriquecimento), o histórico de mandatos
 (`vinculo_temporal`, que resolve o partido *na data do fato*), partidos
-canônicos, tramitações, a persistência e o orquestrador que amarra tudo.
+canônicos, tramitações, a persistência (com adaptador Supabase concreto), o
+cliente HTTP real e o orquestrador que amarra tudo.
 
-O único elo que falta para rodar em produção é o **adaptador Supabase concreto**
-(depende de credenciais de deploy). Ver `ESTADO_ATUAL.md` para o próximo passo.
+Para rodar em produção falta apenas `pip install supabase` + credenciais — ver
+`services/ingestao/run_ingestao.py` e `.env.example`. `ESTADO_ATUAL.md` traz o
+próximo passo.
 
 ## Mapa do repositório
 
@@ -46,8 +48,17 @@ cd codigo/services/ingestao
 python -m unittest discover -s . -t .
 ```
 
-Devem passar **164 testes** com `OK`. (Em ambiente Windows onde `python` é o
+Devem passar **173 testes** com `OK`. (Em ambiente Windows onde `python` é o
 alias da Microsoft Store, use `py` no lugar de `python`.)
+
+### Rodar a ingestão de verdade (deploy)
+
+```bash
+cd codigo/services/ingestao
+pip install supabase
+cp .env.example .env   # e preencha SUPABASE_URL / SUPABASE_SERVICE_KEY
+python run_ingestao.py
+```
 
 Type-check dos pacotes TypeScript:
 

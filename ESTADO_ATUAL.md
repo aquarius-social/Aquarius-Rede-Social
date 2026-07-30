@@ -40,8 +40,13 @@ do `CLAUDE.md`.
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
   o **lookup real de `id_externo`** (o que era injetado nos coletores). Migration
   **0004** torna o placar nulável (não fabrica 0). Falta só o **adaptador
-  concreto Supabase** (pacote `supabase` não instalado neste ambiente; wireado
-  no deploy — ver docstring do repositório).
+  concreto Supabase** (pacote `supabase` não instalado neste ambiente).
+- Adaptador Supabase concreto: **escrito e testado** —
+  `persistencia/supabase_adapter.py` implementa `ClienteBanco` sobre o
+  cliente supabase-py (import tardio), provado contra um duble stateful e como
+  drop-in do repositório. Cliente HTTP real (`pipeline/http.py`, urllib) e o
+  entrypoint `run_ingestao.py` completam o wiring. **Só falta `pip install
+  supabase` + credenciais no deploy** — a lógica inteira já roda com fakes.
 - Orquestrador: **pronto e testado** — `orquestracao/orquestrador.py` roda uma
   ingestão completa na ordem de FKs (deputados → lookup real → proposições →
   votações → votos), HTTP e banco injetados. Teste de integração prova a
@@ -115,8 +120,8 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **164 passando** (72 → … → 137 bronze de votos → 154 histórico/
-`vinculo_temporal` → 164 partidos canônicos; +92 no total), todos sem rede.
+Base de testes: **173 passando** (72 → … → 154 histórico → 164 partidos
+canônicos → 173 adaptador Supabase + cliente HTTP; +101 no total), sem rede.
 
 ### 3b. Coletor de deputados — primeiro passe ✅
 
@@ -141,10 +146,11 @@ Falta neste coletor (etapas próprias, não feitas):
 
 ### 4. Depois do orquestrador
 
-- **Adaptador Supabase concreto** — implementar os 3 métodos de `ClienteBanco`
-  sobre o cliente Supabase (service role) quando o pacote/creds existirem no
-  deploy. Aplicar migrations 0001–0004. É o único elo que falta para a ingestão
-  rodar de verdade (a lógica toda já está testada com fakes).
+- **Deploy** — `pip install supabase`, definir `SUPABASE_URL`/
+  `SUPABASE_SERVICE_KEY` (ver `.env.example`), aplicar migrations 0001–0005 e
+  rodar `run_ingestao.py`. O adaptador, o cliente HTTP e o entrypoint já estão
+  escritos e testados; falta só o pacote e as credenciais, que não existem
+  neste ambiente.
 - **Linhagem de partidos (§4)** — siglas históricas (PMDB→MDB) e fusões
   (DEM/PSL→UNIÃO) precisam de `partido_sigla_historico` + `partido_linhagem`
   por curadoria; sem fonte de curadoria, o `partido_id` de períodos antigos

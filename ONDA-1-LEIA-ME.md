@@ -20,6 +20,7 @@ services/ingestao/
   pipeline/
     camadas.py       bronze, portão bronze→prata, verificadores reutilizáveis
     coletor.py       HTTP com retry, distingue instabilidade de falha
+    http.py          cliente HTTP concreto (urllib) — implementação real de ClienteHttp
     dedup.py         dedup por conteúdo (o instrumento da seção 5.4)
   contrato/
     canario.py       os cinco estados (ok / instabilidade / falha / quebra / alerta)
@@ -31,9 +32,12 @@ services/ingestao/
     partidos.py      coletor — partidos canônicos (profile tipo=partido, §4)
     tramitacoes.py   coletor — tramitações (Área D, §11; monotonicidade §5.2)
   persistencia/
-    repositorio.py   upsert bronze/prata + lookup real de id_externo (porta injetável)
+    repositorio.py       upsert bronze/prata + lookup real (porta injetável)
+    supabase_adapter.py  ClienteBanco concreto sobre supabase-py (import tardio)
   orquestracao/
     orquestrador.py  uma rodada na ordem de FKs, HTTP e banco injetados
+  run_ingestao.py    entrypoint de deploy (urllib + Supabase → orquestrador)
+  .env.example       variáveis de credencial exigidas no deploy
 ```
 
 Verificar tudo (o interpretador aqui é `py`, não `python`):
@@ -42,7 +46,7 @@ Verificar tudo (o interpretador aqui é `py`, não `python`):
 cd services/ingestao && py -m unittest discover -s . -t .
 ```
 
-Resultado atual: **164 testes passando**, todos sem rede.
+Resultado atual: **173 testes passando**, todos sem rede.
 
 ---
 
@@ -229,12 +233,14 @@ não resolvem — a dependência de ordem que o orquestrador existe para garanti
 
 ## O que segue pendente
 
-**Adaptador Supabase concreto.** A lógica está toda testada com um banco fake.
-Falta o adaptador que implementa os 3 métodos de `ClienteBanco` sobre o cliente
-Supabase (service role) — o pacote `supabase` NÃO está instalado neste ambiente
-(a pasta local `supabase/` de migrations induz falso-positivo em `find_spec`;
-verificado). É o único elo entre "lógica pronta" e "ingestão rodando". Requer
-`SUPABASE_URL`/`SUPABASE_SERVICE_KEY`.
+**Deploy (só falta pacote + credenciais).** O adaptador Supabase concreto
+(`supabase_adapter.py`), o cliente HTTP real (`http.py`) e o entrypoint
+(`run_ingestao.py`) já estão escritos e testados — o adaptador contra um duble
+stateful e como drop-in do repositório; o HTTP com opener injetado. No deploy:
+`pip install supabase`, definir `SUPABASE_URL`/`SUPABASE_SERVICE_KEY`, aplicar
+as migrations 0001–0005 e rodar `run_ingestao.py`. O pacote `supabase` NÃO está
+instalado neste ambiente (a pasta local `supabase/` induz falso-positivo em
+`find_spec`; verificado por import real), por isso o import é tardio.
 
 **Presidência (Artigo 17).** Computada em `ResultadoVotos.presidencia`, sem
 coluna/tabela alvo ainda. Precisa de destino no schema para ser persistida.
