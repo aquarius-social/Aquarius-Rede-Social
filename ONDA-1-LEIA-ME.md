@@ -113,7 +113,7 @@ fonte real. Foi reformado (itens V1–V4 de `ANALISE-Metodologia-vs-Codigo.md`):
   versão anterior deste próprio documento) mapeava `Artigo 17 → obstrucao`, o
   que contradiz a autoridade. Agora ele vai para `ResultadoVotos.presidencia`,
   fora do enum de posição.
-- **V4** — o placar vive no TE**182 testes passando**TO da descrição (formatos distintos de plenário e
+- **V4** — o placar vive no TEXTO da descrição (formatos distintos de plenário e
   comissão); é extraído por parsing e reconciliado contra a soma dos nominais
   (§5.2: soma == placar; votantes ≤ 513). Descrição sem número → placar `None`,
   nunca 0. O parser foi validado contra amostras vivas dos dois tipos.
