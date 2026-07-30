@@ -27,6 +27,10 @@ supabase/.temp/
 # Se quiser versioná-los, remova as linhas abaixo (ideal: Git LFS para binários).
 # -----------------------------------------------------------------------------
 *.docx
+# Exceção: os DOIS documentos de autoridade (fonte de verdade do projeto) são
+# versionados via Git LFS. Ver .gitattributes.
+!Aquarius_Metodologia_de_Dados.docx
+!Aquarius_Concepcao_do_Produto.docx
 *.pptx
 *.pdf
 *.zip
