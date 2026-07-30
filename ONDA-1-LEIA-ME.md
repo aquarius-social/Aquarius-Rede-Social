@@ -16,6 +16,7 @@ supabase/migrations/
   0003_votacao_nominal.sql     distingue nominal de secreta em votacao
   0004_placar_nao_extraido.sql placar da votação nulável (None = não extraído)
   0005_vinculo_upsert.sql      alvo de upsert idempotente do vinculo_temporal
+  0006_camada_ouro.sql         views servidas (ouro) — proveniência/frescor, sem PII
 services/ingestao/
   pipeline/
     camadas.py       bronze, portão bronze→prata, verificadores reutilizáveis
@@ -256,5 +257,10 @@ quarentena hoje; resolver de quem é a cadeira é cross-referência própria.
 **Comissões dos deputados (§12 D5).** Vínculos de comissão têm defeitos de
 integridade próprios (sobreposição, duração nula, recriação por sessão).
 
-**Camada ouro.** Bronze e prata estão de pé. Ouro (projeção de leitura pública
-com RLS) entra quando começar a servir o app.
+**Camada ouro: pronta (migration 0006).** As três camadas estão de pé —
+bronze (cru), prata (tratado) e ouro (servido). As views públicas
+(`parlamentar_publico`, `votacao_publica`, `voto_nominal_publico`, …) embutem
+proveniência e frescor e **excluem PII** (§3.5): a view é a fronteira, porque
+RLS é por linha e não corta coluna. É a camada — e só ela — que o app e o
+Prometeus leem; nada ao vivo da fonte. Falta: as telas que a consomem
+(Onda 1.5) e as views de agregação/IA (Onda 2).

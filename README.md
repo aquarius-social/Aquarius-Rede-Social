@@ -66,7 +66,7 @@ python run_ingestao.py
 - **`ingestao.yml`** — agenda a ingestão 2×/dia (06h/18h BRT) + disparo manual.
   Basta pôr `SUPABASE_URL` e `SUPABASE_SERVICE_KEY` em *Settings › Secrets and
   variables › Actions*; sem eles, o job pula sem quebrar. Aplicar as migrations
-  0001–0005 no Supabase é pré-requisito (uma vez, via CLI ou painel).
+  0001–0006 no Supabase é pré-requisito (uma vez, via CLI ou painel).
 
 Type-check dos pacotes TypeScript:
 

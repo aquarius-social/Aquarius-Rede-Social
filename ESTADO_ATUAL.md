@@ -150,12 +150,17 @@ Falta neste coletor (etapas próprias, não feitas):
   testes + type-check TS a cada push (fecha o "CI verde" da Onda 0);
   `.github/workflows/ingestao.yml` agenda `run_ingestao.py` 2×/dia (06h/18h BRT)
   + disparo manual, e pula com verde enquanto os secrets Supabase não existirem.
+- **Camada ouro: pronta** — migration `0006_camada_ouro.sql` cria as views
+  servidas (`parlamentar_publico`, `partido_publico`, `proposicao_publica`,
+  `votacao_publica`, `voto_nominal_publico`, `tramitacao_publica`) com
+  proveniência/frescor embutidos, `grant select` a anon/authenticated, e **sem
+  PII** (§3.5 — a view é a fronteira, já que RLS não corta coluna). É a camada
+  que o app/Prometeus leem. Verificado: todas as colunas existem, nenhuma PII
+  projetada. (SQL validado no deploy, como as demais migrations.)
 - **Deploy / infra operacional** — o que falta para a base ficar viva:
-  1. provisionar o projeto Supabase + aplicar migrations 0001–0005;
+  1. provisionar o projeto Supabase + aplicar migrations 0001–0006;
   2. pôr `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` nos secrets do repo (aí o
-     agendador começa a rodar sozinho);
-  3. **construir a camada ouro** (views servidas com proveniência/frescor) — é
-     a peça que o app/Prometeus lê, ainda não existe.
+     agendador começa a rodar sozinho, 2×/dia).
 - **Linhagem de partidos (§4)** — siglas históricas (PMDB→MDB) e fusões
   (DEM/PSL→UNIÃO) precisam de `partido_sigla_historico` + `partido_linhagem`
   por curadoria; sem fonte de curadoria, o `partido_id` de períodos antigos
