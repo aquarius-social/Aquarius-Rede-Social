@@ -1,21 +1,30 @@
-name: Ingestão diária da Câmara
+name: Ingestão da Câmara
 
 # Extrai das APIs abertas, trata pela metodologia (bronze → prata) e persiste
-# no Supabase. Mantém a base fresca — a leitura na plataforma é sempre da nossa
-# base, nunca da fonte ao vivo (princípio da Metodologia).
+# no Supabase. A leitura na plataforma é sempre da nossa base (camada ouro),
+# nunca da fonte ao vivo.
 #
-# Cron do GitHub Actions é em UTC. Duas vezes ao dia:
-#   09:00 UTC = 06:00 em São Paulo (UTC-3) — manhã
-#   21:00 UTC = 18:00 em São Paulo          — fim de tarde
-# A janela móvel de 30 dias cobre a defasagem de publicação da fonte (§3.3),
-# então não há problema em reprocessar: bronze é append-only e a prata faz upsert.
+# CADÊNCIA POR VOLATILIDADE (§3.3): o que muda todo dia (proposições, votações,
+# tramitações + os perfis, que são baratos) roda 2×/dia — rodada LEVE. O que
+# muda pouco e é caro (histórico de mandatos e despesas, ~1 chamada por deputado)
+# roda 1×/semana — rodada COMPLETA. O disparo manual deixa escolher.
+#
+# Cron do GitHub Actions é em UTC:
+#   09:00 UTC = 06:00 São Paulo — diário leve (manhã)
+#   21:00 UTC = 18:00 São Paulo — diário leve (tarde)
+#   06:00 UTC dom = 03:00 São Paulo dom — semanal completo
 on:
   schedule:
     - cron: '0 9 * * *'
     - cron: '0 21 * * *'
-  workflow_dispatch: {}   # permite disparar manualmente pela aba Actions
+    - cron: '0 6 * * 0'
+  workflow_dispatch:
+    inputs:
+      completo:
+        description: 'Rodada COMPLETA (histórico + despesas + enriquecimento por deputado)? Deixe desmarcado para uma rodada leve e rápida.'
+        type: boolean
+        default: false
 
-# Uma rodada por vez: não deixa duas ingestões concorrerem.
 concurrency:
   group: ingestao-camara
   cancel-in-progress: false
@@ -34,18 +43,34 @@ jobs:
           python-version: '3.12'
       - name: Instalar dependências de runtime
         run: pip install -r requirements.txt
+
+      - name: Definir modo (leve × completo)
+        id: modo
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            COMPLETO="${{ github.event.inputs.completo }}"
+          elif [ "${{ github.event.schedule }}" = "0 6 * * 0" ]; then
+            COMPLETO="true"    # semanal de domingo = completo
+          else
+            COMPLETO="false"   # diário = leve
+          fi
+          echo "completo=$COMPLETO" >> "$GITHUB_OUTPUT"
+          echo "::notice::Rodada $( [ "$COMPLETO" = "true" ] && echo COMPLETA || echo LEVE )"
+
       - name: Ingestão
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           AQUARIUS_JANELA_DIAS: '30'
+          AQUARIUS_HISTORICO: ${{ steps.modo.outputs.completo }}
+          AQUARIUS_DESPESAS: ${{ steps.modo.outputs.completo }}
+          AQUARIUS_ENRIQUECER: ${{ steps.modo.outputs.completo }}
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
-            echo "::notice::Secrets do Supabase ausentes — ingestão pulada (workflow segue verde). Configure SUPABASE_URL e SUPABASE_SERVICE_KEY em Settings › Secrets and variables › Actions."
+            echo "::notice::Secrets do Supabase ausentes — ingestão pulada (workflow segue verde)."
             exit 0
           fi
           python run_ingestao.py
 
 # PRÉ-REQUISITO (uma vez, fora deste workflow): aplicar as migrations 0001–0008
-# ao projeto Supabase — via Supabase CLI (`supabase db push`) ou pelo painel.
-# Este job assume o schema já criado.
+# ao projeto Supabase (SQL Editor com deploy_all.sql, ou Supabase CLI).

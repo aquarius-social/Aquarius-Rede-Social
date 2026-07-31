@@ -28,6 +28,17 @@ from pipeline.coletor import JanelaMovel
 from pipeline.http import ClienteHttpUrllib
 
 
+def _flag(nome: str, padrao: bool = True) -> bool:
+    """Lê uma flag booleana de ambiente. Ausente = `padrao`. Desliga com
+    0/false/nao/off. Serve para separar a rodada LEVE (dado diário) das partes
+    pesadas por deputado (histórico, despesas, enriquecimento), que têm
+    volatilidade baixa e não precisam rodar toda vez (§3.3, cadência por área)."""
+    v = os.environ.get(nome)
+    if v is None:
+        return padrao
+    return v.strip().lower() not in ("0", "false", "nao", "não", "off", "no", "")
+
+
 def main() -> None:
     url = os.environ["SUPABASE_URL"]
     key = os.environ["SUPABASE_SERVICE_KEY"]
@@ -42,6 +53,10 @@ def main() -> None:
         ate=datetime.now(timezone.utc).date(),
         janela=JanelaMovel(dias=janela_dias),
         id_legislatura=int(id_legislatura) if id_legislatura else None,
+        # Partes pesadas por deputado — controláveis por env (padrão: ligadas).
+        enriquecer_deputados=_flag("AQUARIUS_ENRIQUECER"),
+        coletar_historico=_flag("AQUARIUS_HISTORICO"),
+        coletar_despesas=_flag("AQUARIUS_DESPESAS"),
     )
 
     print(
