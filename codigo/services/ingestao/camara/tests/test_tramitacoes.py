@@ -10,6 +10,7 @@ from typing import Any
 
 from camara.tramitacoes import (
     CAMPOS_CRITICOS_TRAMITACAO,
+    coletar_bronze_tramitacoes,
     conferir_sequencia_monotonica,
     processar_tramitacoes_para_prata,
     rodada_tramitacoes,
@@ -170,6 +171,17 @@ class TestRodadaTramitacoes(unittest.TestCase):
                                linha_base=None)
         self.assertIs(r.estado, EstadoContrato.FALHA)
         self.assertIsNone(r.prata)
+
+    def test_nao_envia_itens_ao_endpoint(self):
+        """Regressão: o endpoint de tramitações REJEITA `itens` com HTTP 400.
+        Mandar `itens` zerava todas as tramitações em produção (a coleta caía em
+        ErroFalha e a rodada era pulada)."""
+        cliente = ClienteFake({self._URL: [_Resp(200, {"dados": [], "links": []})]})
+        coletar_bronze_tramitacoes(cliente, "996958")
+        _, params = cliente.chamadas[0]
+        self.assertTrue(
+            params is None or "itens" not in params,
+            f"tramitações não pode enviar 'itens'; enviou {params!r}")
 
 
 if __name__ == "__main__":

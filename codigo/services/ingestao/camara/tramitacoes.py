@@ -65,26 +65,23 @@ def coletar_bronze_tramitacoes(
     proposicao_id_fonte: str,
     *,
     politica: PoliticaRetry = PoliticaRetry(),
-    itens_por_pagina: int = 100,
     limite_paginas: int = 50,
 ) -> list[RegistroBronze]:
     """Tramitações de UMA proposição.
 
-    Não passa parâmetro de ordenação: `ordem` sem `ordenarPor` devolve 400 na
-    fonte (medido ao vivo). A ordenação para a checagem monotônica é feita
-    localmente, sobre `sequencia`.
+    NÃO envia parâmetros de paginação/ordenação: este endpoint os REJEITA com
+    HTTP 400 ("parâmetro inválido") — tanto `itens` quanto `ordem` sem
+    `ordenarPor`. É o mesmo comportamento do endpoint de votos (§10): vem íntegro
+    numa resposta. Medido ao vivo (2026-07-31): `?itens=100` → 400; sem params →
+    200. A ordenação para a checagem monotônica é feita localmente, sobre
+    `sequencia`. Mandar `itens` foi o bug que zerava as tramitações.
     """
     url = f"{BASE}/proposicoes/{proposicao_id_fonte}/tramitacoes"
-    params: dict[str, Any] = {"itens": itens_por_pagina}
     bronze: list[RegistroBronze] = []
     pagina = 1
     proximo: str | None = None
     while pagina <= limite_paginas:
-        corpo = obter_com_retry(
-            cliente, proximo or url,
-            params=None if proximo else params,
-            politica=politica,
-        )
+        corpo = obter_com_retry(cliente, proximo or url, politica=politica)
         for item in (corpo or {}).get("dados", []):
             bronze.append(RegistroBronze.de(FONTE, url, item))
         proximo = _proximo_link(corpo)
