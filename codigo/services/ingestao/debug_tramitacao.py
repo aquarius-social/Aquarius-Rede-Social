@@ -32,22 +32,28 @@ def main() -> None:
     print(f"  id_na_fonte={int(pid)} (int) -> achou? {prop_int is not None}")
 
     print("=== [1c] o que está REALMENTE gravado numa proposição ===")
-    qualquer = banco.selecionar_um("proposicao", {}) or {}
+    qualquer = banco.selecionar_um("proposicao", {"casa_origem": "camara"}) or {}
     print(f"  casa_origem={qualquer.get('casa_origem')!r} "
           f"id_na_fonte={qualquer.get('id_na_fonte')!r} "
           f"(tipo id_na_fonte: {type(qualquer.get('id_na_fonte')).__name__})")
 
-    print("=== [2] coleta + portão + salvar (fluxo real) ===")
+    print("=== [2] coleta + portão + salvar (fluxo real, uma proposição) ===")
     bronze = coletar_bronze_tramitacoes(http, pid)
     prata = processar_tramitacoes_para_prata(bronze, pid)
     print(f"  tramitações coletadas={len(bronze)} | aprovados={len(prata.aprovados)}"
           f" | quarentena={len(prata.quarentena)}")
+    if prata.quarentena:
+        _, viol = prata.quarentena[0]
+        print(f"  1ª quarentena: dim={viol.dimensao} motivo={viol.motivo!r}")
     if prata.aprovados:
         t = prata.aprovados[0]
         print(f"  amostra prata: casa={t['casa']!r} "
-              f"proposicao_id_fonte={t['proposicao_id_fonte']!r}")
+              f"proposicao_id_fonte={t['proposicao_id_fonte']!r} "
+              f"(tipo: {type(t['proposicao_id_fonte']).__name__}) "
+              f"seq={t['sequencia']!r} data_hora={t['data_hora']!r} "
+              f"descricao={(t['descricao'] or '')[:30]!r}")
     n = salvar_tramitacoes(banco, prata.aprovados)
-    print(f"  salvar_tramitacoes -> {n} persistidas")
+    print(f"  >>> salvar_tramitacoes -> {n} persistidas <<<")
 
 
 if __name__ == "__main__":
