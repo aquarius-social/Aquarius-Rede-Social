@@ -21,6 +21,11 @@
 
 create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
+-- btree_gist dá ao GiST classes de operador para tipos escalares (uuid, enum),
+-- necessárias nas constraints `exclude using gist` de vinculo_temporal e
+-- partido_sigla_historico, que combinam `profile_id/partido_id with =` (uuid) e
+-- `casa with =` (enum) com `vigencia with &&` (daterange). Sem ela: erro 42704.
+create extension if not exists "btree_gist";
 
 -- -----------------------------------------------------------------------------
 -- Domínios e enums

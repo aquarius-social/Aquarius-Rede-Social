@@ -1,11 +1,13 @@
 -- =============================================================================
 -- Aquarius · deploy_all.sql — schema completo para o PRIMEIRO provisionamento
 -- =============================================================================
--- Concatenação, NA ORDEM, de TODAS as migrations. Para o primeiro setup:
--- cole isto no SQL Editor do Supabase e rode uma vez.
--- Para MUDANÇAS depois, crie uma migration nova (nunca edite as antigas).
+-- Concatenação, NA ORDEM, de TODAS as migrations, envolta numa transação:
+-- se qualquer statement falhar, TUDO é desfeito (nada de schema pela metade).
+-- Cole no SQL Editor do Supabase e rode uma vez. Mudanças depois = migration nova.
 -- Gerado de: 0001_identidade.sql, 0002_camadas_civicas.sql, 0003_votacao_nominal.sql, 0004_placar_nao_extraido.sql, 0005_vinculo_upsert.sql, 0006_camada_ouro.sql, 0007_ouro_coletivos.sql, 0008_despesas_ceap.sql
 -- =============================================================================
+
+begin;
 
 
 
@@ -33,6 +35,11 @@
 
 create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
+-- btree_gist dá ao GiST classes de operador para tipos escalares (uuid, enum),
+-- necessárias nas constraints `exclude using gist` de vinculo_temporal e
+-- partido_sigla_historico, que combinam `profile_id/partido_id with =` (uuid) e
+-- `casa with =` (enum) com `vigencia with &&` (daterange). Sem ela: erro 42704.
+create extension if not exists "btree_gist";
 
 -- -----------------------------------------------------------------------------
 -- Domínios e enums
@@ -1024,3 +1031,6 @@ grant select on despesa_publica to anon, authenticated;
 
 comment on view despesa_publica is
   'Camada ouro. Despesas da cota parlamentar (CEAP) por parlamentar (§8).';
+
+
+commit;
