@@ -38,6 +38,7 @@ from __future__ import annotations
 from typing import Any, Callable, Iterable, Protocol, Sequence
 
 BASE_CAMARA = "https://dadosabertos.camara.leg.br/api/v2"
+BASE_TRANSPARENCIA = "https://api.portaldatransparencia.gov.br/api-de-dados"
 
 # Versão da regra de ligação id_externo (§3.4). Bump quando a regra mudar.
 VERSAO_REGRA = "camara.v1"
@@ -223,6 +224,38 @@ def lookup_partido_por_sigla(cliente: ClienteBanco):
         row = cliente.selecionar_um("partido", {"sigla_atual": sigla})
         return row["id"] if row else None
     return _l
+
+
+_COLS_EMENDA = (
+    "codigo_emenda", "ano", "tipo", "numero", "autor_nome", "autor_codigo",
+    "localidade_gasto", "funcao", "subfuncao",
+    "valor_empenhado", "valor_liquidado", "valor_pago",
+    "valor_resto_inscrito", "valor_resto_cancelado", "valor_resto_pago",
+)
+
+
+def salvar_emendas(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    lookup=None,
+    *,
+    source: str = "transparencia.emendas",
+    source_url: str = BASE_TRANSPARENCIA,
+) -> int:
+    """Persiste emendas orçamentárias. Resolve o autor pelo `id_externo`
+    (sistema='autor_orcamentario', §6.3) quando `lookup` é dado e o mapa de
+    autores foi carregado; senão `autor_profile_id` fica null (furo declarado).
+    Upsert por `codigo_emenda`."""
+    for e in aprovados:
+        autor_profile_id = None
+        if lookup is not None and e.get("autor_codigo"):
+            autor_profile_id = lookup("autor_orcamentario", e["autor_codigo"])
+        linha = {c: e.get(c) for c in _COLS_EMENDA}
+        linha["autor_profile_id"] = autor_profile_id
+        linha["source"] = source
+        linha["source_url"] = source_url
+        cliente.upsert("emenda", [linha], conflito="codigo_emenda")
+    return len(aprovados)
 
 
 def _daterange(inicio: str, fim: str | None) -> str:

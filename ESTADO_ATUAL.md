@@ -46,6 +46,18 @@ do `CLAUDE.md`.
   **estorno legítimo** (satisfaz a identidade) — a regra "não-negativo" era
   falso-positivo e foi removida (100 aprovados/0 quarentena após o fix). **5 de
   9 áreas de dado da Câmara prontas.**
+- Emendas parlamentares / execução orçamentária (Área F, §13): **coletor pronto**
+  — `transparencia/emendas.py`, fonte **Portal da Transparência** (não a Câmara),
+  por exercício, paginado. Identidade de ordem §5.2 no portão (empenhado ≥
+  liquidado ≥ pago; restos pago+cancelado ≤ inscrito — estágios NUNCA se somam).
+  Valores em formato BR (`10.000,00`) parseados; autor extraído do `codigoEmenda`
+  (§6.3) como `autor_codigo`, resolvido ao perfil por `id_externo`
+  `autor_orcamentario` quando o mapa de autores existe (curadoria própria — a
+  resolução fica `null` sem o mapa, degradação honesta). Tabela `emenda` + view
+  ouro `emenda_publica` (0009). Campos conferidos contra o dado real
+  (`emendas_2024.json`, 6990 registros). **EXIGE** a chave pessoal
+  `chave-api-dados` (env `AQUARIUS_TRANSPARENCIA_KEY`); sem ela a área é pulada.
+  Primeira área fora da Câmara.
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -77,10 +89,10 @@ fantasma da Microsoft Store).
 
 ```
 cd codigo/services/ingestao
-python -m unittest discover -s . -t .
+py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 72 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 203 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -131,7 +143,8 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **190 passando** (+9 dos coletores de comissão e frente), sem rede.
+Base de testes: **203 passando** (+12 do coletor de emendas: parse BR, §5.2 de
+estágios, portão, rodada, e persistência com/sem mapa de autores), sem rede.
 
 ### 3b. Coletor de deputados — primeiro passe ✅
 

@@ -21,6 +21,7 @@ from persistencia.repositorio import (
     salvar_deputados,
     salvar_despesas,
     salvar_partidos,
+    salvar_emendas,
     salvar_perfis_coletivos,
     salvar_proposicoes,
     salvar_tramitacoes,
@@ -221,6 +222,34 @@ class TestDespesas(unittest.TestCase):
         banco = FakeBanco()
         lookup = lookup_id_externo(banco)
         self.assertEqual(salvar_despesas(banco, [self._desp("000")], lookup), 0)
+
+
+class TestEmendas(unittest.TestCase):
+    def _emenda(self):
+        from transparencia.emendas import transformar_emenda
+        return transformar_emenda({
+            "codigoEmenda": "202440340007", "ano": 2024,
+            "tipoEmenda": "Individual", "autor": "LUISA CANZIANI",
+            "numeroEmenda": "0007", "funcao": "Saúde",
+            "valorEmpenhado": "10.000,00", "valorLiquidado": "10.000,00",
+            "valorPago": "10.000,00"})
+
+    def test_persiste_com_valores_e_autor_null_sem_mapa(self):
+        banco = FakeBanco()
+        n = salvar_emendas(banco, [self._emenda()])
+        self.assertEqual(n, 1)
+        row = banco.tabelas["emenda"][0]
+        self.assertEqual(row["codigo_emenda"], "202440340007")
+        self.assertEqual(row["valor_empenhado"], 10000.0)
+        self.assertEqual(row["autor_codigo"], "4034")
+        self.assertIsNone(row["autor_profile_id"])  # sem mapa carregado
+
+    def test_resolve_autor_quando_mapa_existe(self):
+        """§6.3: com id_externo 'autor_orcamentario' carregado, o autor resolve."""
+        banco = FakeBanco()
+        lookup = lambda s, i: "P-CANZIANI" if (s, i) == ("autor_orcamentario", "4034") else None
+        salvar_emendas(banco, [self._emenda()], lookup)
+        self.assertEqual(banco.tabelas["emenda"][0]["autor_profile_id"], "P-CANZIANI")
 
 
 class TestPerfisColetivos(unittest.TestCase):

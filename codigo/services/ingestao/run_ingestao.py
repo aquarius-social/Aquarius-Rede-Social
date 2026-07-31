@@ -48,6 +48,18 @@ def main() -> None:
     http = ClienteHttpUrllib()
     banco = criar_banco_supabase(url, key)
 
+    # Emendas (Portal da Transparência) só rodam com a chave `chave-api-dados`.
+    # Sem ela, a área é pulada. Anos via AQUARIUS_EMENDAS_ANOS ("2024,2025").
+    cliente_transparencia = None
+    anos_emendas = None
+    chave_transp = os.environ.get("AQUARIUS_TRANSPARENCIA_KEY")
+    if chave_transp:
+        cliente_transparencia = ClienteHttpUrllib(
+            headers_extra={"chave-api-dados": chave_transp})
+        anos_env = os.environ.get("AQUARIUS_EMENDAS_ANOS")
+        anos_emendas = ([int(a) for a in anos_env.split(",") if a.strip()]
+                        if anos_env else [datetime.now(timezone.utc).year])
+
     r = ingerir(
         http, banco,
         ate=datetime.now(timezone.utc).date(),
@@ -57,12 +69,15 @@ def main() -> None:
         enriquecer_deputados=_flag("AQUARIUS_ENRIQUECER"),
         coletar_historico=_flag("AQUARIUS_HISTORICO"),
         coletar_despesas=_flag("AQUARIUS_DESPESAS"),
+        cliente_transparencia=cliente_transparencia,
+        anos_emendas=anos_emendas,
     )
 
     print(
         "ingestão concluída — "
         f"partidos={r.partidos_salvos} perfis={r.perfis_salvos} "
-        f"vinculos={r.vinculos_salvos} proposicoes={r.proposicoes_salvas} "
+        f"vinculos={r.vinculos_salvos} despesas={r.despesas_salvas} "
+        f"emendas={r.emendas_salvas} proposicoes={r.proposicoes_salvas} "
         f"tramitacoes={r.tramitacoes_salvas} votacoes={r.votacoes_salvas} "
         f"votos={r.votos_salvos} bronze={r.bronze_salvo}"
     )

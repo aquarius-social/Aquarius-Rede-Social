@@ -43,20 +43,23 @@ class ClienteHttpUrllib:
         *,
         timeout: float = 30.0,
         user_agent: str = "Aquarius/1.0 (ingestao; dados abertos)",
+        headers_extra: dict[str, str] | None = None,
         abrir: Callable[..., Any] | None = None,
     ):
         self._timeout = timeout
         self._ua = user_agent
+        # Headers extras enviados em toda requisição. É como a fonte de emendas
+        # (Portal da Transparência) recebe a `chave-api-dados`.
+        self._headers_extra = dict(headers_extra or {})
         self._abrir = abrir or urllib.request.urlopen
 
     def get(self, url: str, params: dict[str, Any] | None = None) -> RespostaUrllib:
         alvo = url
         if params:
             alvo = f"{url}?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(
-            alvo,
-            headers={"Accept": "application/json", "User-Agent": self._ua},
-        )
+        cabecalhos = {"Accept": "application/json", "User-Agent": self._ua}
+        cabecalhos.update(self._headers_extra)
+        req = urllib.request.Request(alvo, headers=cabecalhos)
         try:
             with self._abrir(req, timeout=self._timeout) as r:
                 bruto = r.read().decode("utf-8")

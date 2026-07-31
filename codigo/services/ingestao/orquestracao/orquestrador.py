@@ -61,10 +61,12 @@ from persistencia.repositorio import (
     salvar_proposicoes,
     salvar_tramitacoes,
     salvar_vinculos_temporais,
+    salvar_emendas,
     salvar_votacoes,
     salvar_votos_nominais,
 )
 from pipeline.coletor import ClienteHttp, JanelaMovel, PoliticaRetry
+from transparencia.emendas import rodada_emendas
 
 _PROCESSAVEL = (EstadoContrato.OK, EstadoContrato.ALERTA)
 
@@ -82,6 +84,7 @@ class LinhasBase:
     tramitacoes: frozenset[str] | None = None
     historico: frozenset[str] | None = None
     despesas: frozenset[str] | None = None
+    emendas: frozenset[str] | None = None
 
 
 @dataclass
@@ -95,6 +98,7 @@ class ResultadoIngestao:
     perfis_salvos: int = 0
     vinculos_salvos: int = 0
     despesas_salvas: int = 0
+    emendas_salvas: int = 0
     proposicoes_salvas: int = 0
     tramitacoes_salvas: int = 0
     votacoes_salvas: int = 0
@@ -117,6 +121,8 @@ def ingerir(
     coletar_historico: bool = True,
     coletar_despesas: bool = True,
     ano_despesas: int | None = None,
+    cliente_transparencia: ClienteHttp | None = None,
+    anos_emendas: list[int] | None = None,
     politica: PoliticaRetry = PoliticaRetry(),
 ) -> ResultadoIngestao:
     """Executa uma rodada completa de ingestão da Câmara.
@@ -226,6 +232,22 @@ def ingerir(
             if rd.estado in _PROCESSAVEL and rd.prata is not None:
                 despesas_salvas += salvar_despesas(banco, rd.prata.aprovados, lookup)
 
+    # -- 2d. Emendas orçamentárias (Área F, §13) — fonte Transparência -------
+    # Só roda se um cliente da Transparência (com a chave) e anos forem dados.
+    # Autor resolvido por id_externo 'autor_orcamentario' (§6.3) — null enquanto
+    # o mapa de autores não é carregado por curadoria (furo conhecido).
+    emendas_salvas = 0
+    if cliente_transparencia is not None and anos_emendas:
+        for ano in anos_emendas:
+            re_ = rodada_emendas(
+                cliente_transparencia, ano,
+                canario_validado=canario_validado,
+                linha_base=base.emendas, politica=politica)
+            bronze_salvo += salvar_bronze(
+                banco, re_.bronze, chave_id="codigoEmenda")
+            if re_.estado in _PROCESSAVEL and re_.prata is not None:
+                emendas_salvas += salvar_emendas(banco, re_.prata.aprovados, lookup)
+
     # -- 3. Proposições: bronze + proposicao ---------------------------------
     prop = prop_mod.rodada(
         cliente_http,
@@ -293,6 +315,7 @@ def ingerir(
         perfis_salvos=perfis,
         vinculos_salvos=vinculos_salvos,
         despesas_salvas=despesas_salvas,
+        emendas_salvas=emendas_salvas,
         proposicoes_salvas=proposicoes_salvas,
         tramitacoes_salvas=tramitacoes_salvas,
         votacoes_salvas=votacoes_salvas,
