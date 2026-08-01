@@ -58,6 +58,21 @@ do `CLAUDE.md`.
   (`emendas_2024.json`, 6990 registros). **EXIGE** a chave pessoal
   `chave-api-dados` (env `AQUARIUS_TRANSPARENCIA_KEY`); sem ela a área é pulada.
   Primeira área fora da Câmara.
+- Senado — senadores + junção bicameral (Área I, §17): **coletor pronto** —
+  `senado/senadores.py`, fonte **Dados Abertos do Senado** (JSON via header
+  `Accept`), lista (`/senador/lista/atual`) + enriquecimento por detalhe
+  (`/senador/{cod}` → nascimento/naturalidade, sinais §5.3). Verificado ao vivo
+  (2026-07-31): 81 senadores em exercício, contrato OK. Senadores entram na
+  MESMA tabela polimórfica `profiles` (a fundação já previa as duas casas).
+  **Junção bicameral (§17):** `resolucao/bicameral.py` reusa o núcleo de
+  convergência do resolvedor (nome civil + nascimento + naturalidade, §5.3) SEM
+  o filtro de mandato vigente — o deputado que virou senador nunca sobrepõe no
+  tempo. `salvar_senadores` decide: 2+ sinais → é a mesma pessoa, anexa o
+  `id_externo(senado)` ao perfil do deputado (metodo='convergencia', SEM perfil
+  novo); 1 sinal só → perfil próprio + `pendente_conferencia` (§13, ambíguo não
+  auto-funde). Migration 0010 torna a view `parlamentar_publico` bicameral
+  (partido/UF/`casa_atual` para senadores). Fonte pública, sem chave. Prova de
+  ponta a ponta no teste do orquestrador (senador 900 = deputada Ana → vincula).
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -92,7 +107,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 203 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 222 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -143,8 +158,9 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **203 passando** (+12 do coletor de emendas: parse BR, §5.2 de
-estágios, portão, rodada, e persistência com/sem mapa de autores), sem rede.
+Base de testes: **222 passando** (+19 do Senado: coletor de senadores, resolvedor
+bicameral §17 — aceita/recusa por família de sinal, persistência que vincula ou
+cria perfil, e a prova de ponta a ponta no orquestrador), sem rede.
 
 ### 3b. Coletor de deputados — primeiro passe ✅
 

@@ -24,6 +24,7 @@ from persistencia.repositorio import (
     salvar_emendas,
     salvar_perfis_coletivos,
     salvar_proposicoes,
+    salvar_senadores,
     salvar_tramitacoes,
     salvar_vinculos_temporais,
     salvar_votacoes,
@@ -250,6 +251,73 @@ class TestEmendas(unittest.TestCase):
         lookup = lambda s, i: "P-CANZIANI" if (s, i) == ("autor_orcamentario", "4034") else None
         salvar_emendas(banco, [self._emenda()], lookup)
         self.assertEqual(banco.tabelas["emenda"][0]["autor_profile_id"], "P-CANZIANI")
+
+
+def _senador(cod="5672", nome="Alan Rick", civil="Alan Rick Miranda",
+             nasc="1976-10-23", mun="Rio Branco", uf_nasc="AC",
+             uf="AC", partido="REPUBLICANOS"):
+    return {
+        "id_fonte": cod, "tipo": "parlamentar", "nome": nome,
+        "slug": f"alan-rick-sen-{cod}", "foto_url": None, "ativo": True,
+        "nome_civil": civil, "data_nascimento": nasc,
+        "naturalidade_municipio": mun, "naturalidade_uf": uf_nasc,
+        "sistema_externo": "senado", "identificador_externo": cod,
+        "metodo_ligacao": "fonte_direta", "grau": "direto",
+        "mandato_hint": {"casa": "senado", "uf": uf, "partido": partido,
+                         "legislatura": 57, "vigencia_inicio": "2023-02-01",
+                         "vigencia_fim": "2031-01-31", "ocupacao": "titular"},
+    }
+
+
+class TestSenadores(unittest.TestCase):
+    def test_sem_candidatos_cria_perfil_proprio(self):
+        banco = FakeBanco()
+        c = salvar_senadores(banco, [_senador()])
+        self.assertEqual(c, {"novos": 1, "vinculados": 0, "pendentes": 0})
+        self.assertEqual(len(banco.tabelas["profiles"]), 1)
+        ext = banco.tabelas["id_externo"][0]
+        self.assertEqual(ext["sistema"], "senado")
+        self.assertEqual(ext["metodo"], "fonte_direta")
+        v = banco.tabelas["vinculo_temporal"][0]
+        self.assertEqual(v["casa"], "senado")
+        self.assertEqual(v["partido_sigla_fonte"], "REPUBLICANOS")
+
+    def test_match_forte_anexa_ao_deputado_sem_criar_perfil(self):
+        """§17: 2+ sinais convergem → é a mesma pessoa. id_externo do Senado vai
+        para o perfil do deputado; nenhum perfil novo nasce."""
+        banco = FakeBanco()
+        cand = [{"profile_id": "P-DEP", "nome": "Alan Rick",
+                 "nome_civil": "Alan Rick Miranda", "data_nascimento": "1976-10-23",
+                 "naturalidade_municipio": "Rio Branco", "naturalidade_uf": "AC"}]
+        c = salvar_senadores(banco, [_senador()], cand)
+        self.assertEqual(c["vinculados"], 1)
+        self.assertEqual(c["novos"], 0)
+        self.assertEqual(len(banco.tabelas.get("profiles", [])), 0)  # nenhum novo
+        ext = banco.tabelas["id_externo"][0]
+        self.assertEqual(ext["profile_id"], "P-DEP")
+        self.assertEqual(ext["metodo"], "convergencia")
+        self.assertGreaterEqual(len(ext["sinais"]), 2)
+        # o vínculo do mandato do Senado também prende no perfil do deputado
+        self.assertEqual(banco.tabelas["vinculo_temporal"][0]["profile_id"], "P-DEP")
+
+    def test_um_sinal_so_nao_auto_funde_e_marca_pendente(self):
+        """Só o nome civil converge (deputado sem nascimento) → perfil próprio,
+        mas id_externo marcado pendente de conferência (§5.3, ambíguo não funde)."""
+        banco = FakeBanco()
+        cand = [{"profile_id": "P-DEP", "nome": "Alan Rick",
+                 "nome_civil": "Alan Rick Miranda", "data_nascimento": None,
+                 "naturalidade_municipio": None, "naturalidade_uf": None}]
+        c = salvar_senadores(banco, [_senador()], cand)
+        self.assertEqual(c["novos"], 1)
+        self.assertEqual(c["pendentes"], 1)
+        self.assertEqual(c["vinculados"], 0)
+        self.assertTrue(banco.tabelas["id_externo"][0]["pendente_conferencia"])
+
+    def test_lookup_partido_resolve_partido_id(self):
+        banco = FakeBanco()
+        salvar_senadores(banco, [_senador()],
+                         lookup_partido=lambda s: "PART-REP" if s == "REPUBLICANOS" else None)
+        self.assertEqual(banco.tabelas["vinculo_temporal"][0]["partido_id"], "PART-REP")
 
 
 class TestPerfisColetivos(unittest.TestCase):

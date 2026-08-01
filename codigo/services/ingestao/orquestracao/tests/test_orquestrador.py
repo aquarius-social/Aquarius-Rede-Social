@@ -14,6 +14,7 @@ from orquestracao.orquestrador import LinhasBase, ingerir
 from pipeline.coletor import JanelaMovel
 
 BASE = "https://dadosabertos.camara.leg.br/api/v2"
+SBASE = "https://legis.senado.leg.br/dadosabertos"
 
 
 class _Resp:
@@ -113,11 +114,31 @@ def _desp(did):
             "nomeFornecedor": "Posto X", "cnpjCpfFornecedor": "00000000000191"}
 
 
+# Um senador (código 900) que é a MESMA pessoa que a deputada Ana (id 1): o
+# detalhe da Câmara dá nomeCivil "Nome Civil 1", nascimento 1970-01-01, São
+# Paulo/SP — o senador bate por nome civil + nascimento + naturalidade (§17).
+def _sen_item():
+    return {"IdentificacaoParlamentar": {
+        "CodigoParlamentar": "900", "NomeParlamentar": "Ana Senadora",
+        "NomeCompletoParlamentar": "Nome Civil 1", "SiglaPartidoParlamentar": "PT",
+        "UfParlamentar": "SP", "UrlFotoParlamentar": "http://x/900.jpg"},
+        "Mandato": {"PrimeiraLegislaturaDoMandato": {
+            "NumeroLegislatura": "57", "DataInicio": "2023-02-01",
+            "DataFim": "2027-01-31"}, "DescricaoParticipacao": "Titular"}}
+
+
 def _mundo(deputados_resp=None):
     """Fábrica do fake HTTP com o mundo inteiro programado."""
     dep_list = deputados_resp if deputados_resp is not None else _Resp(200, {
         "dados": [_dep(1, "Ana"), _dep(2, "Bruno")], "links": []})
     return ClienteHttpFake({
+        f"{SBASE}/senador/lista/atual": _Resp(200, {
+            "ListaParlamentarEmExercicio": {"Parlamentares": {
+                "Parlamentar": [_sen_item()]}}}),
+        f"{SBASE}/senador/900": _Resp(200, {"DetalheParlamentar": {"Parlamentar": {
+            "IdentificacaoParlamentar": {"CodigoParlamentar": "900"},
+            "DadosBasicosParlamentar": {"DataNascimento": "1970-01-01",
+                "Naturalidade": "São Paulo", "UfNaturalidade": "SP"}}}}),
         f"{BASE}/partidos": _Resp(200, {"dados": [
             {"id": 10, "sigla": "PT", "nome": "Partido dos Trabalhadores"}],
             "links": []}),
@@ -223,6 +244,29 @@ class TestOrquestrador(unittest.TestCase):
         ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30))
         self.assertEqual(
             banco.tabelas["proposicao"][0]["data_apresentacao"], "2015-03-12")
+
+    def test_senado_bicameral_vincula_senador_ao_deputado(self):
+        """§17 ponta a ponta: o senador 900 é a mesma pessoa que a deputada Ana
+        (id 1). Com `coletar_senado`, o id_externo do Senado prende NO PERFIL da
+        deputada — sem criar perfil novo."""
+        http = _mundo()
+        banco = FakeBanco()
+        r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
+                    id_legislatura=57, coletar_senado=True)
+
+        self.assertEqual(r.senadores_vinculados, 1)
+        self.assertEqual(r.senadores_novos, 0)
+        # ainda só 2 parlamentares (Ana e Bruno) — o senador não virou um terceiro
+        parlamentares = [p for p in banco.tabelas["profiles"]
+                         if p["tipo"] == "parlamentar"]
+        self.assertEqual(len(parlamentares), 2)
+        # o id_externo do Senado aponta ao mesmo perfil da deputada da Câmara
+        ext_sen = [e for e in banco.tabelas["id_externo"] if e["sistema"] == "senado"]
+        self.assertEqual(len(ext_sen), 1)
+        ana_camara = next(e for e in banco.tabelas["id_externo"]
+                          if e["sistema"] == "camara" and e["identificador"] == "1")
+        self.assertEqual(ext_sen[0]["profile_id"], ana_camara["profile_id"])
+        self.assertEqual(ext_sen[0]["metodo"], "convergencia")
 
     def test_deputados_ausentes_deixam_votos_sem_resolver(self):
         """A dependência de ordem, provada pela negativa: sem deputados, o lookup

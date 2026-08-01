@@ -71,11 +71,16 @@ def main() -> None:
         coletar_despesas=_flag("AQUARIUS_DESPESAS"),
         cliente_transparencia=cliente_transparencia,
         anos_emendas=anos_emendas,
+        # Senado (Área I, §17): fonte pública sem chave. Padrão ligado; a rodada
+        # leve pode desligar com AQUARIUS_SENADO=0.
+        coletar_senado=_flag("AQUARIUS_SENADO"),
     )
 
     print(
         "ingestão concluída — "
         f"partidos={r.partidos_salvos} perfis={r.perfis_salvos} "
+        f"senado(novos={r.senadores_novos} vinculados={r.senadores_vinculados} "
+        f"pendentes={r.senadores_pendentes}) "
         f"vinculos={r.vinculos_salvos} despesas={r.despesas_salvas} "
         f"emendas={r.emendas_salvas} proposicoes={r.proposicoes_salvas} "
         f"tramitacoes={r.tramitacoes_salvas} votacoes={r.votacoes_salvas} "

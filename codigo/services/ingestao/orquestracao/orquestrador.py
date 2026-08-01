@@ -59,6 +59,7 @@ from persistencia.repositorio import (
     salvar_partidos,
     salvar_perfis_coletivos,
     salvar_proposicoes,
+    salvar_senadores,
     salvar_tramitacoes,
     salvar_vinculos_temporais,
     salvar_emendas,
@@ -66,6 +67,7 @@ from persistencia.repositorio import (
     salvar_votos_nominais,
 )
 from pipeline.coletor import ClienteHttp, JanelaMovel, PoliticaRetry
+from senado.senadores import rodada_senadores
 from transparencia.emendas import rodada_emendas
 
 _PROCESSAVEL = (EstadoContrato.OK, EstadoContrato.ALERTA)
@@ -85,6 +87,7 @@ class LinhasBase:
     historico: frozenset[str] | None = None
     despesas: frozenset[str] | None = None
     emendas: frozenset[str] | None = None
+    senadores: frozenset[str] | None = None
 
 
 @dataclass
@@ -99,6 +102,11 @@ class ResultadoIngestao:
     vinculos_salvos: int = 0
     despesas_salvas: int = 0
     emendas_salvas: int = 0
+    # Senado (§17): perfis novos, os vinculados a um deputado (mesma pessoa), e
+    # os marcados pendentes de conferência (match por 1 sinal só).
+    senadores_novos: int = 0
+    senadores_vinculados: int = 0
+    senadores_pendentes: int = 0
     proposicoes_salvas: int = 0
     tramitacoes_salvas: int = 0
     votacoes_salvas: int = 0
@@ -123,6 +131,7 @@ def ingerir(
     ano_despesas: int | None = None,
     cliente_transparencia: ClienteHttp | None = None,
     anos_emendas: list[int] | None = None,
+    coletar_senado: bool = False,
     politica: PoliticaRetry = PoliticaRetry(),
 ) -> ResultadoIngestao:
     """Executa uma rodada completa de ingestão da Câmara.
@@ -179,8 +188,38 @@ def ingerir(
     )
     bronze_salvo += salvar_bronze(banco, dep.bronze)
     perfis = 0
+    candidatos_dep: list[dict] = []
     if dep.estado in _PROCESSAVEL and dep.prata is not None:
-        perfis = len(salvar_deputados(banco, dep.prata.aprovados))
+        pids_dep = salvar_deputados(banco, dep.prata.aprovados)
+        perfis = len(pids_dep)
+        # Candidatos para a junção bicameral (§17): cada deputado com seu
+        # profile_id e os sinais §5.3 (nome civil/nascimento/naturalidade).
+        candidatos_dep = [
+            {"profile_id": pid, **d} for pid, d in zip(pids_dep, dep.prata.aprovados)
+        ]
+
+    # -- 1c. Senadores: profiles + id_externo(senado) + junção bicameral -----
+    # Depois dos deputados (candidatos do match) e antes dos lookups. O senador
+    # que já é deputado ingerido NÃO vira perfil novo — anexa-se o id_externo do
+    # Senado ao perfil existente (§17). Fonte pública, sem chave; gated para não
+    # pesar a rodada leve. Reusa o lookup_partido do passo 0.
+    senadores_novos = senadores_vinculados = senadores_pendentes = 0
+    if coletar_senado:
+        sen = rodada_senadores(
+            cliente_http, canario_validado=canario_validado,
+            linha_base=base.senadores, politica=politica)
+        bronze_salvo += salvar_bronze(
+            banco, sen.bronze,
+            id_na_fonte_de=lambda r: str(
+                (r.payload.get("IdentificacaoParlamentar") or {})
+                .get("CodigoParlamentar")))
+        if sen.estado in _PROCESSAVEL and sen.prata is not None:
+            c = salvar_senadores(
+                banco, sen.prata.aprovados, candidatos_dep,
+                lookup_partido=lookup_partido)
+            senadores_novos = c["novos"]
+            senadores_vinculados = c["vinculados"]
+            senadores_pendentes = c["pendentes"]
 
     # -- 2. Lookup real de id_externo (respaldado pelo banco) ----------------
     lookup = lookup_id_externo(banco)
@@ -316,6 +355,9 @@ def ingerir(
         vinculos_salvos=vinculos_salvos,
         despesas_salvas=despesas_salvas,
         emendas_salvas=emendas_salvas,
+        senadores_novos=senadores_novos,
+        senadores_vinculados=senadores_vinculados,
+        senadores_pendentes=senadores_pendentes,
         proposicoes_salvas=proposicoes_salvas,
         tramitacoes_salvas=tramitacoes_salvas,
         votacoes_salvas=votacoes_salvas,

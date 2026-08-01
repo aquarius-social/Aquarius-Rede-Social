@@ -35,10 +35,12 @@ Convenções do schema honradas aqui:
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any, Callable, Iterable, Protocol, Sequence
 
 BASE_CAMARA = "https://dadosabertos.camara.leg.br/api/v2"
 BASE_TRANSPARENCIA = "https://api.portaldatransparencia.gov.br/api-de-dados"
+BASE_SENADO = "https://legis.senado.leg.br/dadosabertos"
 
 # Versão da regra de ligação id_externo (§3.4). Bump quando a regra mudar.
 VERSAO_REGRA = "camara.v1"
@@ -160,6 +162,134 @@ def lookup_id_externo(cliente: ClienteBanco):
         )
         return row["profile_id"] if row else None
     return _l
+
+
+# -----------------------------------------------------------------------------
+# Senadores → profiles + id_externo (+ junção bicameral §17) + vínculo
+# -----------------------------------------------------------------------------
+
+def _para_date(valor: Any) -> date | None:
+    if not valor:
+        return None
+    try:
+        return date.fromisoformat(str(valor)[:10])
+    except ValueError:
+        return None
+
+
+def salvar_senadores(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    candidatos: Sequence[dict] | None = None,
+    *,
+    lookup_partido: Callable[[str | None], str | None] | None = None,
+    source: str = "senado.senadores",
+    source_url: str = BASE_SENADO,
+) -> dict:
+    """Persiste senadores com JUNÇÃO BICAMERAL (§17). Devolve contadores
+    {novos, vinculados, pendentes}.
+
+    Para cada senador, tenta casar (probabilístico, §13 Tier 2) contra os
+    `candidatos` — deputados já ingeridos, cada um um dict com `profile_id` +
+    nome civil/nascimento/naturalidade. A decisão segue a disciplina §5.3:
+
+      - Match 'direto' (2+ famílias independentes convergem): é a MESMA PESSOA.
+        NÃO cria perfil — anexa o `id_externo` do Senado ao perfil do deputado
+        (metodo='convergencia', grau='direto' sustentado pelos sinais).
+      - Match 'com_ressalva' (1 sinal só) ou sem match: cria PERFIL PRÓPRIO. O
+        vínculo senado→código é 'fonte_direta' (a fonte declara o código).
+        Um sinal isolado marca `pendente_conferencia` — possível dup bicameral
+        para conferência humana, jamais auto-fundida (ambíguo não auto-resolve).
+
+    Sem `candidatos`, todo senador vira perfil próprio (passe só-Senado, honesto).
+    O mandato vigente (partido/UF/legislatura) vai para `vinculo_temporal`
+    (casa='senado') em qualquer caso — o `partido_id` resolve por sigla quando
+    `lookup_partido` é dado, senão fica na `partido_sigla_fonte`.
+    """
+    from resolucao.bicameral import Alvo, Candidato, Grau, resolver_bicameral
+
+    cand_objs = [
+        Candidato(
+            profile_id=c["profile_id"],
+            nome_parlamentar=c.get("nome") or c.get("nome_parlamentar") or "",
+            mandatos=(),
+            nome_civil=c.get("nome_civil"),
+            data_nascimento=_para_date(c.get("data_nascimento")),
+            naturalidade_municipio=c.get("naturalidade_municipio"),
+            naturalidade_uf=c.get("naturalidade_uf"),
+        )
+        for c in (candidatos or [])
+    ]
+
+    contadores = {"novos": 0, "vinculados": 0, "pendentes": 0}
+    for s in aprovados:
+        match = None
+        if cand_objs:
+            match = resolver_bicameral(
+                Alvo(
+                    nome=s.get("nome") or "",
+                    data_do_fato=date(1900, 1, 1),  # bicameral ignora a data
+                    nome_civil=s.get("nome_civil"),
+                    data_nascimento=_para_date(s.get("data_nascimento")),
+                    naturalidade_municipio=s.get("naturalidade_municipio"),
+                    naturalidade_uf=s.get("naturalidade_uf"),
+                ),
+                cand_objs,
+            )
+
+        if match is not None and match.grau is Grau.DIRETO and match.profile_id:
+            pid = match.profile_id
+            cliente.upsert("id_externo", [{
+                "profile_id": pid,
+                "sistema": "senado",
+                "identificador": s["identificador_externo"],
+                "metodo": "convergencia",
+                "grau": "direto",
+                "sinais": list(match.sinais),
+                "versao_regra": match.versao_regra,
+                "pendente_conferencia": False,
+            }], conflito="sistema,identificador")
+            contadores["vinculados"] += 1
+        else:
+            pendente = bool(match and match.grau is Grau.COM_RESSALVA)
+            linha_profile = {c: s.get(c) for c in _COLS_PROFILE}
+            linha_profile["source"] = source
+            linha_profile["source_url"] = source_url
+            [perfil] = cliente.upsert("profiles", [linha_profile], conflito="slug")
+            pid = perfil["id"]
+            cliente.upsert("id_externo", [{
+                "profile_id": pid,
+                "sistema": "senado",
+                "identificador": s["identificador_externo"],
+                "metodo": "fonte_direta",
+                "grau": "direto",
+                "sinais": [],
+                "versao_regra": VERSAO_REGRA,
+                "pendente_conferencia": pendente,
+            }], conflito="sistema,identificador")
+            contadores["novos"] += 1
+            if pendente:
+                contadores["pendentes"] += 1
+
+        # Mandato vigente → vinculo_temporal (casa='senado'), em qualquer caso.
+        h = s.get("mandato_hint") or {}
+        if h.get("vigencia_inicio") and h.get("uf"):
+            partido_id = None
+            if lookup_partido is not None:
+                partido_id = lookup_partido(h.get("partido"))
+            cliente.upsert("vinculo_temporal", [{
+                "profile_id": pid,
+                "casa": "senado",
+                "legislatura": h.get("legislatura"),
+                "uf": h["uf"],
+                "partido_id": partido_id,
+                "partido_sigla_fonte": h.get("partido"),
+                "ocupacao": h.get("ocupacao") or "titular",
+                "vigencia": _daterange(h["vigencia_inicio"], h.get("vigencia_fim")),
+                "source": source,
+                "source_url": source_url,
+            }], conflito="profile_id,casa,vigencia")
+    return contadores
 
 
 def salvar_partidos(
