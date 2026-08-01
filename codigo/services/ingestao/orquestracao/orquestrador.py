@@ -74,6 +74,7 @@ from pipeline.coletor import ClienteHttp, JanelaMovel, PoliticaRetry
 from senado.discursos import rodada_discursos_senado
 from senado.materias import rodada_materias
 from senado.senadores import rodada_senadores
+from senado.tramitacoes import rodada_tramitacoes_senado
 from transparencia.emendas import rodada_emendas
 
 _PROCESSAVEL = (EstadoContrato.OK, EstadoContrato.ALERTA)
@@ -97,6 +98,7 @@ class LinhasBase:
     discursos: frozenset[str] | None = None
     discursos_senado: frozenset[str] | None = None
     materias_senado: frozenset[str] | None = None
+    tramitacoes_senado: frozenset[str] | None = None
 
 
 @dataclass
@@ -120,6 +122,8 @@ class ResultadoIngestao:
     discursos_salvos: int = 0
     # Matérias do Senado (proposições, Área B bicameral).
     materias_senado_salvas: int = 0
+    # Tramitações do Senado (Área D bicameral).
+    tramitacoes_senado_salvas: int = 0
     proposicoes_salvas: int = 0
     tramitacoes_salvas: int = 0
     votacoes_salvas: int = 0
@@ -371,6 +375,7 @@ def ingerir(
     # Mesma tabela `proposicao` (casa_origem='senado'), mesma janela móvel. Sob
     # o mesmo gate do Senado. Tramitações/votações do Senado são passos próprios.
     materias_senado_salvas = 0
+    tramitacoes_senado_salvas = 0
     if coletar_senado:
         m_ini, m_fim = janela.intervalo(ate)
         rm = rodada_materias(
@@ -382,6 +387,23 @@ def ingerir(
             materias_senado_salvas = salvar_proposicoes(
                 banco, rm.prata.aprovados,
                 source="senado.materias", source_url=BASE_SENADO)
+
+            # Tramitações do Senado: uma rodada por matéria, via /processo/{id}
+            # (endpoint substituto — o antigo /movimentacoes foi descontinuado).
+            # Prende-se à matéria já persistida (FK), como na Câmara.
+            for m in rm.prata.aprovados:
+                id_proc = m.get("id_processo")
+                if not id_proc:
+                    continue
+                rts = rodada_tramitacoes_senado(
+                    cliente_http, id_proc, m["id_fonte"],
+                    canario_validado=canario_validado,
+                    linha_base=base.tramitacoes_senado, politica=politica)
+                bronze_salvo += salvar_bronze(banco, rts.bronze, chave_id="id")
+                if rts.estado in _PROCESSAVEL and rts.prata is not None:
+                    tramitacoes_senado_salvas += salvar_tramitacoes(
+                        banco, rts.prata.aprovados,
+                        source="senado.tramitacoes", source_url=BASE_SENADO)
 
     # -- 4/5. Votações + votos nominais --------------------------------------
     inicio, fim = janela.intervalo(ate)
@@ -428,6 +450,7 @@ def ingerir(
         senadores_pendentes=senadores_pendentes,
         discursos_salvos=discursos_salvos,
         materias_senado_salvas=materias_senado_salvas,
+        tramitacoes_senado_salvas=tramitacoes_senado_salvas,
         proposicoes_salvas=proposicoes_salvas,
         tramitacoes_salvas=tramitacoes_salvas,
         votacoes_salvas=votacoes_salvas,

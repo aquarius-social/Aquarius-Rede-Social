@@ -129,6 +129,10 @@ def transformar_materia(payload: dict) -> dict:
         "situacao": None,
         "uri_autores": None,
         "casa_origem": "senado",
+        # Id do PROCESSO (≠ Codigo da matéria) — chave do endpoint /processo/{id}
+        # que traz a tramitação. NÃO é persistido (salvar_proposicoes ignora); o
+        # orquestrador o usa para o passo de tramitações do Senado.
+        "id_processo": str(payload.get("IdentificacaoProcesso") or "") or None,
     }
 
 

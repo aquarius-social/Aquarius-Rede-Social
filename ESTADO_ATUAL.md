@@ -96,6 +96,18 @@ do `CLAUDE.md`.
   Verificado ao vivo (2026-07-31): 85 matérias PL/PLP/PDL em jun/2024, 0
   quarentena. Início da onda de PARIDADE do Senado (fechar o que só a Câmara
   tinha antes de partir para áreas novas).
+- Tramitações do Senado (Área D, bicameral): **coletor pronto** —
+  `senado/tramitacoes.py`. **Achado §19:** o endpoint antigo
+  `/materia/movimentacoes` foi DESCONTINUADO (desativação 2026-02-01); a própria
+  fonte aponta `/processo/{idProcesso}` como substituto — usamos o substituto,
+  não o endpoint morto. O `idProcesso` (≠ código da matéria) vem da pesquisa de
+  matérias e viaja na prata como `id_processo`. A tramitação é
+  `autuacoes[].informesLegislativos` (eventos datados com colegiado/descrição).
+  Sem número de sequência na fonte → ordena por `id` (ordem de criação) e atribui
+  1..N; a checagem §5.2 de monotonicidade (reusada da Câmara) confere que a data
+  não retrocede nessa ordem — teste REAL. Mesma prata da Câmara
+  (`casa='senado'`) → reusa `salvar_tramitacoes`, **sem migration**. Verificado
+  ao vivo (2026-08-01): PL 1/2024 = 19 tramitações, 0 violações.
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -130,7 +142,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 246 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 253 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -181,7 +193,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **246 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **253 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 

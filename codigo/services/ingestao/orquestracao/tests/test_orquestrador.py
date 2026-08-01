@@ -148,9 +148,17 @@ def _mundo(deputados_resp=None):
         f"{BASE}/deputados/2/discursos": _Resp(200, {"dados": [], "links": []}),
         f"{SBASE}/materia/pesquisa/lista": _Resp(200, {"PesquisaBasicaMateria": {
             "Materias": {"Materia": [{"Codigo": "161856",
+                "IdentificacaoProcesso": "8614284",
                 "DescricaoIdentificacao": "PL 1/2024", "Sigla": "PL",
                 "Numero": "00001", "Ano": "2024", "Ementa": "Ementa do Senado",
                 "Data": "2023-06-05", "UrlDetalheMateria": "http://x/m/161856"}]}}}),
+        f"{SBASE}/processo/8614284": _Resp(200, {"id": 8614284,
+            "codigoMateria": "161856", "autuacoes": [{"numero": 1,
+                "movimentacoes": [], "informesLegislativos": [
+                    {"id": 1, "data": "2023-06-05 10:00:00",
+                     "colegiado": {"sigla": "PLEN"}, "descricao": "Recebida"},
+                    {"id": 2, "data": "2023-06-06 11:00:00",
+                     "colegiado": {"sigla": "CCJ"}, "descricao": "Distribuída"}]}]}),
         f"{SBASE}/senador/900/discursos": _Resp(200, {"DiscursosParlamentar": {
             "Parlamentar": {"Pronunciamentos": {"Pronunciamento": [
                 {"CodigoPronunciamento": "777", "DataPronunciamento": "2023-06-11",
@@ -300,6 +308,13 @@ class TestOrquestrador(unittest.TestCase):
                    if p["casa_origem"] == "senado")
         self.assertEqual(mat["identificador"], "PL 1/2024")
         self.assertEqual(mat["id_na_fonte"], "161856")
+
+        # tramitações do Senado prendem-se à matéria (via /processo/{idProcesso})
+        self.assertGreaterEqual(r.tramitacoes_senado_salvas, 2)
+        tr = [t for t in banco.tabelas["tramitacao"]
+              if t["proposicao_id"] == mat["id"]]
+        self.assertEqual(len(tr), 2)
+        self.assertEqual({t["sequencia"] for t in tr}, {1, 2})
 
     def test_discursos_bicamerais_resolvem_o_autor(self):
         """Área G ponta a ponta: discurso da Câmara (dep 1) + do Senado (sen 900)
