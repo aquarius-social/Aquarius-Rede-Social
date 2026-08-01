@@ -146,6 +146,16 @@ def _mundo(deputados_resp=None):
              "urlVideo": None, "urlAudio": None, "transcricao": "texto"}],
             "links": []}),
         f"{BASE}/deputados/2/discursos": _Resp(200, {"dados": [], "links": []}),
+        f"{SBASE}/comissao/lista/colegiados": _Resp(200, {"ListaColegiados": {
+            "Colegiados": {"Colegiado": [
+                {"Codigo": "34", "Sigla": "CCJ", "Nome": "Comissão de Constituição",
+                 "DescricaoTipoColegiado": "Comissão Permanente", "SiglaCasa": "SF"},
+                {"Codigo": "99", "Sigla": "FPX", "Nome": "Frente X",
+                 "DescricaoTipoColegiado": "Frente Parlamentar", "SiglaCasa": "SF"}]}}}),
+        f"{SBASE}/composicao/lista/blocos": _Resp(200, {"ListaBlocoParlamentar": {
+            "Blocos": {"Bloco": [{"CodigoBloco": "346",
+                "NomeBloco": "Bloco Parlamentar Aliança", "NomeApelido": "BLALIANÇA",
+                "DataCriacao": "2023-03-20"}]}}}),
         f"{SBASE}/materia/pesquisa/lista": _Resp(200, {"PesquisaBasicaMateria": {
             "Materias": {"Materia": [{"Codigo": "161856",
                 "IdentificacaoProcesso": "8614284",
@@ -291,6 +301,16 @@ class TestOrquestrador(unittest.TestCase):
 
         self.assertEqual(r.senadores_vinculados, 1)
         self.assertEqual(r.senadores_novos, 0)
+
+        # comissões (só a permanente, não a frente) + bloco do Senado — o tipo
+        # 'bloco' estreia na tabela polimórfica profiles
+        self.assertEqual(r.comissoes_senado_salvas, 1)
+        self.assertEqual(r.blocos_senado_salvos, 1)
+        tipos = {p["tipo"] for p in banco.tabelas["profiles"]}
+        self.assertIn("bloco", tipos)
+        com_sf = [p for p in banco.tabelas["profiles"]
+                  if p["tipo"] == "comissao" and p["slug"].startswith("comissao-sf")]
+        self.assertEqual(len(com_sf), 1)
         # ainda só 2 parlamentares (Ana e Bruno) — o senador não virou um terceiro
         parlamentares = [p for p in banco.tabelas["profiles"]
                          if p["tipo"] == "parlamentar"]

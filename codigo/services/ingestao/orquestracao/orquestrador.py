@@ -71,6 +71,10 @@ from persistencia.repositorio import (
     salvar_votos_nominais,
 )
 from pipeline.coletor import ClienteHttp, JanelaMovel, PoliticaRetry
+from senado.coletivos import (
+    FONTE_BLOCOS_SENADO, FONTE_COMISSOES_SENADO,
+    rodada_blocos_senado, rodada_comissoes_senado,
+)
 from senado.discursos import rodada_discursos_senado
 from senado.materias import rodada_materias
 from senado.senadores import rodada_senadores
@@ -101,6 +105,8 @@ class LinhasBase:
     materias_senado: frozenset[str] | None = None
     tramitacoes_senado: frozenset[str] | None = None
     votacoes_senado: frozenset[str] | None = None
+    comissoes_senado: frozenset[str] | None = None
+    blocos_senado: frozenset[str] | None = None
 
 
 @dataclass
@@ -126,6 +132,9 @@ class ResultadoIngestao:
     materias_senado_salvas: int = 0
     # Tramitações do Senado (Área D bicameral).
     tramitacoes_senado_salvas: int = 0
+    # Perfis coletivos do Senado (comissões + blocos — o tipo 'bloco' estreia).
+    comissoes_senado_salvas: int = 0
+    blocos_senado_salvos: int = 0
     # Votações + votos nominais do Senado (Área C bicameral).
     votacoes_senado_salvas: int = 0
     votos_senado_salvos: int = 0
@@ -201,6 +210,29 @@ def ingerir(
     if fre.estado in _PROCESSAVEL and fre.prata is not None:
         frentes_salvas = salvar_perfis_coletivos(
             banco, fre.prata.aprovados, source=FONTE_FRENTES)
+
+    # -- 0c. Perfis coletivos do Senado: comissões + blocos ------------------
+    # Polimórficos (mesma tabela profiles). O tipo 'bloco' estreia aqui. Sob o
+    # gate do Senado; independem de senadores/matérias.
+    comissoes_senado_salvas = blocos_senado_salvos = 0
+    if coletar_senado:
+        csen = rodada_comissoes_senado(
+            cliente_http, canario_validado=canario_validado,
+            linha_base=base.comissoes_senado, politica=politica)
+        bronze_salvo += salvar_bronze(banco, csen.bronze, chave_id="Codigo")
+        if csen.estado in _PROCESSAVEL and csen.prata is not None:
+            comissoes_senado_salvas = salvar_perfis_coletivos(
+                banco, csen.prata.aprovados, source=FONTE_COMISSOES_SENADO,
+                source_url=BASE_SENADO)
+
+        bsen = rodada_blocos_senado(
+            cliente_http, canario_validado=canario_validado,
+            linha_base=base.blocos_senado, politica=politica)
+        bronze_salvo += salvar_bronze(banco, bsen.bronze, chave_id="CodigoBloco")
+        if bsen.estado in _PROCESSAVEL and bsen.prata is not None:
+            blocos_senado_salvos = salvar_perfis_coletivos(
+                banco, bsen.prata.aprovados, source=FONTE_BLOCOS_SENADO,
+                source_url=BASE_SENADO)
 
     # -- 1. Deputados: bronze + profiles + id_externo ------------------------
     dep = rodada_deputados(
@@ -477,6 +509,8 @@ def ingerir(
         senadores_vinculados=senadores_vinculados,
         senadores_pendentes=senadores_pendentes,
         discursos_salvos=discursos_salvos,
+        comissoes_senado_salvas=comissoes_senado_salvas,
+        blocos_senado_salvos=blocos_senado_salvos,
         materias_senado_salvas=materias_senado_salvas,
         tramitacoes_senado_salvas=tramitacoes_senado_salvas,
         votacoes_senado_salvas=votacoes_senado_salvas,

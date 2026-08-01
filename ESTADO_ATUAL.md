@@ -33,8 +33,8 @@ do `CLAUDE.md`.
 - Perfis coletivos (comissão + frente): **prontos** — `camara/coletivos.py`
   popula os tipos `comissao` (comissões permanentes, `/orgaos?codTipoOrgao=2`) e
   `frente` (`/frentes`) da tabela polimórfica `profiles`. Views ouro na 0007.
-  Validado ao vivo: 30 comissões permanentes, 100+ frentes. **4 dos 6 tipos de
-  perfil populados** (parlamentar, partido, comissão, frente); faltam bloco/órgão.
+  Validado ao vivo: 30 comissões permanentes, 100+ frentes. (Bloco entrou depois,
+  pelo Senado — ver abaixo; **5 dos 6 tipos de perfil populados**, falta só órgão.)
 - Tramitações: **coletor pronto** — `camara/tramitacoes.py`, por proposição,
   com a identidade §5.2 de sequência monotônica (por data de calendário — a
   fonte viva mostrou tramitações com hora `00:00`, e comparar por instante
@@ -121,6 +121,16 @@ do `CLAUDE.md`.
   `salvar_votacoes`/`salvar_votos_nominais`, **sem migration**. Verificado ao vivo
   (2026-08-01): dez/2024 = 27 votações (15 secretas), **888 votos nominais
   resolvidos**, 0 divergências §5.2. Fecha o cruzamento "como cada senador votou".
+- Comissões + blocos do Senado (perfis coletivos, bicameral): **coletor pronto** —
+  `senado/coletivos.py`. Comissões via `/comissao/lista/colegiados` (301 → JSON
+  estático, urllib segue), filtrando ao que É comissão
+  (`DescricaoTipoColegiado` começa com "Comiss") — o resto (frentes, grupos, mesa)
+  é escopo próprio. Blocos via `/composicao/lista/blocos`. Popula os tipos
+  `comissao` e **`bloco`** da tabela polimórfica `profiles` — o **bloco estreia**
+  (era o 5º dos 6 tipos). Slug leva `-sf` para não colidir com comissões homônimas
+  da Câmara (CCJ existe nas duas casas). Reusa `salvar_perfis_coletivos`, **sem
+  migration** (enum já tinha `bloco`/`comissao`). Verificado ao vivo (2026-08-01):
+  58 comissões, 6 blocos.
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -155,7 +165,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 262 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 266 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -206,7 +216,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **262 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **266 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 
