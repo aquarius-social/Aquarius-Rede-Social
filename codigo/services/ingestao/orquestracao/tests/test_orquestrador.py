@@ -139,6 +139,19 @@ def _mundo(deputados_resp=None):
             "IdentificacaoParlamentar": {"CodigoParlamentar": "900"},
             "DadosBasicosParlamentar": {"DataNascimento": "1970-01-01",
                 "Naturalidade": "São Paulo", "UfNaturalidade": "SP"}}}}),
+        # discursos: deputada 1 tem um, deputado 2 nenhum; senador 900 tem um
+        f"{BASE}/deputados/1/discursos": _Resp(200, {"dados": [
+            {"dataHoraInicio": "2023-06-10T14:00", "tipoDiscurso": "COMO LÍDER",
+             "keywords": "A,B", "sumario": "resumo", "urlTexto": "http://x/t",
+             "urlVideo": None, "urlAudio": None, "transcricao": "texto"}],
+            "links": []}),
+        f"{BASE}/deputados/2/discursos": _Resp(200, {"dados": [], "links": []}),
+        f"{SBASE}/senador/900/discursos": _Resp(200, {"DiscursosParlamentar": {
+            "Parlamentar": {"Pronunciamentos": {"Pronunciamento": [
+                {"CodigoPronunciamento": "777", "DataPronunciamento": "2023-06-11",
+                 "TipoUsoPalavra": {"Descricao": "Discurso"}, "TextoResumo": "r",
+                 "Indexacao": "X", "UrlTexto": "http://x/p",
+                 "UrlTextoBinario": "http://x/b"}]}}}}),
         f"{BASE}/partidos": _Resp(200, {"dados": [
             {"id": 10, "sigla": "PT", "nome": "Partido dos Trabalhadores"}],
             "links": []}),
@@ -267,6 +280,23 @@ class TestOrquestrador(unittest.TestCase):
                           if e["sistema"] == "camara" and e["identificador"] == "1")
         self.assertEqual(ext_sen[0]["profile_id"], ana_camara["profile_id"])
         self.assertEqual(ext_sen[0]["metodo"], "convergencia")
+
+    def test_discursos_bicamerais_resolvem_o_autor(self):
+        """Área G ponta a ponta: discurso da Câmara (dep 1) + do Senado (sen 900)
+        entram na MESMA tabela, cada um resolvido ao seu perfil. O do senador
+        cai no perfil da deputada Ana (mesma pessoa, §17)."""
+        http = _mundo()
+        banco = FakeBanco()
+        r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
+                    id_legislatura=57, coletar_senado=True, coletar_discursos=True)
+
+        self.assertEqual(r.discursos_salvos, 2)   # 1 câmara + 1 senado
+        casas = {d["casa"] for d in banco.tabelas["discurso"]}
+        self.assertEqual(casas, {"camara", "senado"})
+        sen_disc = next(d for d in banco.tabelas["discurso"] if d["casa"] == "senado")
+        ana = next(e for e in banco.tabelas["id_externo"]
+                   if e["sistema"] == "camara" and e["identificador"] == "1")
+        self.assertEqual(sen_disc["profile_id"], ana["profile_id"])
 
     def test_deputados_ausentes_deixam_votos_sem_resolver(self):
         """A dependência de ordem, provada pela negativa: sem deputados, o lookup

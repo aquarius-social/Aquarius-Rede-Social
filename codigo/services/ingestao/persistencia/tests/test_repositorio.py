@@ -21,6 +21,7 @@ from persistencia.repositorio import (
     salvar_deputados,
     salvar_despesas,
     salvar_partidos,
+    salvar_discursos,
     salvar_emendas,
     salvar_perfis_coletivos,
     salvar_proposicoes,
@@ -318,6 +319,48 @@ class TestSenadores(unittest.TestCase):
         salvar_senadores(banco, [_senador()],
                          lookup_partido=lambda s: "PART-REP" if s == "REPUBLICANOS" else None)
         self.assertEqual(banco.tabelas["vinculo_temporal"][0]["partido_id"], "PART-REP")
+
+
+def _discurso(casa="camara", sistema="camara", pid_fonte="74784",
+              id_fonte="74784:2024-12-18T14:00"):
+    return {"casa": casa, "sistema": sistema, "parlamentar_id_fonte": pid_fonte,
+            "id_fonte": id_fonte, "data": "2024-12-18", "tipo": "COMO LÍDER",
+            "sumario": "resumo", "keywords": "A,B", "url_texto": "http://x/t",
+            "url_video": "http://x/v", "url_audio": None, "tem_transcricao": True}
+
+
+class TestDiscursos(unittest.TestCase):
+    def test_resolve_autor_e_persiste(self):
+        banco = FakeBanco()
+        lookup = lambda s, i: "P-DEP" if (s, i) == ("camara", "74784") else None
+        n = salvar_discursos(banco, [_discurso()], lookup,
+                             source="camara.discursos", source_url="http://cam")
+        self.assertEqual(n, 1)
+        row = banco.tabelas["discurso"][0]
+        self.assertEqual(row["profile_id"], "P-DEP")
+        self.assertEqual(row["casa"], "camara")
+        self.assertEqual(row["source"], "camara.discursos")
+
+    def test_autor_nao_resolvido_e_pulado(self):
+        """Integridade referencial §6: sem perfil, o discurso é pulado, não
+        inventado (mesma disciplina do voto nominal órfão)."""
+        banco = FakeBanco()
+        n = salvar_discursos(banco, [_discurso()], lambda s, i: None,
+                             source="camara.discursos", source_url="http://cam")
+        self.assertEqual(n, 0)
+        self.assertNotIn("discurso", banco.tabelas)
+
+    def test_discurso_do_senado_resolve_por_sistema_senado(self):
+        banco = FakeBanco()
+        lookup = lambda s, i: "P-SEN" if (s, i) == ("senado", "5672") else None
+        n = salvar_discursos(
+            banco,
+            [_discurso(casa="senado", sistema="senado", pid_fonte="5672",
+                       id_fonte="510783")],
+            lookup, source="senado.discursos", source_url="http://sen")
+        self.assertEqual(n, 1)
+        self.assertEqual(banco.tabelas["discurso"][0]["profile_id"], "P-SEN")
+        self.assertEqual(banco.tabelas["discurso"][0]["casa"], "senado")
 
 
 class TestPerfisColetivos(unittest.TestCase):

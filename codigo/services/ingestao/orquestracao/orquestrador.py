@@ -43,6 +43,7 @@ from camara.coletivos import (
 )
 from camara.deputados import rodada_deputados, ResultadoRodadaDeputados
 from camara.despesas import rodada_despesas
+from camara.discursos import rodada_discursos
 from camara.mandatos import rodada_historico
 from camara.partidos import rodada_partidos
 from camara.proposicoes import ResultadoRodada
@@ -50,12 +51,15 @@ from camara.tramitacoes import rodada_tramitacoes
 from camara.votacoes import ResultadoRodadaVotacoes, rodada_votacoes
 from contrato.canario import EstadoContrato
 from persistencia.repositorio import (
+    BASE_CAMARA,
+    BASE_SENADO,
     ClienteBanco,
     lookup_id_externo,
     lookup_partido_por_sigla,
     salvar_bronze,
     salvar_deputados,
     salvar_despesas,
+    salvar_discursos,
     salvar_partidos,
     salvar_perfis_coletivos,
     salvar_proposicoes,
@@ -67,6 +71,7 @@ from persistencia.repositorio import (
     salvar_votos_nominais,
 )
 from pipeline.coletor import ClienteHttp, JanelaMovel, PoliticaRetry
+from senado.discursos import rodada_discursos_senado
 from senado.senadores import rodada_senadores
 from transparencia.emendas import rodada_emendas
 
@@ -88,6 +93,8 @@ class LinhasBase:
     despesas: frozenset[str] | None = None
     emendas: frozenset[str] | None = None
     senadores: frozenset[str] | None = None
+    discursos: frozenset[str] | None = None
+    discursos_senado: frozenset[str] | None = None
 
 
 @dataclass
@@ -107,6 +114,8 @@ class ResultadoIngestao:
     senadores_novos: int = 0
     senadores_vinculados: int = 0
     senadores_pendentes: int = 0
+    # Discursos das duas casas (Área G): total persistido (câmara + senado).
+    discursos_salvos: int = 0
     proposicoes_salvas: int = 0
     tramitacoes_salvas: int = 0
     votacoes_salvas: int = 0
@@ -132,6 +141,7 @@ def ingerir(
     cliente_transparencia: ClienteHttp | None = None,
     anos_emendas: list[int] | None = None,
     coletar_senado: bool = False,
+    coletar_discursos: bool = False,
     politica: PoliticaRetry = PoliticaRetry(),
 ) -> ResultadoIngestao:
     """Executa uma rodada completa de ingestão da Câmara.
@@ -204,6 +214,7 @@ def ingerir(
     # Senado ao perfil existente (§17). Fonte pública, sem chave; gated para não
     # pesar a rodada leve. Reusa o lookup_partido do passo 0.
     senadores_novos = senadores_vinculados = senadores_pendentes = 0
+    senadores_prata = None
     if coletar_senado:
         sen = rodada_senadores(
             cliente_http, canario_validado=canario_validado,
@@ -214,6 +225,7 @@ def ingerir(
                 (r.payload.get("IdentificacaoParlamentar") or {})
                 .get("CodigoParlamentar")))
         if sen.estado in _PROCESSAVEL and sen.prata is not None:
+            senadores_prata = sen.prata
             c = salvar_senadores(
                 banco, sen.prata.aprovados, candidatos_dep,
                 lookup_partido=lookup_partido)
@@ -287,6 +299,42 @@ def ingerir(
             if re_.estado in _PROCESSAVEL and re_.prata is not None:
                 emendas_salvas += salvar_emendas(banco, re_.prata.aprovados, lookup)
 
+    # -- 2e. Discursos das DUAS casas (Área G) — por parlamentar, na janela ---
+    # Bicameral: Câmara (por deputado) + Senado (por senador). Volumoso, gated.
+    # O autor resolve pelo lookup (passo 2); sem perfil, o discurso é pulado.
+    discursos_salvos = 0
+    if coletar_discursos:
+        d_ini, d_fim = janela.intervalo(ate)
+        if dep.estado in _PROCESSAVEL and dep.prata is not None:
+            for d in dep.prata.aprovados:
+                rdi = rodada_discursos(
+                    cliente_http, d["id_fonte"],
+                    canario_validado=canario_validado, linha_base=base.discursos,
+                    data_inicio=d_ini.isoformat(), data_fim=d_fim.isoformat(),
+                    politica=politica)
+                bronze_salvo += salvar_bronze(
+                    banco, rdi.bronze,
+                    id_na_fonte_de=lambda r, did=d["id_fonte"]: (
+                        f"{did}:{r.payload.get('dataHoraInicio')}"))
+                if rdi.estado in _PROCESSAVEL and rdi.prata is not None:
+                    discursos_salvos += salvar_discursos(
+                        banco, rdi.prata.aprovados, lookup,
+                        source="camara.discursos", source_url=BASE_CAMARA)
+        if senadores_prata is not None:
+            for s in senadores_prata.aprovados:
+                rds = rodada_discursos_senado(
+                    cliente_http, s["id_fonte"],
+                    canario_validado=canario_validado,
+                    linha_base=base.discursos_senado,
+                    data_inicio=d_ini.isoformat(), data_fim=d_fim.isoformat(),
+                    politica=politica)
+                bronze_salvo += salvar_bronze(
+                    banco, rds.bronze, chave_id="CodigoPronunciamento")
+                if rds.estado in _PROCESSAVEL and rds.prata is not None:
+                    discursos_salvos += salvar_discursos(
+                        banco, rds.prata.aprovados, lookup,
+                        source="senado.discursos", source_url=BASE_SENADO)
+
     # -- 3. Proposições: bronze + proposicao ---------------------------------
     prop = prop_mod.rodada(
         cliente_http,
@@ -358,6 +406,7 @@ def ingerir(
         senadores_novos=senadores_novos,
         senadores_vinculados=senadores_vinculados,
         senadores_pendentes=senadores_pendentes,
+        discursos_salvos=discursos_salvos,
         proposicoes_salvas=proposicoes_salvas,
         tramitacoes_salvas=tramitacoes_salvas,
         votacoes_salvas=votacoes_salvas,

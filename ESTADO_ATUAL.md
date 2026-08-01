@@ -73,6 +73,19 @@ do `CLAUDE.md`.
   auto-funde). Migration 0010 torna a view `parlamentar_publico` bicameral
   (partido/UF/`casa_atual` para senadores). Fonte pública, sem chave. Prova de
   ponta a ponta no teste do orquestrador (senador 900 = deputada Ana → vincula).
+- Discursos — **bicameral** (Área G, §13): **coletores prontos** para as DUAS
+  casas. `camara/discursos.py` (`/deputados/{id}/discursos`, id composto
+  deputado:dataHoraInicio, como o voto) e `senado/discursos.py`
+  (`/senador/{cod}/discursos`, `CodigoPronunciamento`, janela `YYYYMMDD`).
+  Produzem a MESMA prata; a tabela `discurso` (0011) serve as duas casas
+  (coluna `casa`) + view ouro `discurso_publico` SEM PII, citando `url_texto` da
+  fonte. `salvar_discursos` resolve o autor por `id_externo` (camara/senado)
+  antes de gravar — sem perfil, pula (§6). A transcrição integral NÃO é copiada:
+  guarda-se resumo + flag `tem_transcricao` + URL. Verificado ao vivo
+  (2026-07-31): deputado 74784 = 4 discursos, senador 5672 = 19 pronunciamentos.
+  Prova ponta a ponta no orquestrador (discurso da Câmara + do Senado na mesma
+  tabela; o do senador resolve ao perfil unificado da §17). **Primeira área
+  construída bicameral desde o início** (decisão de paridade Câmara↔Senado).
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -107,7 +120,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 222 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 239 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -158,9 +171,9 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **222 passando** (+19 do Senado: coletor de senadores, resolvedor
-bicameral §17 — aceita/recusa por família de sinal, persistência que vincula ou
-cria perfil, e a prova de ponta a ponta no orquestrador), sem rede.
+Base de testes: **239 passando** (+17 dos discursos bicamerais: coletores da
+Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
+o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 
 ### 3b. Coletor de deputados — primeiro passe ✅
 

@@ -388,6 +388,38 @@ def salvar_emendas(
     return len(aprovados)
 
 
+_COLS_DISCURSO = (
+    "casa", "id_fonte", "data", "tipo", "sumario", "keywords",
+    "url_texto", "url_video", "url_audio", "tem_transcricao",
+)
+
+
+def salvar_discursos(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    lookup,
+    *,
+    source: str,
+    source_url: str,
+) -> int:
+    """Persiste discursos das DUAS casas (a prata carrega `casa`). Resolve o
+    autor por `id_externo` (sistema='camara'|'senado') antes de gravar — sem o
+    perfil ingerido, o discurso é pulado (integridade referencial §6), não
+    inventado. Upsert por (casa, id_fonte)."""
+    n = 0
+    for d in aprovados:
+        perfil_id = lookup(d["sistema"], d["parlamentar_id_fonte"])
+        if perfil_id is None:
+            continue
+        linha = {c: d.get(c) for c in _COLS_DISCURSO}
+        linha["profile_id"] = perfil_id
+        linha["source"] = source
+        linha["source_url"] = source_url
+        cliente.upsert("discurso", [linha], conflito="casa,id_fonte")
+        n += 1
+    return n
+
+
 def _daterange(inicio: str, fim: str | None) -> str:
     """Literal daterange do Postgres: `[inicio, fim)` — início inclusivo, fim
     exclusivo. Fim ausente = em aberto: `[inicio,)`."""

@@ -74,6 +74,9 @@ def main() -> None:
         # Senado (Área I, §17): fonte pública sem chave. Padrão ligado; a rodada
         # leve pode desligar com AQUARIUS_SENADO=0.
         coletar_senado=_flag("AQUARIUS_SENADO"),
+        # Discursos das duas casas (Área G): por parlamentar, volumoso. Padrão
+        # LIGADO na rodada completa; desligue na leve com AQUARIUS_DISCURSOS=0.
+        coletar_discursos=_flag("AQUARIUS_DISCURSOS"),
     )
 
     print(
@@ -82,7 +85,8 @@ def main() -> None:
         f"senado(novos={r.senadores_novos} vinculados={r.senadores_vinculados} "
         f"pendentes={r.senadores_pendentes}) "
         f"vinculos={r.vinculos_salvos} despesas={r.despesas_salvas} "
-        f"emendas={r.emendas_salvas} proposicoes={r.proposicoes_salvas} "
+        f"emendas={r.emendas_salvas} discursos={r.discursos_salvos} "
+        f"proposicoes={r.proposicoes_salvas} "
         f"tramitacoes={r.tramitacoes_salvas} votacoes={r.votacoes_salvas} "
         f"votos={r.votos_salvos} bronze={r.bronze_salvo}"
     )
