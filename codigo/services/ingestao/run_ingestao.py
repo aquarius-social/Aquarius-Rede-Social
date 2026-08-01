@@ -86,7 +86,7 @@ def main() -> None:
         f"pendentes={r.senadores_pendentes}) "
         f"vinculos={r.vinculos_salvos} despesas={r.despesas_salvas} "
         f"emendas={r.emendas_salvas} discursos={r.discursos_salvos} "
-        f"proposicoes={r.proposicoes_salvas} "
+        f"proposicoes={r.proposicoes_salvas} materias_senado={r.materias_senado_salvas} "
         f"tramitacoes={r.tramitacoes_salvas} votacoes={r.votacoes_salvas} "
         f"votos={r.votos_salvos} bronze={r.bronze_salvo}"
     )

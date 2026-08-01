@@ -72,6 +72,7 @@ from persistencia.repositorio import (
 )
 from pipeline.coletor import ClienteHttp, JanelaMovel, PoliticaRetry
 from senado.discursos import rodada_discursos_senado
+from senado.materias import rodada_materias
 from senado.senadores import rodada_senadores
 from transparencia.emendas import rodada_emendas
 
@@ -95,6 +96,7 @@ class LinhasBase:
     senadores: frozenset[str] | None = None
     discursos: frozenset[str] | None = None
     discursos_senado: frozenset[str] | None = None
+    materias_senado: frozenset[str] | None = None
 
 
 @dataclass
@@ -116,6 +118,8 @@ class ResultadoIngestao:
     senadores_pendentes: int = 0
     # Discursos das duas casas (Área G): total persistido (câmara + senado).
     discursos_salvos: int = 0
+    # Matérias do Senado (proposições, Área B bicameral).
+    materias_senado_salvas: int = 0
     proposicoes_salvas: int = 0
     tramitacoes_salvas: int = 0
     votacoes_salvas: int = 0
@@ -363,6 +367,22 @@ def ingerir(
             if rt.estado in _PROCESSAVEL and rt.prata is not None:
                 tramitacoes_salvas += salvar_tramitacoes(banco, rt.prata.aprovados)
 
+    # -- 3c. Matérias do Senado (proposições, bicameral §17) -----------------
+    # Mesma tabela `proposicao` (casa_origem='senado'), mesma janela móvel. Sob
+    # o mesmo gate do Senado. Tramitações/votações do Senado são passos próprios.
+    materias_senado_salvas = 0
+    if coletar_senado:
+        m_ini, m_fim = janela.intervalo(ate)
+        rm = rodada_materias(
+            cliente_http, data_inicio=m_ini.isoformat(), data_fim=m_fim.isoformat(),
+            canario_validado=canario_validado, linha_base=base.materias_senado,
+            politica=politica)
+        bronze_salvo += salvar_bronze(banco, rm.bronze, chave_id="Codigo")
+        if rm.estado in _PROCESSAVEL and rm.prata is not None:
+            materias_senado_salvas = salvar_proposicoes(
+                banco, rm.prata.aprovados,
+                source="senado.materias", source_url=BASE_SENADO)
+
     # -- 4/5. Votações + votos nominais --------------------------------------
     inicio, fim = janela.intervalo(ate)
     vot = rodada_votacoes(
@@ -407,6 +427,7 @@ def ingerir(
         senadores_vinculados=senadores_vinculados,
         senadores_pendentes=senadores_pendentes,
         discursos_salvos=discursos_salvos,
+        materias_senado_salvas=materias_senado_salvas,
         proposicoes_salvas=proposicoes_salvas,
         tramitacoes_salvas=tramitacoes_salvas,
         votacoes_salvas=votacoes_salvas,

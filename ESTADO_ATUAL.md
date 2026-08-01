@@ -86,6 +86,16 @@ do `CLAUDE.md`.
   Prova ponta a ponta no orquestrador (discurso da Câmara + do Senado na mesma
   tabela; o do senador resolve ao perfil unificado da §17). **Primeira área
   construída bicameral desde o início** (decisão de paridade Câmara↔Senado).
+- Matérias do Senado — proposições (Área B, bicameral): **coletor pronto** —
+  `senado/materias.py`, fonte `/materia/pesquisa/lista` com janela de
+  apresentação (`dataInicioApresentacao/Fim`, YYYYMMDD), uma consulta por sigla
+  suportada (PL/PEC/PLP/PDL). Produz a MESMA prata da Câmara
+  (`casa_origem='senado'`) e reusa `salvar_proposicoes` — **sem migration nova**,
+  a tabela `proposicao` já era bicameral (0002, §17). Tipos procedurais do Senado
+  (RQS, MSF) ficam de fora (ampliar o enum é decisão de escopo, não técnica).
+  Verificado ao vivo (2026-07-31): 85 matérias PL/PLP/PDL em jun/2024, 0
+  quarentena. Início da onda de PARIDADE do Senado (fechar o que só a Câmara
+  tinha antes de partir para áreas novas).
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -120,7 +130,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 239 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 246 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -171,7 +181,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **239 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **246 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 

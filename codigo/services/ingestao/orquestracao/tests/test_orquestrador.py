@@ -146,6 +146,11 @@ def _mundo(deputados_resp=None):
              "urlVideo": None, "urlAudio": None, "transcricao": "texto"}],
             "links": []}),
         f"{BASE}/deputados/2/discursos": _Resp(200, {"dados": [], "links": []}),
+        f"{SBASE}/materia/pesquisa/lista": _Resp(200, {"PesquisaBasicaMateria": {
+            "Materias": {"Materia": [{"Codigo": "161856",
+                "DescricaoIdentificacao": "PL 1/2024", "Sigla": "PL",
+                "Numero": "00001", "Ano": "2024", "Ementa": "Ementa do Senado",
+                "Data": "2023-06-05", "UrlDetalheMateria": "http://x/m/161856"}]}}}),
         f"{SBASE}/senador/900/discursos": _Resp(200, {"DiscursosParlamentar": {
             "Parlamentar": {"Pronunciamentos": {"Pronunciamento": [
                 {"CodigoPronunciamento": "777", "DataPronunciamento": "2023-06-11",
@@ -280,6 +285,21 @@ class TestOrquestrador(unittest.TestCase):
                           if e["sistema"] == "camara" and e["identificador"] == "1")
         self.assertEqual(ext_sen[0]["profile_id"], ana_camara["profile_id"])
         self.assertEqual(ext_sen[0]["metodo"], "convergencia")
+
+    def test_materias_do_senado_entram_na_tabela_proposicao(self):
+        """Área B bicameral: a matéria do Senado cai na MESMA tabela `proposicao`
+        (casa_origem='senado'), ao lado das proposições da Câmara."""
+        http = _mundo()
+        banco = FakeBanco()
+        r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
+                    id_legislatura=57, coletar_senado=True)
+        self.assertGreaterEqual(r.materias_senado_salvas, 1)
+        casas = {p["casa_origem"] for p in banco.tabelas["proposicao"]}
+        self.assertEqual(casas, {"camara", "senado"})
+        mat = next(p for p in banco.tabelas["proposicao"]
+                   if p["casa_origem"] == "senado")
+        self.assertEqual(mat["identificador"], "PL 1/2024")
+        self.assertEqual(mat["id_na_fonte"], "161856")
 
     def test_discursos_bicamerais_resolvem_o_autor(self):
         """Área G ponta a ponta: discurso da Câmara (dep 1) + do Senado (sen 900)
