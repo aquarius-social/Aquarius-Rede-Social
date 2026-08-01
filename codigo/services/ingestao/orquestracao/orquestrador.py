@@ -75,6 +75,7 @@ from senado.discursos import rodada_discursos_senado
 from senado.materias import rodada_materias
 from senado.senadores import rodada_senadores
 from senado.tramitacoes import rodada_tramitacoes_senado
+from senado.votacoes import rodada_votacoes_senado
 from transparencia.emendas import rodada_emendas
 
 _PROCESSAVEL = (EstadoContrato.OK, EstadoContrato.ALERTA)
@@ -99,6 +100,7 @@ class LinhasBase:
     discursos_senado: frozenset[str] | None = None
     materias_senado: frozenset[str] | None = None
     tramitacoes_senado: frozenset[str] | None = None
+    votacoes_senado: frozenset[str] | None = None
 
 
 @dataclass
@@ -124,6 +126,11 @@ class ResultadoIngestao:
     materias_senado_salvas: int = 0
     # Tramitações do Senado (Área D bicameral).
     tramitacoes_senado_salvas: int = 0
+    # Votações + votos nominais do Senado (Área C bicameral).
+    votacoes_senado_salvas: int = 0
+    votos_senado_salvos: int = 0
+    # Divergências placar × nominais do Senado (§5.2), por votação.
+    placar_violacoes_senado: dict = field(default_factory=dict)
     proposicoes_salvas: int = 0
     tramitacoes_salvas: int = 0
     votacoes_salvas: int = 0
@@ -436,6 +443,27 @@ def ingerir(
                 banco, votacao_id_fonte, resultado_votos.resolvidos
             )
 
+    # -- 5b. Votações + votos nominais do Senado (bicameral §10/§5.2) ---------
+    # Placar e nominais vêm inline do /votacao (substituto). Resolve o senador
+    # pelo mesmo lookup (id_externo sistema='senado'). Secreta não tem nominal.
+    votacoes_senado_salvas = votos_senado_salvos = 0
+    placar_violacoes_senado: dict = {}
+    if coletar_senado:
+        vs_ini, vs_fim = janela.intervalo(ate)
+        rvs = rodada_votacoes_senado(
+            cliente_http, data_inicio=vs_ini.isoformat(), data_fim=vs_fim.isoformat(),
+            canario_validado=canario_validado, linha_base=base.votacoes_senado,
+            lookup=lookup, politica=politica)
+        bronze_salvo += salvar_bronze(banco, rvs.bronze, chave_id="codigoSessaoVotacao")
+        if rvs.estado in _PROCESSAVEL and rvs.votacoes_prata is not None:
+            votacoes_senado_salvas = salvar_votacoes(
+                banco, rvs.votacoes_prata.aprovados,
+                source="senado.votacoes", source_url=BASE_SENADO)
+            for idf, resolvidos in rvs.nominais.items():
+                votos_senado_salvos += salvar_votos_nominais(
+                    banco, idf, resolvidos, casa="senado")
+            placar_violacoes_senado = rvs.placar_violacoes
+
     return ResultadoIngestao(
         deputados=dep, proposicoes=prop, votacoes=vot,
         partidos_salvos=partidos_salvos,
@@ -451,6 +479,9 @@ def ingerir(
         discursos_salvos=discursos_salvos,
         materias_senado_salvas=materias_senado_salvas,
         tramitacoes_senado_salvas=tramitacoes_senado_salvas,
+        votacoes_senado_salvas=votacoes_senado_salvas,
+        votos_senado_salvos=votos_senado_salvos,
+        placar_violacoes_senado=placar_violacoes_senado,
         proposicoes_salvas=proposicoes_salvas,
         tramitacoes_salvas=tramitacoes_salvas,
         votacoes_salvas=votacoes_salvas,

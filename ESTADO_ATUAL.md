@@ -108,6 +108,19 @@ do `CLAUDE.md`.
   não retrocede nessa ordem — teste REAL. Mesma prata da Câmara
   (`casa='senado'`) → reusa `salvar_tramitacoes`, **sem migration**. Verificado
   ao vivo (2026-08-01): PL 1/2024 = 19 tramitações, 0 violações.
+- Votações + votos nominais do Senado (Área C, §10/§5.2, bicameral): **coletor
+  pronto** — `senado/votacoes.py`. **Achado §19:** `/materia/votacoes` também
+  descontinuado; substituto é `/votacao?dataInicio&dataFim`. Bem mais limpo que a
+  Câmara: placar (`totalVotosSim/Nao/Abstencao`) e votos nominais (`votos[]`) vêm
+  INLINE e estruturados — sem parse de texto (a reforma V1–V4 da Câmara foi por
+  isso). Mapeia a sigla de voto do Senado → enum `voto_tipo` (Sim/Não/Abstenção +
+  ausências AP/LS/NCom/MIS/P-NRV→ausente). §10: voto secreto (`votacaoSecreta='S'`
+  → siglas 'Votou') grava `secreta=true` e NENHUM nominal. §5.2: contagem dos
+  nominais reconciliada contra o placar oficial. Resolve o senador pelo mesmo
+  lookup `id_externo(senado)`. Mesmas tabelas da Câmara (`casa='senado'`) → reusa
+  `salvar_votacoes`/`salvar_votos_nominais`, **sem migration**. Verificado ao vivo
+  (2026-08-01): dez/2024 = 27 votações (15 secretas), **888 votos nominais
+  resolvidos**, 0 divergências §5.2. Fecha o cruzamento "como cada senador votou".
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -142,7 +155,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 253 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 262 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -193,7 +206,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **253 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **262 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 

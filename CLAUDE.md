@@ -192,7 +192,7 @@ Fixada com o usuário. Onde os documentos entram em conflito, quem manda
    cd codigo/services/ingestao
    py -m unittest discover -s . -t .
    ```
-   Devem passar **253 testes** com "OK". Se não, primeiro problema a resolver.
+   Devem passar **262 testes** com "OK". Se não, primeiro problema a resolver.
    (Neste ambiente o interpretador é `py`, não `python` — o `python` é o alias
    fantasma da Microsoft Store.)
 3. Ao terminar uma peça de trabalho, atualize `ESTADO_ATUAL.md` para

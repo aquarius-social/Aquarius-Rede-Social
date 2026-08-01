@@ -89,12 +89,17 @@ def main() -> None:
         f"proposicoes={r.proposicoes_salvas} "
         f"materias_senado={r.materias_senado_salvas} "
         f"tramitacoes_senado={r.tramitacoes_senado_salvas} "
+        f"votacoes_senado={r.votacoes_senado_salvas} "
+        f"votos_senado={r.votos_senado_salvos} "
         f"tramitacoes={r.tramitacoes_salvas} votacoes={r.votacoes_salvas} "
         f"votos={r.votos_salvos} bronze={r.bronze_salvo}"
     )
     if r.placar_violacoes:
-        print(f"ATENÇÃO: {len(r.placar_violacoes)} votação(ões) com "
+        print(f"ATENÇÃO: {len(r.placar_violacoes)} votação(ões) da Câmara com "
               "divergência entre placar declarado e nominais (§5.2)")
+    if r.placar_violacoes_senado:
+        print(f"ATENÇÃO: {len(r.placar_violacoes_senado)} votação(ões) do Senado "
+              "com divergência entre placar declarado e nominais (§5.2)")
 
 
 if __name__ == "__main__":

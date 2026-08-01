@@ -159,6 +159,15 @@ def _mundo(deputados_resp=None):
                      "colegiado": {"sigla": "PLEN"}, "descricao": "Recebida"},
                     {"id": 2, "data": "2023-06-06 11:00:00",
                      "colegiado": {"sigla": "CCJ"}, "descricao": "Distribuída"}]}]}),
+        f"{SBASE}/votacao": _Resp(200, [{
+            "codigoSessaoVotacao": 6883, "codigoMateria": "161856", "sigla": "PL",
+            "numero": "1", "ano": 2024, "dataSessao": "2023-06-10",
+            "descricaoVotacao": "Votação do PL 1/2024", "identificacao": "PL 1/2024",
+            "resultadoVotacao": "A", "votacaoSecreta": "N", "totalVotosSim": 1,
+            "totalVotosNao": 0, "totalVotosAbstencao": 0, "votos": [
+                {"codigoParlamentar": 900, "siglaVotoParlamentar": "Sim",
+                 "nomeParlamentar": "Ana Senadora", "siglaPartidoParlamentar": "PT",
+                 "siglaUFParlamentar": "SP"}]}]),
         f"{SBASE}/senador/900/discursos": _Resp(200, {"DiscursosParlamentar": {
             "Parlamentar": {"Pronunciamentos": {"Pronunciamento": [
                 {"CodigoPronunciamento": "777", "DataPronunciamento": "2023-06-11",
@@ -315,6 +324,20 @@ class TestOrquestrador(unittest.TestCase):
               if t["proposicao_id"] == mat["id"]]
         self.assertEqual(len(tr), 2)
         self.assertEqual({t["sequencia"] for t in tr}, {1, 2})
+
+        # votação do Senado + voto nominal resolvido ao perfil do senador (que é
+        # a deputada Ana unificada, §17): a votação prende à matéria do Senado
+        self.assertEqual(r.votacoes_senado_salvas, 1)
+        self.assertEqual(r.votos_senado_salvos, 1)
+        vs = next(v for v in banco.tabelas["votacao"] if v["casa"] == "senado")
+        self.assertEqual(vs["proposicao_id"], mat["id"])
+        self.assertEqual(vs["sim"], 1)
+        ana = next(e for e in banco.tabelas["id_externo"]
+                   if e["sistema"] == "camara" and e["identificador"] == "1")
+        vn = next(v for v in banco.tabelas["voto_nominal"]
+                  if v["votacao_id"] == vs["id"])
+        self.assertEqual(vn["perfil_id"], ana["profile_id"])
+        self.assertEqual(vn["voto"], "sim")
 
     def test_discursos_bicamerais_resolvem_o_autor(self):
         """Área G ponta a ponta: discurso da Câmara (dep 1) + do Senado (sen 900)
