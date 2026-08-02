@@ -228,15 +228,30 @@ class TestOrquestrador(unittest.TestCase):
     def test_fluxo_completo_resolve_votos_ponta_a_ponta(self):
         http = _mundo()
         banco = FakeBanco()
+        # curadoria: o código de autor 9001 mapeia para a deputada Ana (id 1)
+        mapa_csv = (
+            "codigo_autor;nome_na_fonte;deputado_id;nome_camara;sinais;n_sinais;"
+            "classe;ufs_do_gasto;conferido_por_humano\n"
+            "9001;ANA;1;Ana;nome,UF;2;2 sinais;;\n")
         r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
-                    id_legislatura=57)
+                    id_legislatura=57, abrir_mapa_autores=lambda: mapa_csv)
+
+        # curadoria materializou o autor orçamentário 9001 → perfil da Ana
+        self.assertEqual(r.autores_camara_resolvidos, 1)
+        ana_dep = next(e for e in banco.tabelas["id_externo"]
+                       if e["sistema"] == "camara" and e["identificador"] == "1")
+        autor = next(e for e in banco.tabelas["id_externo"]
+                     if e["sistema"] == "autor_orcamentario")
+        self.assertEqual(autor["identificador"], "9001")
+        self.assertEqual(autor["profile_id"], ana_dep["profile_id"])
 
         # perfis + id_externo (profiles inclui os 2 parlamentares + 1 partido)
         self.assertEqual(r.perfis_salvos, 2)
         parlamentares = [p for p in banco.tabelas["profiles"]
                          if p["tipo"] == "parlamentar"]
         self.assertEqual(len(parlamentares), 2)
-        self.assertEqual(len(banco.tabelas["id_externo"]), 2)
+        camara_ext = [e for e in banco.tabelas["id_externo"] if e["sistema"] == "camara"]
+        self.assertEqual(len(camara_ext), 2)
 
         # partidos canônicos ingeridos (profile tipo=partido + partido)
         self.assertEqual(r.partidos_salvos, 1)

@@ -149,6 +149,53 @@ def salvar_deputados(
     return ids
 
 
+def salvar_autores_orcamentarios(
+    cliente: ClienteBanco,
+    autores: Sequence[dict],
+    lookup,
+    lookup_senador_nome=None,
+) -> dict:
+    """Materializa a curadoria autor-de-emenda → perfil como `id_externo`
+    (sistema='autor_orcamentario', §6.3). Devolve {camara, senado, pendentes}.
+
+    Dois braços (§17): `deputado_id` → perfil por id_externo(camara); senão, o
+    nome casando um SENADOR → perfil por nome (1 sinal = 'nome'). Bancada/comissão
+    sem perfil é pulada (não inventa). Grau vem do nº de sinais (§5.3): 2+ =
+    'direto'; 1 = 'com_ressalva' + pendente (a constraint id_externo_grau_coerente
+    exige ≥2 sinais para 'direto' com metodo 'convergencia')."""
+    contadores = {"camara": 0, "senado": 0, "pendentes": 0}
+    for a in autores:
+        pid = None
+        sinais = list(a.get("sinais") or [])
+        if a.get("deputado_id"):
+            pid = lookup("camara", a["deputado_id"])
+        if pid is None and lookup_senador_nome is not None and a.get("nome_na_fonte"):
+            pid = lookup_senador_nome(a["nome_na_fonte"])
+            if pid is not None:
+                sinais = sinais or ["nome"]     # match por nome parlamentar
+                a = {**a, "_via": "senado"}
+        if pid is None:
+            continue
+        grau = "direto" if len(sinais) >= 2 else "com_ressalva"
+        cliente.upsert("id_externo", [{
+            "profile_id": pid,
+            "sistema": "autor_orcamentario",
+            "identificador": a["codigo_autor"],
+            "metodo": "convergencia",
+            "grau": grau,
+            "sinais": sinais,
+            "versao_regra": VERSAO_REGRA,
+            "pendente_conferencia": grau == "com_ressalva",
+        }], conflito="sistema,identificador")
+        if a.get("_via") == "senado":
+            contadores["senado"] += 1
+        else:
+            contadores["camara"] += 1
+        if grau == "com_ressalva":
+            contadores["pendentes"] += 1
+    return contadores
+
+
 def lookup_id_externo(cliente: ClienteBanco):
     """Fábrica do lookup real de id_externo — mesma assinatura do que os
     coletores recebiam injetado, mas agora respaldado pela tabela.

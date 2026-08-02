@@ -57,6 +57,7 @@ from persistencia.repositorio import (
     lookup_id_externo,
     lookup_partido_por_sigla,
     salvar_bronze,
+    salvar_autores_orcamentarios,
     salvar_deputados,
     salvar_despesas,
     salvar_despesas_senado,
@@ -84,6 +85,7 @@ from senado.materias import rodada_materias
 from senado.senadores import rodada_senadores
 from senado.tramitacoes import rodada_tramitacoes_senado
 from senado.votacoes import rodada_votacoes_senado
+from transparencia.autores import rodada_autores
 from transparencia.emendas import rodada_emendas
 
 _PROCESSAVEL = (EstadoContrato.OK, EstadoContrato.ALERTA)
@@ -103,6 +105,7 @@ class LinhasBase:
     historico: frozenset[str] | None = None
     despesas: frozenset[str] | None = None
     emendas: frozenset[str] | None = None
+    autores: frozenset[str] | None = None
     senadores: frozenset[str] | None = None
     discursos: frozenset[str] | None = None
     discursos_senado: frozenset[str] | None = None
@@ -127,6 +130,9 @@ class ResultadoIngestao:
     vinculos_salvos: int = 0
     despesas_salvas: int = 0
     emendas_salvas: int = 0
+    # Curadoria autor-de-emenda → perfil (§6.3): resolvidos por braço.
+    autores_camara_resolvidos: int = 0
+    autores_senado_resolvidos: int = 0
     # Senado (§17): perfis novos, os vinculados a um deputado (mesma pessoa), e
     # os marcados pendentes de conferência (match por 1 sinal só).
     senadores_novos: int = 0
@@ -174,6 +180,7 @@ def ingerir(
     ano_despesas: int | None = None,
     cliente_transparencia: ClienteHttp | None = None,
     anos_emendas: list[int] | None = None,
+    abrir_mapa_autores: "Callable[[], str] | None" = None,
     coletar_senado: bool = False,
     coletar_discursos: bool = False,
     baixar_ceaps: "Callable[[str], str] | None" = None,
@@ -293,6 +300,18 @@ def ingerir(
     # -- 2. Lookup real de id_externo (respaldado pelo banco) ----------------
     lookup = lookup_id_externo(banco)
 
+    # Mapa nome parlamentar normalizado → perfil dos senadores ingeridos.
+    # Usado onde a fonte identifica o senador por NOME (CEAPS; curadoria de
+    # autores de emenda) — §6.2.
+    lookup_senador_nome = None
+    if senadores_prata is not None:
+        _mapa_sen = {}
+        for s in senadores_prata.aprovados:
+            pid = lookup("senado", s["id_fonte"])
+            if pid and s.get("nome"):
+                _mapa_sen[normalizar(s["nome"])] = pid
+        lookup_senador_nome = lambda nome: _mapa_sen.get(normalizar(nome or ""))
+
     # -- 2s. Mandato histórico do Senado → vinculo_temporal (§4/§17) ----------
     # Depois do lookup (o senador já tem id_externo). Uma rodada por senador
     # (81, endpoint estável). Períodos partidários acurados — corrige o §4
@@ -315,13 +334,7 @@ def ingerir(
     # senadores já ingeridos. Só roda com um fetcher (baixar_ceaps) + anos.
     despesas_senado_salvas = 0
     if (coletar_senado and baixar_ceaps is not None and anos_ceaps
-            and senadores_prata is not None):
-        mapa_nome = {}
-        for s in senadores_prata.aprovados:
-            pid = lookup("senado", s["id_fonte"])
-            if pid and s.get("nome"):
-                mapa_nome[normalizar(s["nome"])] = pid
-        lookup_senador = lambda nome: mapa_nome.get(normalizar(nome or ""))
+            and lookup_senador_nome is not None):
         for ano in anos_ceaps:
             rce = rodada_ceaps(
                 baixar_ceaps, ano, canario_validado=canario_validado,
@@ -329,7 +342,7 @@ def ingerir(
             bronze_salvo += salvar_bronze(banco, rce.bronze, chave_id="COD_DOCUMENTO")
             if rce.estado in _PROCESSAVEL and rce.prata is not None:
                 despesas_senado_salvas += salvar_despesas_senado(
-                    banco, rce.prata.aprovados, lookup_senador)
+                    banco, rce.prata.aprovados, lookup_senador_nome)
 
     # -- 2b. Histórico de mandatos → vinculo_temporal (§12 D4, §4) -----------
     # Camada temporal dos deputados; precisa do lookup (passo 2). Uma rodada por
@@ -377,6 +390,22 @@ def ingerir(
                 ))
             if rd.estado in _PROCESSAVEL and rd.prata is not None:
                 despesas_salvas += salvar_despesas(banco, rd.prata.aprovados, lookup)
+
+    # -- 2ca. Curadoria: autor de emenda → perfil (§6.3) ---------------------
+    # ANTES das emendas, para que o lookup('autor_orcamentario', ...) resolva.
+    # Materializa o mapa curado como id_externo. Dois braços (§17): deputado_id
+    # (Câmara) e nome→senador (os que o mapa não achou por só tentar a Câmara).
+    autores_camara_resolvidos = autores_senado_resolvidos = 0
+    if abrir_mapa_autores is not None:
+        ra = rodada_autores(
+            abrir_mapa_autores, canario_validado=canario_validado,
+            linha_base=base.autores)
+        bronze_salvo += salvar_bronze(banco, ra.bronze, chave_id="codigo_autor")
+        if ra.estado in _PROCESSAVEL and ra.prata is not None:
+            ca = salvar_autores_orcamentarios(
+                banco, ra.prata.aprovados, lookup, lookup_senador_nome)
+            autores_camara_resolvidos = ca["camara"]
+            autores_senado_resolvidos = ca["senado"]
 
     # -- 2d. Emendas orçamentárias (Área F, §13) — fonte Transparência -------
     # Só roda se um cliente da Transparência (com a chave) e anos forem dados.
@@ -553,6 +582,8 @@ def ingerir(
         vinculos_salvos=vinculos_salvos,
         despesas_salvas=despesas_salvas,
         emendas_salvas=emendas_salvas,
+        autores_camara_resolvidos=autores_camara_resolvidos,
+        autores_senado_resolvidos=autores_senado_resolvidos,
         senadores_novos=senadores_novos,
         senadores_vinculados=senadores_vinculados,
         senadores_pendentes=senadores_pendentes,

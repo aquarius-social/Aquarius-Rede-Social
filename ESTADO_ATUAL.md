@@ -58,6 +58,20 @@ do `CLAUDE.md`.
   (`emendas_2024.json`, 6990 registros). **EXIGE** a chave pessoal
   `chave-api-dados` (env `AQUARIUS_TRANSPARENCIA_KEY`); sem ela a área é pulada.
   Primeira área fora da Câmara.
+- Curadoria: autor de emenda → perfil (§6.3): **pronto** — `transparencia/autores.py`
+  + `salvar_autores_orcamentarios`. Materializa o mapa curado
+  (`dados/mapa_autores_emendas_2025.csv`, 628 autores) como `id_externo`
+  (sistema='autor_orcamentario') ANTES das emendas, para que `salvar_emendas`
+  resolva `autor_profile_id`. **Dois braços (§17):** Câmara (`deputado_id` →
+  perfil, **580/628 = 92%**) e Senado (nome → senador, os que o mapa não achou por
+  só tentar a Câmara). Grau pelo nº de sinais (§5.3): 2+ → 'direto'; 1 →
+  'com_ressalva' + pendente. Bancadas estaduais/comissões (36) ficam sem perfil
+  (não há tipo 'bancada'; honesto). **Ressalva do braço Senado:** casa 0 contra a
+  lista `/senador/lista/atual` porque os autores-senadores pendentes (AUGUSTA
+  BRITO, JORGE SEIF, RODRIGO CUNHA, ZUCCO…) são titulares LICENCIADOS, fora do
+  "em exercício" agora (§6.4, mesmo motivo do CEAPS) — acende ao ingerir o roster
+  completo da legislatura (titulares+suplentes), etapa própria. Verificado ao vivo
+  (2026-08-02): mapa carrega 628, braço Câmara 580 resolvíveis.
 - Senado — senadores + junção bicameral (Área I, §17): **coletor pronto** —
   `senado/senadores.py`, fonte **Dados Abertos do Senado** (JSON via header
   `Accept`), lista (`/senador/lista/atual`) + enriquecimento por detalhe
@@ -192,7 +206,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 280 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 287 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -243,7 +257,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **280 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **287 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 

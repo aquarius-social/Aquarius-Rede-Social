@@ -18,6 +18,7 @@ from persistencia.repositorio import (
     lookup_id_externo,
     lookup_partido_por_sigla,
     salvar_bronze,
+    salvar_autores_orcamentarios,
     salvar_deputados,
     salvar_despesas,
     salvar_despesas_senado,
@@ -225,6 +226,46 @@ class TestDespesas(unittest.TestCase):
         banco = FakeBanco()
         lookup = lookup_id_externo(banco)
         self.assertEqual(salvar_despesas(banco, [self._desp("000")], lookup), 0)
+
+
+class TestAutoresOrcamentarios(unittest.TestCase):
+    def _autor(self, cod="4291", dep="220714", nome="ADAIL FILHO", sinais=("nome", "UF")):
+        return {"codigo_autor": cod, "deputado_id": dep, "nome_na_fonte": nome,
+                "sinais": list(sinais), "classe": "2 sinais"}
+
+    def test_braco_camara_resolve_por_deputado_id(self):
+        banco = FakeBanco()
+        lookup = lambda s, i: "P-DEP" if (s, i) == ("camara", "220714") else None
+        c = salvar_autores_orcamentarios(banco, [self._autor()], lookup)
+        self.assertEqual(c["camara"], 1)
+        ext = banco.tabelas["id_externo"][0]
+        self.assertEqual(ext["sistema"], "autor_orcamentario")
+        self.assertEqual(ext["identificador"], "4291")
+        self.assertEqual(ext["profile_id"], "P-DEP")
+        self.assertEqual(ext["grau"], "direto")            # 2 sinais
+
+    def test_braco_senado_resolve_por_nome(self):
+        """Autor que o mapa não achou na Câmara mas é senador → braço Senado."""
+        banco = FakeBanco()
+        autor = self._autor(cod="4273", dep="", nome="JORGE SEIF", sinais=())
+        lookup = lambda s, i: None
+        lookup_sen = lambda nome: "P-SEN" if nome == "JORGE SEIF" else None
+        c = salvar_autores_orcamentarios(banco, [autor], lookup, lookup_sen)
+        self.assertEqual(c["senado"], 1)
+        self.assertEqual(c["pendentes"], 1)                # 1 sinal (nome) → ressalva
+        ext = banco.tabelas["id_externo"][0]
+        self.assertEqual(ext["profile_id"], "P-SEN")
+        self.assertEqual(ext["grau"], "com_ressalva")
+        self.assertTrue(ext["pendente_conferencia"])
+
+    def test_bancada_sem_perfil_e_pulada(self):
+        banco = FakeBanco()
+        bancada = {"codigo_autor": "7106", "deputado_id": None,
+                   "nome_na_fonte": "BANCADA DA BAHIA", "sinais": [], "classe": "coletivo"}
+        c = salvar_autores_orcamentarios(banco, [bancada], lambda s, i: None,
+                                         lambda nome: None)
+        self.assertEqual(c, {"camara": 0, "senado": 0, "pendentes": 0})
+        self.assertNotIn("id_externo", banco.tabelas)
 
 
 class TestDespesasSenado(unittest.TestCase):

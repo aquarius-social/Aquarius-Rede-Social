@@ -27,6 +27,7 @@ from persistencia.supabase_adapter import criar_banco_supabase
 from pipeline.coletor import JanelaMovel
 from pipeline.http import ClienteHttpUrllib
 from senado.despesas import baixar_ceaps_urllib
+from transparencia.autores import abrir_mapa_padrao
 
 
 def _flag(nome: str, padrao: bool = True) -> bool:
@@ -88,6 +89,8 @@ def main() -> None:
         # ("2024,2025"); vazio = ano corrente. Só roda com o Senado ligado.
         baixar_ceaps=baixar_ceaps_urllib,
         anos_ceaps=anos_ceaps,
+        # Curadoria autor-de-emenda → perfil (§6.3): mapa curado do repo.
+        abrir_mapa_autores=abrir_mapa_padrao,
     )
 
     print(
@@ -96,7 +99,9 @@ def main() -> None:
         f"senado(novos={r.senadores_novos} vinculados={r.senadores_vinculados} "
         f"pendentes={r.senadores_pendentes}) "
         f"vinculos={r.vinculos_salvos} despesas={r.despesas_salvas} "
-        f"emendas={r.emendas_salvas} discursos={r.discursos_salvos} "
+        f"emendas={r.emendas_salvas} "
+        f"autores(cam={r.autores_camara_resolvidos} sen={r.autores_senado_resolvidos}) "
+        f"discursos={r.discursos_salvos} "
         f"proposicoes={r.proposicoes_salvas} "
         f"comissoes_senado={r.comissoes_senado_salvas} "
         f"blocos_senado={r.blocos_senado_salvos} "
