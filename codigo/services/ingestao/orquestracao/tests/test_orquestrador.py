@@ -217,6 +217,21 @@ def _mundo(deputados_resp=None):
             {"sequencia": 2, "dataHora": "2015-03-15T09:00", "siglaOrgao": "CCJC",
              "descricaoTramitacao": "Às Comissões", "despacho": "Despacho x"},
         ], "links": []}),
+        f"{BASE}/eventos": _Resp(200, {"dados": [{"id": 9001,
+            "dataHoraInicio": "2023-06-10T14:00", "dataHoraFim": None,
+            "situacao": "Realizada", "descricaoTipo": "Audiência Pública",
+            "descricao": "Debate sobre X", "localExterno": None,
+            "orgaos": [{"id": 2003, "sigla": "CCJC", "nome": "CCJC"}],
+            "localCamara": {"nome": "Sala 1"}, "urlRegistro": "http://x/e"}],
+            "links": []}),
+        f"{SBASE}/comissao/agenda/mes/202305": _Resp(200, {"AgendaReuniao": {
+            "reunioes": {"reuniao": []}}}),
+        f"{SBASE}/comissao/agenda/mes/202306": _Resp(200, {"AgendaReuniao": {
+            "reunioes": {"reuniao": [{"codigo": "7001", "titulo": "Reunião Y",
+                "dataInicio": "2023-06-11T10:00:00.000", "situacao": "Agendada",
+                "local": "Anexo", "colegiadoCriador": {"codigo": "834",
+                    "sigla": "CDH", "nome": "CDH",
+                    "descricaoTipo": "Comissão Permanente"}}]}}}),
         f"{BASE}/votacoes": _Resp(200, {"dados": [_votacao()], "links": []}),
         f"{BASE}/votacoes/V-1": _Resp(200, {"dados": _votacao()}),
         f"{BASE}/votacoes/V-1/votos": _Resp(200, {"dados": [
@@ -326,7 +341,7 @@ class TestOrquestrador(unittest.TestCase):
             '"2023";"6";"ANA SENADORA";"Aluguel";"00.0/0001-00";"X";"1";'
             '"10/06/2023";"";"1.000,00";"555"\n')
         r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
-                    id_legislatura=57, coletar_senado=True,
+                    id_legislatura=57, coletar_senado=True, coletar_eventos=True,
                     baixar_ceaps=lambda url: ceaps_csv, anos_ceaps=[2023])
 
         self.assertEqual(r.senadores_vinculados, 1)
@@ -351,6 +366,16 @@ class TestOrquestrador(unittest.TestCase):
         self.assertEqual(len(vt_sen), 1)
         self.assertEqual(vt_sen[0]["profile_id"], ana["profile_id"])
         self.assertEqual(vt_sen[0]["partido_sigla_fonte"], "PT")
+
+        # eventos das DUAS casas (área nova): 1 da Câmara + 1 do Senado
+        self.assertEqual(r.eventos_salvos, 2)
+        casas_ev = {e["casa"] for e in banco.tabelas["evento"]}
+        self.assertEqual(casas_ev, {"camara", "senado"})
+        # o evento da Câmara (CCJC id 2003) resolve ao perfil da comissão pelo slug
+        ev_cam = next(e for e in banco.tabelas["evento"] if e["casa"] == "camara")
+        com_ccjc = next(p for p in banco.tabelas["profiles"]
+                        if p.get("slug") == "comissao-ccjc-2003")
+        self.assertEqual(ev_cam["orgao_profile_id"], com_ccjc["id"])
 
         # CEAPS do Senado resolvido por NOME → cai no perfil unificado da Ana
         self.assertEqual(r.despesas_senado_salvas, 1)

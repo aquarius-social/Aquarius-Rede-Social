@@ -48,7 +48,7 @@ cd codigo/services/ingestao
 python -m unittest discover -s . -t .
 ```
 
-Devem passar **288 testes** com `OK`. (Em ambiente Windows onde `python` é o
+Devem passar **300 testes** com `OK`. (Em ambiente Windows onde `python` é o
 alias da Microsoft Store, use `py` no lugar de `python`.)
 
 ### Rodar a ingestão de verdade (deploy)
@@ -62,11 +62,11 @@ python run_ingestao.py
 
 ### Automação (GitHub Actions)
 
-- **`ci.yml`** — roda os 288 testes + type-check TS a cada push/PR.
+- **`ci.yml`** — roda os 300 testes + type-check TS a cada push/PR.
 - **`ingestao.yml`** — agenda a ingestão 2×/dia (06h/18h BRT) + disparo manual.
   Basta pôr `SUPABASE_URL` e `SUPABASE_SERVICE_KEY` em *Settings › Secrets and
   variables › Actions*; sem eles, o job pula sem quebrar. Aplicar as migrations
-  0001–0011 no Supabase é pré-requisito (uma vez, via CLI ou painel).
+  0001–0012 no Supabase é pré-requisito (uma vez, via CLI ou painel).
 
 Type-check dos pacotes TypeScript:
 

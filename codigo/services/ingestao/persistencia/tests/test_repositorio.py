@@ -25,6 +25,7 @@ from persistencia.repositorio import (
     salvar_partidos,
     salvar_discursos,
     salvar_emendas,
+    salvar_eventos,
     salvar_perfis_coletivos,
     salvar_proposicoes,
     salvar_senadores,
@@ -226,6 +227,33 @@ class TestDespesas(unittest.TestCase):
         banco = FakeBanco()
         lookup = lookup_id_externo(banco)
         self.assertEqual(salvar_despesas(banco, [self._desp("000")], lookup), 0)
+
+
+class TestEventos(unittest.TestCase):
+    def _ev(self, casa="senado", idf="14883", slug="comissao-sf-cdh-834"):
+        return {"casa": casa, "id_fonte": idf, "tipo": "Reunião", "titulo": "56ª",
+                "data_hora_inicio": "2026-08-06T10:00:00", "data_hora_fim": None,
+                "situacao": "Agendada", "orgao_sigla": "CDH", "orgao_nome": "CDH",
+                "orgao_slug": slug, "local": "Anexo II", "url": None}
+
+    def test_resolve_orgao_por_slug(self):
+        banco = FakeBanco()
+        # cria o perfil da comissão com o mesmo slug
+        banco.upsert("profiles", [{"tipo": "comissao", "nome": "CDH",
+                                    "slug": "comissao-sf-cdh-834"}], conflito="slug")
+        n = salvar_eventos(banco, [self._ev()], source="senado.eventos",
+                           source_url="http://sen")
+        self.assertEqual(n, 1)
+        row = banco.tabelas["evento"][0]
+        self.assertEqual(row["casa"], "senado")
+        self.assertEqual(row["orgao_profile_id"], banco.tabelas["profiles"][0]["id"])
+
+    def test_orgao_sem_perfil_fica_null(self):
+        """Plenário e órgãos não-ingeridos → orgao_profile_id null (não inventa)."""
+        banco = FakeBanco()
+        salvar_eventos(banco, [self._ev(slug="comissao-plen-180")],
+                       source="camara.eventos", source_url="http://cam")
+        self.assertIsNone(banco.tabelas["evento"][0]["orgao_profile_id"])
 
 
 class TestAutoresOrcamentarios(unittest.TestCase):

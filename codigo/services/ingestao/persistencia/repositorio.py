@@ -416,6 +416,36 @@ def salvar_emendas(
     return len(aprovados)
 
 
+_COLS_EVENTO = (
+    "casa", "id_fonte", "tipo", "titulo", "data_hora_inicio", "data_hora_fim",
+    "situacao", "orgao_sigla", "orgao_nome", "local", "url",
+)
+
+
+def salvar_eventos(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    *,
+    source: str,
+    source_url: str,
+) -> int:
+    """Persiste eventos da agenda (as duas casas — a prata carrega `casa`).
+    Resolve `orgao_profile_id` pelo slug reconstruído da comissão (null quando
+    não é comissão ingerida — plenário etc.). Upsert por (casa, id_fonte)."""
+    for e in aprovados:
+        orgao_profile_id = None
+        slug = e.get("orgao_slug")
+        if slug:
+            prof = cliente.selecionar_um("profiles", {"slug": slug})
+            orgao_profile_id = prof["id"] if prof else None
+        linha = {c: e.get(c) for c in _COLS_EVENTO}
+        linha["orgao_profile_id"] = orgao_profile_id
+        linha["source"] = source
+        linha["source_url"] = source_url
+        cliente.upsert("evento", [linha], conflito="casa,id_fonte")
+    return len(aprovados)
+
+
 _COLS_DISCURSO = (
     "casa", "id_fonte", "data", "tipo", "sumario", "keywords",
     "url_texto", "url_video", "url_audio", "tem_transcricao",

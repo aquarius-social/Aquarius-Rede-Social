@@ -177,6 +177,17 @@ do `CLAUDE.md`.
   R\$ 32,2 mi, 0 quarentena; 73/88 nomes casam com a lista viva** (o resto =
   ex-senadores/suplentes que gastaram no ano). **Fecha as 6 de 6 áreas da
   paridade Câmara↔Senado.**
+- Eventos — agenda legislativa (área NOVA, bicameral): **coletores prontos** para
+  as DUAS casas. `camara/eventos.py` (`/eventos?dataInicio&dataFim` — sessões,
+  reuniões, audiências) e `senado/eventos.py` (`/comissao/agenda/mes/{YYYYMM}` —
+  agenda de reuniões de comissão; achei o endpoint `/comissao/agenda` por ele dar
+  400 e não 404). Produzem a MESMA prata; tabela `evento` (0012) serve as duas
+  casas (`casa`) + view ouro `evento_publico`. `data_hora` é `timestamp` SEM fuso
+  (hora de parede de Brasília; para agenda, converter p/ UTC deslocaria 3h).
+  `salvar_eventos` liga `orgao_profile_id` ao perfil da comissão pelo slug
+  reconstruído (null p/ plenário/órgão não-ingerido, honesto). Verificado ao vivo
+  (2026-08-02): Câmara 8 eventos/semana, Senado 7 reuniões/mês, slug do órgão
+  batendo. **Primeira área que nenhuma casa tinha — nasce bicameral.**
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -211,7 +222,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 288 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 300 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -262,7 +273,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **288 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **300 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 

@@ -88,6 +88,8 @@ def main() -> None:
         # Discursos das duas casas (Área G): por parlamentar, volumoso. Padrão
         # LIGADO na rodada completa; desligue na leve com AQUARIUS_DISCURSOS=0.
         coletar_discursos=_flag("AQUARIUS_DISCURSOS"),
+        # Eventos das duas casas (agenda legislativa). Padrão ligado.
+        coletar_eventos=_flag("AQUARIUS_EVENTOS"),
         # Despesas CEAPS do Senado (Área A): CSV anual. Anos via AQUARIUS_CEAPS_ANOS
         # ("2024,2025"); vazio = ano corrente. Só roda com o Senado ligado.
         baixar_ceaps=baixar_ceaps_urllib,
@@ -104,7 +106,7 @@ def main() -> None:
         f"vinculos={r.vinculos_salvos} despesas={r.despesas_salvas} "
         f"emendas={r.emendas_salvas} "
         f"autores(cam={r.autores_camara_resolvidos} sen={r.autores_senado_resolvidos}) "
-        f"discursos={r.discursos_salvos} "
+        f"discursos={r.discursos_salvos} eventos={r.eventos_salvos} "
         f"proposicoes={r.proposicoes_salvas} "
         f"comissoes_senado={r.comissoes_senado_salvas} "
         f"blocos_senado={r.blocos_senado_salvos} "

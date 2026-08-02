@@ -44,6 +44,7 @@ from camara.coletivos import (
 from camara.deputados import rodada_deputados, ResultadoRodadaDeputados
 from camara.despesas import rodada_despesas
 from camara.discursos import rodada_discursos
+from camara.eventos import rodada_eventos
 from camara.mandatos import rodada_historico
 from camara.partidos import rodada_partidos
 from camara.proposicoes import ResultadoRodada
@@ -62,6 +63,7 @@ from persistencia.repositorio import (
     salvar_despesas,
     salvar_despesas_senado,
     salvar_discursos,
+    salvar_eventos,
     salvar_partidos,
     salvar_perfis_coletivos,
     salvar_proposicoes,
@@ -80,6 +82,7 @@ from senado.coletivos import (
 )
 from senado.despesas import rodada_ceaps
 from senado.discursos import rodada_discursos_senado
+from senado.eventos import rodada_eventos_senado
 from senado.mandatos import rodada_mandatos_senado
 from senado.materias import rodada_materias
 from senado.senadores import rodada_senadores
@@ -109,6 +112,8 @@ class LinhasBase:
     senadores: frozenset[str] | None = None
     discursos: frozenset[str] | None = None
     discursos_senado: frozenset[str] | None = None
+    eventos: frozenset[str] | None = None
+    eventos_senado: frozenset[str] | None = None
     materias_senado: frozenset[str] | None = None
     tramitacoes_senado: frozenset[str] | None = None
     votacoes_senado: frozenset[str] | None = None
@@ -140,6 +145,8 @@ class ResultadoIngestao:
     senadores_pendentes: int = 0
     # Discursos das duas casas (Área G): total persistido (câmara + senado).
     discursos_salvos: int = 0
+    # Eventos das duas casas (área nova): agenda legislativa.
+    eventos_salvos: int = 0
     # Matérias do Senado (proposições, Área B bicameral).
     materias_senado_salvas: int = 0
     # Tramitações do Senado (Área D bicameral).
@@ -184,6 +191,7 @@ def ingerir(
     coletar_senado: bool = False,
     legislatura_senado: int | None = None,
     coletar_discursos: bool = False,
+    coletar_eventos: bool = False,
     baixar_ceaps: "Callable[[str], str] | None" = None,
     anos_ceaps: list[int] | None = None,
     politica: PoliticaRetry = PoliticaRetry(),
@@ -523,6 +531,36 @@ def ingerir(
                         banco, rts.prata.aprovados,
                         source="senado.tramitacoes", source_url=BASE_SENADO)
 
+    # -- 3e. Eventos das DUAS casas (área nova) — agenda legislativa ----------
+    # Câmara por janela de data; Senado por mês (a agenda de comissões é mensal).
+    # O órgão resolve ao perfil da comissão pelo slug (null p/ plenário). Gated.
+    eventos_salvos = 0
+    if coletar_eventos:
+        ev_ini, ev_fim = janela.intervalo(ate)
+        rev = rodada_eventos(
+            cliente_http, data_inicio=ev_ini.isoformat(), data_fim=ev_fim.isoformat(),
+            canario_validado=canario_validado, linha_base=base.eventos)
+        bronze_salvo += salvar_bronze(banco, rev.bronze)
+        if rev.estado in _PROCESSAVEL and rev.prata is not None:
+            eventos_salvos += salvar_eventos(
+                banco, rev.prata.aprovados,
+                source="camara.eventos", source_url=BASE_CAMARA)
+        # Senado: um mês por consulta; cobre os meses tocados pela janela.
+        y, m = ev_ini.year, ev_ini.month
+        while (y, m) <= (ev_fim.year, ev_fim.month):
+            revs = rodada_eventos_senado(
+                cliente_http, f"{y}{m:02d}",
+                canario_validado=canario_validado, linha_base=base.eventos_senado)
+            bronze_salvo += salvar_bronze(banco, revs.bronze, chave_id="codigo")
+            if revs.estado in _PROCESSAVEL and revs.prata is not None:
+                eventos_salvos += salvar_eventos(
+                    banco, revs.prata.aprovados,
+                    source="senado.eventos", source_url=BASE_SENADO)
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+
     # -- 4/5. Votações + votos nominais --------------------------------------
     inicio, fim = janela.intervalo(ate)
     vot = rodada_votacoes(
@@ -590,6 +628,7 @@ def ingerir(
         senadores_vinculados=senadores_vinculados,
         senadores_pendentes=senadores_pendentes,
         discursos_salvos=discursos_salvos,
+        eventos_salvos=eventos_salvos,
         comissoes_senado_salvas=comissoes_senado_salvas,
         blocos_senado_salvos=blocos_senado_salvos,
         vinculos_senado_salvos=vinculos_senado_salvos,
