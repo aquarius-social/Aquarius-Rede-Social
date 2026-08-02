@@ -532,6 +532,44 @@ def salvar_despesas(
     return salvas
 
 
+def salvar_despesas_senado(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    lookup_senador,
+    *,
+    source: str = "senado.ceaps",
+    source_url: str = BASE_SENADO,
+) -> int:
+    """Persiste a CEAPS do Senado na MESMA tabela `despesa`. Resolve o perfil por
+    NOME (a fonte não traz código): `lookup_senador(nome)` → profile_id (uuid).
+    Sem perfil resolvido, pula (§6, não inventa). Upsert por (perfil_id,
+    cod_documento, parcela) — parcela=0 no Senado torna a chave efetiva."""
+    salvas = 0
+    for d in aprovados:
+        perfil_id = lookup_senador(d.get("senador_nome"))
+        if perfil_id is None:
+            continue
+        cliente.upsert("despesa", [{
+            "perfil_id": perfil_id,
+            "ano": d["ano"], "mes": d["mes"],
+            "tipo_despesa": d.get("tipo_despesa"),
+            "tipo_documento": d.get("tipo_documento"),
+            "cod_documento": d.get("cod_documento"),
+            "num_documento": d.get("num_documento"),
+            "parcela": d.get("parcela"),
+            "data_documento": d.get("data_documento"),
+            "valor_documento": d.get("valor_documento"),
+            "valor_glosa": d.get("valor_glosa"),
+            "valor_liquido": d.get("valor_liquido"),
+            "fornecedor_nome": d.get("fornecedor_nome"),
+            "fornecedor_cnpj_cpf": d.get("fornecedor_cnpj_cpf"),
+            "url_documento": d.get("url_documento"),
+            "source": source, "source_url": source_url,
+        }], conflito="perfil_id,cod_documento,parcela")
+        salvas += 1
+    return salvas
+
+
 # -----------------------------------------------------------------------------
 # Tramitações — resolve a proposição (uuid) a partir do id da fonte
 # -----------------------------------------------------------------------------

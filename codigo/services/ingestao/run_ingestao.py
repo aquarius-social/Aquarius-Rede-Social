@@ -26,6 +26,7 @@ from orquestracao.orquestrador import ingerir
 from persistencia.supabase_adapter import criar_banco_supabase
 from pipeline.coletor import JanelaMovel
 from pipeline.http import ClienteHttpUrllib
+from senado.despesas import baixar_ceaps_urllib
 
 
 def _flag(nome: str, padrao: bool = True) -> bool:
@@ -60,6 +61,12 @@ def main() -> None:
         anos_emendas = ([int(a) for a in anos_env.split(",") if a.strip()]
                         if anos_env else [datetime.now(timezone.utc).year])
 
+    # CEAPS do Senado: anos a baixar (vazio = ano corrente). Só efetiva com o
+    # Senado ligado (o passo é gated no orquestrador).
+    anos_ceaps_env = os.environ.get("AQUARIUS_CEAPS_ANOS")
+    anos_ceaps = ([int(a) for a in anos_ceaps_env.split(",") if a.strip()]
+                  if anos_ceaps_env else [datetime.now(timezone.utc).year])
+
     r = ingerir(
         http, banco,
         ate=datetime.now(timezone.utc).date(),
@@ -77,6 +84,10 @@ def main() -> None:
         # Discursos das duas casas (Área G): por parlamentar, volumoso. Padrão
         # LIGADO na rodada completa; desligue na leve com AQUARIUS_DISCURSOS=0.
         coletar_discursos=_flag("AQUARIUS_DISCURSOS"),
+        # Despesas CEAPS do Senado (Área A): CSV anual. Anos via AQUARIUS_CEAPS_ANOS
+        # ("2024,2025"); vazio = ano corrente. Só roda com o Senado ligado.
+        baixar_ceaps=baixar_ceaps_urllib,
+        anos_ceaps=anos_ceaps,
     )
 
     print(
@@ -90,6 +101,7 @@ def main() -> None:
         f"comissoes_senado={r.comissoes_senado_salvas} "
         f"blocos_senado={r.blocos_senado_salvos} "
         f"vinculos_senado={r.vinculos_senado_salvos} "
+        f"despesas_senado={r.despesas_senado_salvas} "
         f"materias_senado={r.materias_senado_salvas} "
         f"tramitacoes_senado={r.tramitacoes_senado_salvas} "
         f"votacoes_senado={r.votacoes_senado_salvas} "

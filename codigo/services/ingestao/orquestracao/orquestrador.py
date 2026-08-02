@@ -59,6 +59,7 @@ from persistencia.repositorio import (
     salvar_bronze,
     salvar_deputados,
     salvar_despesas,
+    salvar_despesas_senado,
     salvar_discursos,
     salvar_partidos,
     salvar_perfis_coletivos,
@@ -71,10 +72,12 @@ from persistencia.repositorio import (
     salvar_votos_nominais,
 )
 from pipeline.coletor import ClienteHttp, JanelaMovel, PoliticaRetry
+from resolucao.normalizacao import normalizar
 from senado.coletivos import (
     FONTE_BLOCOS_SENADO, FONTE_COMISSOES_SENADO,
     rodada_blocos_senado, rodada_comissoes_senado,
 )
+from senado.despesas import rodada_ceaps
 from senado.discursos import rodada_discursos_senado
 from senado.mandatos import rodada_mandatos_senado
 from senado.materias import rodada_materias
@@ -109,6 +112,7 @@ class LinhasBase:
     comissoes_senado: frozenset[str] | None = None
     blocos_senado: frozenset[str] | None = None
     mandatos_senado: frozenset[str] | None = None
+    ceaps: frozenset[str] | None = None
 
 
 @dataclass
@@ -139,6 +143,8 @@ class ResultadoIngestao:
     blocos_senado_salvos: int = 0
     # Mandato histórico do Senado → vinculo_temporal (partido/UF por período, §4).
     vinculos_senado_salvos: int = 0
+    # Despesas CEAPS do Senado (Área A bicameral).
+    despesas_senado_salvas: int = 0
     # Votações + votos nominais do Senado (Área C bicameral).
     votacoes_senado_salvas: int = 0
     votos_senado_salvos: int = 0
@@ -170,6 +176,8 @@ def ingerir(
     anos_emendas: list[int] | None = None,
     coletar_senado: bool = False,
     coletar_discursos: bool = False,
+    baixar_ceaps: "Callable[[str], str] | None" = None,
+    anos_ceaps: list[int] | None = None,
     politica: PoliticaRetry = PoliticaRetry(),
 ) -> ResultadoIngestao:
     """Executa uma rodada completa de ingestão da Câmara.
@@ -301,6 +309,27 @@ def ingerir(
                 vinculos_senado_salvos += salvar_vinculos_temporais(
                     banco, rms.vinculos, lookup, lookup_partido=lookup_partido,
                     source="senado.mandatos", source_url=BASE_SENADO)
+
+    # -- 2c-senado. Despesas CEAPS do Senado (Área A) — CSV por exercício -----
+    # Fonte CSV (não JSON), resolvida por NOME. Constrói o mapa nome→perfil dos
+    # senadores já ingeridos. Só roda com um fetcher (baixar_ceaps) + anos.
+    despesas_senado_salvas = 0
+    if (coletar_senado and baixar_ceaps is not None and anos_ceaps
+            and senadores_prata is not None):
+        mapa_nome = {}
+        for s in senadores_prata.aprovados:
+            pid = lookup("senado", s["id_fonte"])
+            if pid and s.get("nome"):
+                mapa_nome[normalizar(s["nome"])] = pid
+        lookup_senador = lambda nome: mapa_nome.get(normalizar(nome or ""))
+        for ano in anos_ceaps:
+            rce = rodada_ceaps(
+                baixar_ceaps, ano, canario_validado=canario_validado,
+                linha_base=base.ceaps)
+            bronze_salvo += salvar_bronze(banco, rce.bronze, chave_id="COD_DOCUMENTO")
+            if rce.estado in _PROCESSAVEL and rce.prata is not None:
+                despesas_senado_salvas += salvar_despesas_senado(
+                    banco, rce.prata.aprovados, lookup_senador)
 
     # -- 2b. Histórico de mandatos → vinculo_temporal (§12 D4, §4) -----------
     # Camada temporal dos deputados; precisa do lookup (passo 2). Uma rodada por
@@ -531,6 +560,7 @@ def ingerir(
         comissoes_senado_salvas=comissoes_senado_salvas,
         blocos_senado_salvos=blocos_senado_salvos,
         vinculos_senado_salvos=vinculos_senado_salvos,
+        despesas_senado_salvas=despesas_senado_salvas,
         materias_senado_salvas=materias_senado_salvas,
         tramitacoes_senado_salvas=tramitacoes_senado_salvas,
         votacoes_senado_salvas=votacoes_senado_salvas,

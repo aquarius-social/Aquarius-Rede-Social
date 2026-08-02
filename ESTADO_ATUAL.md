@@ -142,12 +142,22 @@ do `CLAUDE.md`.
   por `lookup(casa, id_fonte)`). Verificado ao vivo (2026-08-01): Alan Rick =
   UNIÃO (2023-02-01→2025-11-10) + REPUBLICANOS (2025-11-12→2031-01-31), sem
   sobreposição. **Fecha a paridade de dados legislativos Câmara↔Senado.**
-- Despesas do Senado (CEAPS) — **BLOQUEADO por fonte** (não implementado): única
-  área do Senado que NÃO está na API JSON de `legis.senado.leg.br`. Verificado ao
-  vivo (2026-08-01): `/senador/{cod}/despesas` → 404; URLs CSV legadas → 404 (base
-  migrou); o serviço dedicado `adm.senado.gov.br/adm-dadosabertos` → **503 em
-  tudo (manutenção)**. Não se escreve coletor contra endpoint não-observável
-  (CLAUDE.md regra 4). Retomar quando o serviço voltar ou com o CSV em mãos.
+- Despesas do Senado / CEAPS (Área A, §8, bicameral): **coletor pronto** —
+  `senado/despesas.py`. A fonte NÃO está na API JSON; é um **CSV anual**
+  (`.../transparencia/LAI/verba/despesa_ceaps_{ano}.csv`, ISO-8859-1, `;`). O
+  nome de arquivo correto (`despesa_ceaps_{ano}`, não `{ano}`) foi recuperado de
+  snapshots recentes do **Internet Archive** — o serviço JSON dedicado
+  (`adm.senado.gov.br`) estava em manutenção (503), mas o CSV oficial sempre
+  esteve vivo. Fetcher PRÓPRIO (Latin-1, `Accept: */*` — `text/csv` dá 406),
+  injetável. Parse com `csv.reader` sobre o texto inteiro (trata quebras dentro
+  de aspas). Senador resolvido por **NOME** (a fonte não traz código): mapa nome
+  parlamentar normalizado → perfil. Sem glosa (valor reembolsado = líquido);
+  `parcela=0` torna a unique key `(perfil,cod_documento,parcela)` efetiva. Mesma
+  tabela `despesa` da Câmara → reusa via `salvar_despesas_senado`, **sem
+  migration**. Verificado ao vivo (2026-08-01): **2024 = 21.431 lançamentos,
+  R\$ 32,2 mi, 0 quarentena; 73/88 nomes casam com a lista viva** (o resto =
+  ex-senadores/suplentes que gastaram no ano). **Fecha as 6 de 6 áreas da
+  paridade Câmara↔Senado.**
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -182,7 +192,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 270 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 280 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -233,7 +243,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **270 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **280 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 

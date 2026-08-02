@@ -304,8 +304,15 @@ class TestOrquestrador(unittest.TestCase):
         deputada — sem criar perfil novo."""
         http = _mundo()
         banco = FakeBanco()
+        # CEAPS: a senadora Ana (= deputada Ana, §17) tem uma despesa em 2023
+        ceaps_csv = (
+            '"ANO";"MES";"SENADOR";"TIPO_DESPESA";"CNPJ_CPF";"FORNECEDOR";'
+            '"DOCUMENTO";"DATA";"DETALHAMENTO";"VALOR_REEMBOLSADO";"COD_DOCUMENTO"\n'
+            '"2023";"6";"ANA SENADORA";"Aluguel";"00.0/0001-00";"X";"1";'
+            '"10/06/2023";"";"1.000,00";"555"\n')
         r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
-                    id_legislatura=57, coletar_senado=True)
+                    id_legislatura=57, coletar_senado=True,
+                    baixar_ceaps=lambda url: ceaps_csv, anos_ceaps=[2023])
 
         self.assertEqual(r.senadores_vinculados, 1)
         self.assertEqual(r.senadores_novos, 0)
@@ -329,6 +336,14 @@ class TestOrquestrador(unittest.TestCase):
         self.assertEqual(len(vt_sen), 1)
         self.assertEqual(vt_sen[0]["profile_id"], ana["profile_id"])
         self.assertEqual(vt_sen[0]["partido_sigla_fonte"], "PT")
+
+        # CEAPS do Senado resolvido por NOME → cai no perfil unificado da Ana
+        self.assertEqual(r.despesas_senado_salvas, 1)
+        desp = banco.tabelas["despesa"]
+        ana_desp = [d for d in desp if d["perfil_id"] == ana["profile_id"]
+                    and d["source"] == "senado.ceaps"]
+        self.assertEqual(len(ana_desp), 1)
+        self.assertEqual(ana_desp[0]["valor_liquido"], 1000.0)
         # ainda só 2 parlamentares (Ana e Bruno) — o senador não virou um terceiro
         parlamentares = [p for p in banco.tabelas["profiles"]
                          if p["tipo"] == "parlamentar"]

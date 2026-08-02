@@ -20,6 +20,7 @@ from persistencia.repositorio import (
     salvar_bronze,
     salvar_deputados,
     salvar_despesas,
+    salvar_despesas_senado,
     salvar_partidos,
     salvar_discursos,
     salvar_emendas,
@@ -224,6 +225,36 @@ class TestDespesas(unittest.TestCase):
         banco = FakeBanco()
         lookup = lookup_id_externo(banco)
         self.assertEqual(salvar_despesas(banco, [self._desp("000")], lookup), 0)
+
+
+class TestDespesasSenado(unittest.TestCase):
+    def _ceaps(self, nome="ALAN RICK", cod=2221244):
+        return {"senador_nome": nome, "ano": 2024, "mes": 1,
+                "tipo_despesa": "Aluguel", "tipo_documento": None,
+                "cod_documento": cod, "num_documento": "470160", "parcela": 0,
+                "data_documento": "2024-01-17", "valor_documento": 583.58,
+                "valor_glosa": None, "valor_liquido": 583.58,
+                "fornecedor_nome": "CLARO", "fornecedor_cnpj_cpf": "66.970.229/0132-26",
+                "url_documento": None}
+
+    def test_resolve_por_nome_e_persiste(self):
+        banco = FakeBanco()
+        lookup_senador = lambda n: "P-AR" if n == "ALAN RICK" else None
+        n = salvar_despesas_senado(banco, [self._ceaps()], lookup_senador)
+        self.assertEqual(n, 1)
+        row = banco.tabelas["despesa"][0]
+        self.assertEqual(row["perfil_id"], "P-AR")
+        self.assertEqual(row["valor_liquido"], 583.58)
+        self.assertIsNone(row["valor_glosa"])
+        self.assertEqual(row["parcela"], 0)
+
+    def test_nome_nao_resolvido_e_pulado(self):
+        """Ex-senador/suplente que não casa com a lista viva → pulado (§6)."""
+        banco = FakeBanco()
+        n = salvar_despesas_senado(banco, [self._ceaps("FULANO DESCONHECIDO")],
+                                   lambda n: None)
+        self.assertEqual(n, 0)
+        self.assertNotIn("despesa", banco.tabelas)
 
 
 class TestEmendas(unittest.TestCase):
