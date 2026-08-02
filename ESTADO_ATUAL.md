@@ -131,6 +131,23 @@ do `CLAUDE.md`.
   da Câmara (CCJ existe nas duas casas). Reusa `salvar_perfis_coletivos`, **sem
   migration** (enum já tinha `bloco`/`comissao`). Verificado ao vivo (2026-08-01):
   58 comissões, 6 blocos.
+- Mandato histórico do Senado → `vinculo_temporal` (§4/§17): **coletor pronto** —
+  `senado/mandatos.py`, `/senador/{cod}/mandatos`. **Corrige um bug de correção:**
+  o coletor de senadores gravava o partido ATUAL sobre o mandato inteiro (o modo
+  de falha §4 "atributo no presente"); agora cada `Mandato` traz `Partidos` com
+  `DataFiliacao/DataDesfiliacao`, e a legislatura é cruzada com os períodos
+  partidários (clipados à janela do mandato) em vigências NÃO sobrepostas. O
+  vínculo coarse saiu de `salvar_senadores` (que voltou a só perfil + id_externo,
+  como a Câmara); `salvar_vinculos_temporais` ficou bicameral (resolve o perfil
+  por `lookup(casa, id_fonte)`). Verificado ao vivo (2026-08-01): Alan Rick =
+  UNIÃO (2023-02-01→2025-11-10) + REPUBLICANOS (2025-11-12→2031-01-31), sem
+  sobreposição. **Fecha a paridade de dados legislativos Câmara↔Senado.**
+- Despesas do Senado (CEAPS) — **BLOQUEADO por fonte** (não implementado): única
+  área do Senado que NÃO está na API JSON de `legis.senado.leg.br`. Verificado ao
+  vivo (2026-08-01): `/senador/{cod}/despesas` → 404; URLs CSV legadas → 404 (base
+  migrou); o serviço dedicado `adm.senado.gov.br/adm-dadosabertos` → **503 em
+  tudo (manutenção)**. Não se escreve coletor contra endpoint não-observável
+  (CLAUDE.md regra 4). Retomar quando o serviço voltar ou com o CSV em mãos.
 - Repositório (persistência em Supabase): **lógica pronta e testada** —
   `persistencia/repositorio.py` com porta injetável `ClienteBanco`, upsert de
   bronze/profiles/id_externo/proposicao/votacao/voto_nominal, resolução de FKs e
@@ -165,7 +182,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 266 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 270 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -216,7 +233,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **266 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **270 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 

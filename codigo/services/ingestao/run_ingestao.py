@@ -89,6 +89,7 @@ def main() -> None:
         f"proposicoes={r.proposicoes_salvas} "
         f"comissoes_senado={r.comissoes_senado_salvas} "
         f"blocos_senado={r.blocos_senado_salvos} "
+        f"vinculos_senado={r.vinculos_senado_salvos} "
         f"materias_senado={r.materias_senado_salvas} "
         f"tramitacoes_senado={r.tramitacoes_senado_salvas} "
         f"votacoes_senado={r.votacoes_senado_salvas} "

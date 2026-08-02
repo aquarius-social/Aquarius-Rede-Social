@@ -139,6 +139,14 @@ def _mundo(deputados_resp=None):
             "IdentificacaoParlamentar": {"CodigoParlamentar": "900"},
             "DadosBasicosParlamentar": {"DataNascimento": "1970-01-01",
                 "Naturalidade": "São Paulo", "UfNaturalidade": "SP"}}}}),
+        f"{SBASE}/senador/900/mandatos": _Resp(200, {"MandatoParlamentar": {
+            "Parlamentar": {"Codigo": "900", "Mandatos": {"Mandato": [{
+                "CodigoMandato": "700", "UfParlamentar": "SP",
+                "DescricaoParticipacao": "Titular",
+                "PrimeiraLegislaturaDoMandato": {"NumeroLegislatura": "57",
+                    "DataInicio": "2023-02-01", "DataFim": "2027-01-31"},
+                "Partidos": {"Partido": [
+                    {"Sigla": "PT", "DataFiliacao": "2023-02-01"}]}}]}}}}),
         # discursos: deputada 1 tem um, deputado 2 nenhum; senador 900 tem um
         f"{BASE}/deputados/1/discursos": _Resp(200, {"dados": [
             {"dataHoraInicio": "2023-06-10T14:00", "tipoDiscurso": "COMO LÍDER",
@@ -311,6 +319,16 @@ class TestOrquestrador(unittest.TestCase):
         com_sf = [p for p in banco.tabelas["profiles"]
                   if p["tipo"] == "comissao" and p["slug"].startswith("comissao-sf")]
         self.assertEqual(len(com_sf), 1)
+
+        # mandato histórico do Senado → vinculo_temporal (casa=senado), preso ao
+        # perfil unificado da Ana; partido/UF por período (§4)
+        ana = next(e for e in banco.tabelas["id_externo"]
+                   if e["sistema"] == "camara" and e["identificador"] == "1")
+        self.assertGreaterEqual(r.vinculos_senado_salvos, 1)
+        vt_sen = [v for v in banco.tabelas["vinculo_temporal"] if v["casa"] == "senado"]
+        self.assertEqual(len(vt_sen), 1)
+        self.assertEqual(vt_sen[0]["profile_id"], ana["profile_id"])
+        self.assertEqual(vt_sen[0]["partido_sigla_fonte"], "PT")
         # ainda só 2 parlamentares (Ana e Bruno) — o senador não virou um terceiro
         parlamentares = [p for p in banco.tabelas["profiles"]
                          if p["tipo"] == "parlamentar"]

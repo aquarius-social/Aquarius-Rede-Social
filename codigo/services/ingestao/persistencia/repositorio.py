@@ -182,12 +182,11 @@ def salvar_senadores(
     aprovados: Sequence[dict],
     candidatos: Sequence[dict] | None = None,
     *,
-    lookup_partido: Callable[[str | None], str | None] | None = None,
     source: str = "senado.senadores",
     source_url: str = BASE_SENADO,
 ) -> dict:
-    """Persiste senadores com JUNÇÃO BICAMERAL (§17). Devolve contadores
-    {novos, vinculados, pendentes}.
+    """Persiste senadores com JUNÇÃO BICAMERAL (§17): perfil + id_externo.
+    Devolve contadores {novos, vinculados, pendentes}.
 
     Para cada senador, tenta casar (probabilístico, §13 Tier 2) contra os
     `candidatos` — deputados já ingeridos, cada um um dict com `profile_id` +
@@ -202,9 +201,10 @@ def salvar_senadores(
         para conferência humana, jamais auto-fundida (ambíguo não auto-resolve).
 
     Sem `candidatos`, todo senador vira perfil próprio (passe só-Senado, honesto).
-    O mandato vigente (partido/UF/legislatura) vai para `vinculo_temporal`
-    (casa='senado') em qualquer caso — o `partido_id` resolve por sigla quando
-    `lookup_partido` é dado, senão fica na `partido_sigla_fonte`.
+
+    O `vinculo_temporal` (partido/UF por período) NÃO é escrito aqui — é do passo
+    de MANDATO HISTÓRICO (`senado/mandatos.py`), que tem os períodos partidários
+    acurados. Espelha a Câmara: deputado = perfil; mandatos.py = vínculo.
     """
     from resolucao.bicameral import Alvo, Candidato, Grau, resolver_bicameral
 
@@ -270,25 +270,6 @@ def salvar_senadores(
             contadores["novos"] += 1
             if pendente:
                 contadores["pendentes"] += 1
-
-        # Mandato vigente → vinculo_temporal (casa='senado'), em qualquer caso.
-        h = s.get("mandato_hint") or {}
-        if h.get("vigencia_inicio") and h.get("uf"):
-            partido_id = None
-            if lookup_partido is not None:
-                partido_id = lookup_partido(h.get("partido"))
-            cliente.upsert("vinculo_temporal", [{
-                "profile_id": pid,
-                "casa": "senado",
-                "legislatura": h.get("legislatura"),
-                "uf": h["uf"],
-                "partido_id": partido_id,
-                "partido_sigla_fonte": h.get("partido"),
-                "ocupacao": h.get("ocupacao") or "titular",
-                "vigencia": _daterange(h["vigencia_inicio"], h.get("vigencia_fim")),
-                "source": source,
-                "source_url": source_url,
-            }], conflito="profile_id,casa,vigencia")
     return contadores
 
 
@@ -448,7 +429,9 @@ def salvar_vinculos_temporais(
     """
     salvos = 0
     for v in vinculos:
-        perfil_id = lookup("camara", v["id_fonte"])
+        # A casa do vínculo é também o sistema do id_externo (camara↔camara,
+        # senado↔senado) — resolve bicameral sem hardcode.
+        perfil_id = lookup(v.get("casa", "camara"), v["id_fonte"])
         if perfil_id is None:
             continue
         partido_id = v.get("partido_id")

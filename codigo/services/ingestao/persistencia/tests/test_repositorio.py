@@ -279,9 +279,8 @@ class TestSenadores(unittest.TestCase):
         ext = banco.tabelas["id_externo"][0]
         self.assertEqual(ext["sistema"], "senado")
         self.assertEqual(ext["metodo"], "fonte_direta")
-        v = banco.tabelas["vinculo_temporal"][0]
-        self.assertEqual(v["casa"], "senado")
-        self.assertEqual(v["partido_sigla_fonte"], "REPUBLICANOS")
+        # vinculo_temporal NÃO é escrito aqui — é do passo de mandato histórico
+        self.assertNotIn("vinculo_temporal", banco.tabelas)
 
     def test_match_forte_anexa_ao_deputado_sem_criar_perfil(self):
         """§17: 2+ sinais convergem → é a mesma pessoa. id_externo do Senado vai
@@ -298,8 +297,6 @@ class TestSenadores(unittest.TestCase):
         self.assertEqual(ext["profile_id"], "P-DEP")
         self.assertEqual(ext["metodo"], "convergencia")
         self.assertGreaterEqual(len(ext["sinais"]), 2)
-        # o vínculo do mandato do Senado também prende no perfil do deputado
-        self.assertEqual(banco.tabelas["vinculo_temporal"][0]["profile_id"], "P-DEP")
 
     def test_um_sinal_so_nao_auto_funde_e_marca_pendente(self):
         """Só o nome civil converge (deputado sem nascimento) → perfil próprio,
@@ -313,12 +310,6 @@ class TestSenadores(unittest.TestCase):
         self.assertEqual(c["pendentes"], 1)
         self.assertEqual(c["vinculados"], 0)
         self.assertTrue(banco.tabelas["id_externo"][0]["pendente_conferencia"])
-
-    def test_lookup_partido_resolve_partido_id(self):
-        banco = FakeBanco()
-        salvar_senadores(banco, [_senador()],
-                         lookup_partido=lambda s: "PART-REP" if s == "REPUBLICANOS" else None)
-        self.assertEqual(banco.tabelas["vinculo_temporal"][0]["partido_id"], "PART-REP")
 
 
 def _discurso(casa="camara", sistema="camara", pid_fonte="74784",

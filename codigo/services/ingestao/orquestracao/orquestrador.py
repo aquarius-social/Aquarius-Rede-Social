@@ -76,6 +76,7 @@ from senado.coletivos import (
     rodada_blocos_senado, rodada_comissoes_senado,
 )
 from senado.discursos import rodada_discursos_senado
+from senado.mandatos import rodada_mandatos_senado
 from senado.materias import rodada_materias
 from senado.senadores import rodada_senadores
 from senado.tramitacoes import rodada_tramitacoes_senado
@@ -107,6 +108,7 @@ class LinhasBase:
     votacoes_senado: frozenset[str] | None = None
     comissoes_senado: frozenset[str] | None = None
     blocos_senado: frozenset[str] | None = None
+    mandatos_senado: frozenset[str] | None = None
 
 
 @dataclass
@@ -135,6 +137,8 @@ class ResultadoIngestao:
     # Perfis coletivos do Senado (comissões + blocos — o tipo 'bloco' estreia).
     comissoes_senado_salvas: int = 0
     blocos_senado_salvos: int = 0
+    # Mandato histórico do Senado → vinculo_temporal (partido/UF por período, §4).
+    vinculos_senado_salvos: int = 0
     # Votações + votos nominais do Senado (Área C bicameral).
     votacoes_senado_salvas: int = 0
     votos_senado_salvos: int = 0
@@ -273,15 +277,30 @@ def ingerir(
                 .get("CodigoParlamentar")))
         if sen.estado in _PROCESSAVEL and sen.prata is not None:
             senadores_prata = sen.prata
-            c = salvar_senadores(
-                banco, sen.prata.aprovados, candidatos_dep,
-                lookup_partido=lookup_partido)
+            c = salvar_senadores(banco, sen.prata.aprovados, candidatos_dep)
             senadores_novos = c["novos"]
             senadores_vinculados = c["vinculados"]
             senadores_pendentes = c["pendentes"]
 
     # -- 2. Lookup real de id_externo (respaldado pelo banco) ----------------
     lookup = lookup_id_externo(banco)
+
+    # -- 2s. Mandato histórico do Senado → vinculo_temporal (§4/§17) ----------
+    # Depois do lookup (o senador já tem id_externo). Uma rodada por senador
+    # (81, endpoint estável). Períodos partidários acurados — corrige o §4
+    # "partido no presente". Resolve partido_id por sigla como a Câmara.
+    vinculos_senado_salvos = 0
+    if coletar_senado and senadores_prata is not None:
+        for s in senadores_prata.aprovados:
+            rms = rodada_mandatos_senado(
+                cliente_http, s["id_fonte"],
+                canario_validado=canario_validado, linha_base=base.mandatos_senado,
+                politica=politica)
+            bronze_salvo += salvar_bronze(banco, rms.bronze, chave_id="CodigoMandato")
+            if rms.estado in _PROCESSAVEL and rms.vinculos:
+                vinculos_senado_salvos += salvar_vinculos_temporais(
+                    banco, rms.vinculos, lookup, lookup_partido=lookup_partido,
+                    source="senado.mandatos", source_url=BASE_SENADO)
 
     # -- 2b. Histórico de mandatos → vinculo_temporal (§12 D4, §4) -----------
     # Camada temporal dos deputados; precisa do lookup (passo 2). Uma rodada por
@@ -511,6 +530,7 @@ def ingerir(
         discursos_salvos=discursos_salvos,
         comissoes_senado_salvas=comissoes_senado_salvas,
         blocos_senado_salvos=blocos_senado_salvos,
+        vinculos_senado_salvos=vinculos_senado_salvos,
         materias_senado_salvas=materias_senado_salvas,
         tramitacoes_senado_salvas=tramitacoes_senado_salvas,
         votacoes_senado_salvas=votacoes_senado_salvas,
