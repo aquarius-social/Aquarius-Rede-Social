@@ -53,6 +53,8 @@ CAMPOS_CRITICOS_SENADOR = frozenset({
     "CodigoParlamentar", "NomeParlamentar", "SiglaPartidoParlamentar",
     "UfParlamentar",
 })
+# O roster da legislatura NÃO traz partido/UF na identificação (vêm em Mandatos).
+CAMPOS_CRITICOS_ROSTER = frozenset({"CodigoParlamentar", "NomeParlamentar"})
 
 
 # -----------------------------------------------------------------------------
@@ -85,6 +87,38 @@ def coletar_bronze_senadores(
     for item in _como_lista(lista.get("Parlamentar")):
         bronze.append(RegistroBronze.de(FONTE, url, item))
     return bronze
+
+
+def coletar_bronze_roster(
+    cliente: ClienteHttp,
+    legislatura: int,
+    *,
+    politica: PoliticaRetry = PoliticaRetry(),
+) -> list[RegistroBronze]:
+    """Roster COMPLETO de uma legislatura — titulares + suplentes (245 na 57ª,
+    vs 81 em exercício). É o que permite resolver senadores licenciados/suplentes
+    que aparecem em CEAPS e emendas mas não estão sentados hoje (§6.4). Raiz
+    diferente (`ListaParlamentarLegislatura`) e sem partido/UF na identificação."""
+    url = f"{BASE}/senador/lista/legislatura/{legislatura}"
+    corpo = obter_com_retry(cliente, url, politica=politica)
+    lista = (((corpo or {}).get("ListaParlamentarLegislatura") or {})
+             .get("Parlamentares") or {})
+    return [RegistroBronze.de(FONTE, url, item)
+            for item in _como_lista(lista.get("Parlamentar"))]
+
+
+def codigos_em_exercicio(
+    cliente: ClienteHttp, *, politica: PoliticaRetry = PoliticaRetry(),
+) -> set[str]:
+    """Conjunto de códigos atualmente EM EXERCÍCIO (para marcar `ativo`)."""
+    url = f"{BASE}/senador/lista/atual"
+    corpo = obter_com_retry(cliente, url, politica=politica)
+    lista = (((corpo or {}).get("ListaParlamentarEmExercicio") or {})
+             .get("Parlamentares") or {})
+    return {
+        str((p.get("IdentificacaoParlamentar") or {}).get("CodigoParlamentar") or "")
+        for p in _como_lista(lista.get("Parlamentar"))
+    }
 
 
 def coletar_detalhe_senador(
@@ -135,7 +169,8 @@ def _ocupacao(descricao: str | None) -> str:
     return "titular"
 
 
-def transformar_senador(item: dict, detalhe: dict | None = None) -> dict:
+def transformar_senador(item: dict, detalhe: dict | None = None,
+                        *, ativo: bool = True) -> dict:
     """Normaliza um `Parlamentar` da lista (+ detalhe opcional) para a prata.
 
     Produz a identidade ESTÁVEL do perfil + o vínculo direto para `id_externo`
@@ -166,7 +201,9 @@ def transformar_senador(item: dict, detalhe: dict | None = None) -> dict:
         "nome": nome,
         "slug": _slug(nome, id_fonte) if nome and id_fonte else None,
         "foto_url": ident.get("UrlFotoParlamentar"),
-        "ativo": True,
+        # No roster completo (titulares + suplentes), quem não está em exercício
+        # entra com ativo=False — perfil válido, apenas não sentado hoje (§6.4).
+        "ativo": ativo,
         # Pessoa natural (do detalhe) — PII restrita à resolução (§3.5), §5.3.
         "nome_civil": ident.get("NomeCompletoParlamentar"),
         "data_nascimento": _data(basicos.get("DataNascimento")),
@@ -216,15 +253,19 @@ VERIFICADORES_SENADOR = [
 def processar_senadores_para_prata(
     bronze: list[RegistroBronze],
     detalhes: dict[str, dict] | None = None,
+    codigos_exercicio: set[str] | None = None,
 ) -> ResultadoPortao:
     """Portão bronze → prata. `detalhes` mapeia código do Senado → payload do
-    detalhe, para o enriquecimento §5.3. Sem detalhe, entra sem nascimento."""
+    detalhe, para o enriquecimento §5.3. `codigos_exercicio` (roster completo)
+    marca `ativo`: quem não está em exercício entra com ativo=False. None (lista
+    em-exercício) = todos ativos."""
     det = detalhes or {}
 
     def _transformar(item: dict) -> dict:
         ident = item.get("IdentificacaoParlamentar") or {}
         cod = str(ident.get("CodigoParlamentar") or "")
-        return transformar_senador(item, det.get(cod))
+        ativo = True if codigos_exercicio is None else (cod in codigos_exercicio)
+        return transformar_senador(item, det.get(cod), ativo=ativo)
 
     return portao_bronze_prata(
         bronze, transformar=_transformar, verificadores=VERIFICADORES_SENADOR)
@@ -248,10 +289,15 @@ def rodada_senadores(
     canario_validado: bool,
     linha_base: frozenset[str] | None,
     enriquecer: bool = True,
+    legislatura: int | None = None,
     politica: PoliticaRetry = PoliticaRetry(),
 ) -> ResultadoRodadaSenadores:
-    """Uma rodada: lista, avalia o contrato (sobre a IdentificacaoParlamentar da
-    amostra), enriquece com o detalhe e passa o portão.
+    """Uma rodada: lista os senadores, avalia o contrato (sobre a
+    IdentificacaoParlamentar da amostra), enriquece com o detalhe e passa o portão.
+
+    Com `legislatura`, usa o ROSTER COMPLETO (titulares + suplentes) em vez da
+    lista em-exercício — fecha a lacuna dos senadores licenciados/suplentes que
+    aparecem em CEAPS/emendas (§6.4). `ativo` é marcado pela lista em-exercício.
 
     Em FALHA/QUEBRA a prata é pulada (§19). Falha pontual do detalhe de um
     senador não derruba a rodada — aquele entra sem nascimento.
@@ -259,9 +305,14 @@ def rodada_senadores(
     erro_falha: str | None = None
     erro_instabilidade: str | None = None
     bronze: list[RegistroBronze] = []
+    exercicio: set[str] | None = None
 
     try:
-        bronze = coletar_bronze_senadores(cliente, politica=politica)
+        if legislatura is not None:
+            bronze = coletar_bronze_roster(cliente, legislatura, politica=politica)
+            exercicio = codigos_em_exercicio(cliente, politica=politica)
+        else:
+            bronze = coletar_bronze_senadores(cliente, politica=politica)
     except ErroFalha as e:
         erro_falha = str(e)
     except ErroInstabilidade as e:
@@ -278,7 +329,8 @@ def rodada_senadores(
         erro_falha=erro_falha,
         erro_instabilidade=erro_instabilidade,
         linha_base=linha_base,
-        criticos=CAMPOS_CRITICOS_SENADOR,
+        criticos=CAMPOS_CRITICOS_ROSTER if legislatura is not None
+        else CAMPOS_CRITICOS_SENADOR,
     )
 
     if contrato.estado in (EstadoContrato.FALHA, EstadoContrato.QUEBRA):
@@ -301,5 +353,5 @@ def rodada_senadores(
             except (ErroFalha, ErroInstabilidade):
                 continue  # falha pontual do detalhe — segue sem PII
 
-    prata = processar_senadores_para_prata(bronze, detalhes)
+    prata = processar_senadores_para_prata(bronze, detalhes, exercicio)
     return ResultadoRodadaSenadores(contrato.estado, contrato.detalhe, bronze, prata)

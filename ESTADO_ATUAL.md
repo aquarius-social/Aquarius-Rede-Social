@@ -66,18 +66,23 @@ do `CLAUDE.md`.
   perfil, **580/628 = 92%**) e Senado (nome → senador, os que o mapa não achou por
   só tentar a Câmara). Grau pelo nº de sinais (§5.3): 2+ → 'direto'; 1 →
   'com_ressalva' + pendente. Bancadas estaduais/comissões (36) ficam sem perfil
-  (não há tipo 'bancada'; honesto). **Ressalva do braço Senado:** casa 0 contra a
-  lista `/senador/lista/atual` porque os autores-senadores pendentes (AUGUSTA
-  BRITO, JORGE SEIF, RODRIGO CUNHA, ZUCCO…) são titulares LICENCIADOS, fora do
-  "em exercício" agora (§6.4, mesmo motivo do CEAPS) — acende ao ingerir o roster
-  completo da legislatura (titulares+suplentes), etapa própria. Verificado ao vivo
-  (2026-08-02): mapa carrega 628, braço Câmara 580 resolvíveis.
+  (não há tipo 'bancada'; honesto). **Braço Senado — resolvido:** com o roster
+  completo da legislatura (ver bullet de senadores), os autores-senadores
+  licenciados (AUGUSTA BRITO, FERNANDO FARIAS, JORGE SEIF, MECIAS DE JESUS,
+  RODRIGO CUNHA) passaram a casar — **0 → 5**. Verificado ao vivo (2026-08-02):
+  mapa carrega 628, braço Câmara 580 + braço Senado 5 resolvíveis.
 - Senado — senadores + junção bicameral (Área I, §17): **coletor pronto** —
   `senado/senadores.py`, fonte **Dados Abertos do Senado** (JSON via header
   `Accept`), lista (`/senador/lista/atual`) + enriquecimento por detalhe
-  (`/senador/{cod}` → nascimento/naturalidade, sinais §5.3). Verificado ao vivo
-  (2026-07-31): 81 senadores em exercício, contrato OK. Senadores entram na
+  (`/senador/{cod}` → nascimento/naturalidade, sinais §5.3). Senadores entram na
   MESMA tabela polimórfica `profiles` (a fundação já previa as duas casas).
+  **Roster COMPLETO da legislatura** (`rodada_senadores(legislatura=57)`, raiz
+  `ListaParlamentarLegislatura`): ingere titulares + suplentes (**245**, não só os
+  **81** em exercício), com `ativo` marcado pela lista em-exercício. Isso FECHA a
+  lacuna §6.4 — os senadores licenciados/suplentes que aparecem em CEAPS e emendas
+  mas não estão sentados hoje. Verificado ao vivo (2026-08-02): 245 perfis (81
+  ativos + 164 inativos); CEAPS passou a resolver **87/88** nomes (era 73) e o
+  braço Senado da curadoria de emendas **0 → 5** autores.
   **Junção bicameral (§17):** `resolucao/bicameral.py` reusa o núcleo de
   convergência do resolvedor (nome civil + nascimento + naturalidade, §5.3) SEM
   o filtro de mandato vigente — o deputado que virou senador nunca sobrepõe no
@@ -206,7 +211,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 287 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 288 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -257,7 +262,7 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **287 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **288 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
 o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
 

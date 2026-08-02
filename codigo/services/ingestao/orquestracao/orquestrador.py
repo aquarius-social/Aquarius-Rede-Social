@@ -182,6 +182,7 @@ def ingerir(
     anos_emendas: list[int] | None = None,
     abrir_mapa_autores: "Callable[[], str] | None" = None,
     coletar_senado: bool = False,
+    legislatura_senado: int | None = None,
     coletar_discursos: bool = False,
     baixar_ceaps: "Callable[[str], str] | None" = None,
     anos_ceaps: list[int] | None = None,
@@ -284,7 +285,8 @@ def ingerir(
     if coletar_senado:
         sen = rodada_senadores(
             cliente_http, canario_validado=canario_validado,
-            linha_base=base.senadores, politica=politica)
+            linha_base=base.senadores, legislatura=legislatura_senado,
+            politica=politica)
         bronze_salvo += salvar_bronze(
             banco, sen.bronze,
             id_na_fonte_de=lambda r: str(

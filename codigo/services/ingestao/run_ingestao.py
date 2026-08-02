@@ -82,6 +82,9 @@ def main() -> None:
         # Senado (Área I, §17): fonte pública sem chave. Padrão ligado; a rodada
         # leve pode desligar com AQUARIUS_SENADO=0.
         coletar_senado=_flag("AQUARIUS_SENADO"),
+        # Roster COMPLETO da legislatura do Senado (titulares + suplentes) — fecha
+        # a lacuna dos licenciados/suplentes em CEAPS/emendas (§6.4). 57 = atual.
+        legislatura_senado=int(os.environ.get("AQUARIUS_LEGISLATURA_SENADO", "57")),
         # Discursos das duas casas (Área G): por parlamentar, volumoso. Padrão
         # LIGADO na rodada completa; desligue na leve com AQUARIUS_DISCURSOS=0.
         coletar_discursos=_flag("AQUARIUS_DISCURSOS"),

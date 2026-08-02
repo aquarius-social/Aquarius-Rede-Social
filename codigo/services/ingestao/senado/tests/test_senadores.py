@@ -144,5 +144,39 @@ class TestRodada(unittest.TestCase):
         self.assertIsNone(r.prata)
 
 
+def _roster_item(cod, nome, civil=None):
+    return {"IdentificacaoParlamentar": {
+        "CodigoParlamentar": cod, "NomeParlamentar": nome,
+        "NomeCompletoParlamentar": civil or (nome + " Completo"),
+        "SexoParlamentar": "Masculino"},
+        "Mandatos": {"Mandato": [{"UfParlamentar": "PE",
+                                  "DescricaoParticipacao": "2º Suplente"}]}}
+
+
+class TestRosterLegislatura(unittest.TestCase):
+    def _cliente(self):
+        # roster com 2 senadores; só o 100 está em exercício
+        return ClienteFake({
+            f"{BASE}/senador/lista/legislatura/57": _Resp(200, {
+                "ListaParlamentarLegislatura": {"Parlamentares": {"Parlamentar": [
+                    _roster_item("100", "Fulano Ativo"),
+                    _roster_item("200", "Beltrano Licenciado")]}}}),
+            f"{BASE}/senador/lista/atual": _Resp(200, {
+                "ListaParlamentarEmExercicio": {"Parlamentares": {"Parlamentar": [
+                    _roster_item("100", "Fulano Ativo")]}}}),
+        })
+
+    def test_roster_marca_ativo_pela_lista_em_exercicio(self):
+        r = rodada_senadores(self._cliente(), canario_validado=True,
+                             linha_base=None, enriquecer=False, legislatura=57)
+        self.assertIs(r.estado, EstadoContrato.OK)
+        self.assertEqual(len(r.prata.aprovados), 2)     # roster completo
+        por_cod = {s["id_fonte"]: s for s in r.prata.aprovados}
+        self.assertTrue(por_cod["100"]["ativo"])         # em exercício
+        self.assertFalse(por_cod["200"]["ativo"])        # licenciado/suplente
+        # nome civil vem da própria lista do roster (sem detalhe)
+        self.assertEqual(por_cod["200"]["nome_civil"], "Beltrano Licenciado Completo")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
