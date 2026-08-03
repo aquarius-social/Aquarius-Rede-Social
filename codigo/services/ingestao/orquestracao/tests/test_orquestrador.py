@@ -449,6 +449,25 @@ class TestOrquestrador(unittest.TestCase):
                    if e["sistema"] == "camara" and e["identificador"] == "1")
         self.assertEqual(sen_disc["profile_id"], ana["profile_id"])
 
+    def test_config_enxuta_dinheiro_liga_so_o_essencial(self):
+        """Caber no Free/priorizar dinheiro: bronze + proposições + votações OFF,
+        despesas ON. Sem essas tabelas gordas; a despesa (o alvo) entra."""
+        http = _mundo()
+        banco = FakeBanco()
+        r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
+                    id_legislatura=57, persistir_bronze=False,
+                    coletar_proposicoes=False, coletar_votacoes=False)
+        # dinheiro entra (despesas dos deputados)
+        self.assertEqual(r.despesas_salvas, 2)
+        self.assertIn("despesa", banco.tabelas)
+        # o que foi desligado NÃO entra
+        self.assertEqual(r.bronze_salvo, 0)
+        self.assertNotIn("bronze_registro", banco.tabelas)
+        self.assertNotIn("proposicao", banco.tabelas)
+        self.assertNotIn("votacao", banco.tabelas)
+        self.assertEqual(r.proposicoes_salvas, 0)
+        self.assertEqual(r.votos_salvos, 0)
+
     def test_deputados_ausentes_deixam_votos_sem_resolver(self):
         """A dependência de ordem, provada pela negativa: sem deputados, o lookup
         não resolve e nenhum voto nominal é persistido — mas a rodada não cai."""

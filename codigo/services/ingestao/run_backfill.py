@@ -65,6 +65,17 @@ def main() -> None:
         ClienteHttpUrllib(headers_extra={"chave-api-dados": chave_transp})
         if chave_transp else None)
 
+    # ÁREAS por env (padrão LIGADO). Para caber no Free e priorizar dinheiro
+    # público, desligue as grandes: AQUARIUS_BRONZE=0 (o maior peso — o app lê da
+    # camada ouro, não do bronze), AQUARIUS_PROPOSICOES=0, AQUARIUS_VOTACOES=0,
+    # AQUARIUS_DISCURSOS=0, AQUARIUS_EVENTOS=0, AQUARIUS_SENADO=0. Mantenha
+    # AQUARIUS_DESPESAS=1 (e a chave da Transparência para emendas).
+    def _flag(nome: str, padrao: bool = True) -> bool:
+        v = os.environ.get(nome)
+        if v is None:
+            return padrao
+        return v.strip().lower() not in ("0", "false", "nao", "não", "off", "no", "")
+
     print(f"=== BACKFILL {inicio}–{fim} — PESADO (horas). "
           "Ctrl+C pausa; rerodar continua (idempotente). ===")
 
@@ -78,15 +89,18 @@ def main() -> None:
                 janela=JanelaMovel(dias=366),
                 id_legislatura=leg,
                 legislatura_senado=leg,
-                enriquecer_deputados=True,
-                coletar_historico=True,
-                coletar_despesas=True,
+                enriquecer_deputados=_flag("AQUARIUS_ENRIQUECER"),
+                coletar_historico=_flag("AQUARIUS_HISTORICO"),
+                coletar_despesas=_flag("AQUARIUS_DESPESAS"),
                 ano_despesas=ano,
                 cliente_transparencia=cliente_transp,
                 anos_emendas=[ano],
-                coletar_senado=True,
-                coletar_discursos=True,
-                coletar_eventos=True,
+                coletar_senado=_flag("AQUARIUS_SENADO"),
+                coletar_discursos=_flag("AQUARIUS_DISCURSOS"),
+                coletar_eventos=_flag("AQUARIUS_EVENTOS"),
+                persistir_bronze=_flag("AQUARIUS_BRONZE"),
+                coletar_proposicoes=_flag("AQUARIUS_PROPOSICOES"),
+                coletar_votacoes=_flag("AQUARIUS_VOTACOES"),
                 baixar_ceaps=baixar_ceaps_urllib,
                 anos_ceaps=[ano],
                 abrir_mapa_autores=abrir_mapa_padrao,

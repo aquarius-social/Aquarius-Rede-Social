@@ -192,6 +192,11 @@ def ingerir(
     legislatura_senado: int | None = None,
     coletar_discursos: bool = False,
     coletar_eventos: bool = False,
+    # Área-flags para caber no Free/priorizar (o app lê da camada ouro, não do
+    # bronze; áreas grandes ficam opt-out quando o espaço é escasso).
+    persistir_bronze: bool = True,
+    coletar_proposicoes: bool = True,
+    coletar_votacoes: bool = True,
     baixar_ceaps: "Callable[[str], str] | None" = None,
     anos_ceaps: list[int] | None = None,
     politica: PoliticaRetry = PoliticaRetry(),
@@ -204,6 +209,9 @@ def ingerir(
     """
     base = linhas_base or LinhasBase()
     bronze_salvo = 0
+    # Bronze desligável (economia de espaço): quando off, vira no-op — a camada
+    # ouro (o que o app lê) não depende do bronze.
+    _sb = salvar_bronze if persistir_bronze else (lambda *a, **k: 0)
 
     # -- 0. Partidos canônicos: profiles(tipo=partido) + partido -------------
     # Primeiro, porque o vínculo temporal (passo 2b) resolve partido_id por
@@ -212,9 +220,9 @@ def ingerir(
         cliente_http, canario_validado=canario_validado,
         linha_base=base.partidos, politica=politica,
     )
-    bronze_salvo += salvar_bronze(banco, part.bronze)
+    bronze_salvo += _sb(banco, part.bronze)
     if part.detalhes_bronze:
-        bronze_salvo += salvar_bronze(banco, part.detalhes_bronze)
+        bronze_salvo += _sb(banco, part.detalhes_bronze)
     partidos_salvos = 0
     if part.estado in _PROCESSAVEL and part.prata is not None:
         partidos_salvos = salvar_partidos(banco, part.prata.aprovados)
@@ -224,7 +232,7 @@ def ingerir(
     com = rodada_comissoes(
         cliente_http, canario_validado=canario_validado,
         linha_base=base.comissoes, politica=politica)
-    bronze_salvo += salvar_bronze(banco, com.bronze)
+    bronze_salvo += _sb(banco, com.bronze)
     comissoes_salvas = 0
     if com.estado in _PROCESSAVEL and com.prata is not None:
         comissoes_salvas = salvar_perfis_coletivos(
@@ -233,7 +241,7 @@ def ingerir(
     fre = rodada_frentes(
         cliente_http, canario_validado=canario_validado,
         linha_base=base.frentes, politica=politica)
-    bronze_salvo += salvar_bronze(banco, fre.bronze)
+    bronze_salvo += _sb(banco, fre.bronze)
     frentes_salvas = 0
     if fre.estado in _PROCESSAVEL and fre.prata is not None:
         frentes_salvas = salvar_perfis_coletivos(
@@ -247,7 +255,7 @@ def ingerir(
         csen = rodada_comissoes_senado(
             cliente_http, canario_validado=canario_validado,
             linha_base=base.comissoes_senado, politica=politica)
-        bronze_salvo += salvar_bronze(banco, csen.bronze, chave_id="Codigo")
+        bronze_salvo += _sb(banco, csen.bronze, chave_id="Codigo")
         if csen.estado in _PROCESSAVEL and csen.prata is not None:
             comissoes_senado_salvas = salvar_perfis_coletivos(
                 banco, csen.prata.aprovados, source=FONTE_COMISSOES_SENADO,
@@ -256,7 +264,7 @@ def ingerir(
         bsen = rodada_blocos_senado(
             cliente_http, canario_validado=canario_validado,
             linha_base=base.blocos_senado, politica=politica)
-        bronze_salvo += salvar_bronze(banco, bsen.bronze, chave_id="CodigoBloco")
+        bronze_salvo += _sb(banco, bsen.bronze, chave_id="CodigoBloco")
         if bsen.estado in _PROCESSAVEL and bsen.prata is not None:
             blocos_senado_salvos = salvar_perfis_coletivos(
                 banco, bsen.prata.aprovados, source=FONTE_BLOCOS_SENADO,
@@ -271,7 +279,7 @@ def ingerir(
         enriquecer=enriquecer_deputados,
         politica=politica,
     )
-    bronze_salvo += salvar_bronze(banco, dep.bronze)
+    bronze_salvo += _sb(banco, dep.bronze)
     perfis = 0
     candidatos_dep: list[dict] = []
     if dep.estado in _PROCESSAVEL and dep.prata is not None:
@@ -295,7 +303,7 @@ def ingerir(
             cliente_http, canario_validado=canario_validado,
             linha_base=base.senadores, legislatura=legislatura_senado,
             politica=politica)
-        bronze_salvo += salvar_bronze(
+        bronze_salvo += _sb(
             banco, sen.bronze,
             id_na_fonte_de=lambda r: str(
                 (r.payload.get("IdentificacaoParlamentar") or {})
@@ -333,7 +341,7 @@ def ingerir(
                 cliente_http, s["id_fonte"],
                 canario_validado=canario_validado, linha_base=base.mandatos_senado,
                 politica=politica)
-            bronze_salvo += salvar_bronze(banco, rms.bronze, chave_id="CodigoMandato")
+            bronze_salvo += _sb(banco, rms.bronze, chave_id="CodigoMandato")
             if rms.estado in _PROCESSAVEL and rms.vinculos:
                 # Resiliência: um vínculo incoerente de UM senador (constraint do
                 # banco) não pode derrubar a rodada inteira — pula aquele e segue.
@@ -354,7 +362,7 @@ def ingerir(
             rce = rodada_ceaps(
                 baixar_ceaps, ano, canario_validado=canario_validado,
                 linha_base=base.ceaps)
-            bronze_salvo += salvar_bronze(banco, rce.bronze, chave_id="COD_DOCUMENTO")
+            bronze_salvo += _sb(banco, rce.bronze, chave_id="COD_DOCUMENTO")
             if rce.estado in _PROCESSAVEL and rce.prata is not None:
                 despesas_senado_salvas += salvar_despesas_senado(
                     banco, rce.prata.aprovados, lookup_senador_nome)
@@ -375,7 +383,7 @@ def ingerir(
             )
             # Bronze do histórico: id composto (deputado:dataHora) — o snapshot
             # não tem id próprio, todos compartilham o id do deputado.
-            bronze_salvo += salvar_bronze(
+            bronze_salvo += _sb(
                 banco, rh.bronze,
                 id_na_fonte_de=lambda r: (
                     f"{r.payload.get('id')}:{r.payload.get('dataHora')}"
@@ -398,7 +406,7 @@ def ingerir(
                 canario_validado=canario_validado,
                 linha_base=base.despesas, politica=politica)
             # Bronze de despesa: id composto deputado:documento:parcela.
-            bronze_salvo += salvar_bronze(
+            bronze_salvo += _sb(
                 banco, rd.bronze,
                 id_na_fonte_de=lambda r, did=d["id_fonte"]: (
                     f"{did}:{r.payload.get('codDocumento')}:{r.payload.get('parcela')}"
@@ -415,7 +423,7 @@ def ingerir(
         ra = rodada_autores(
             abrir_mapa_autores, canario_validado=canario_validado,
             linha_base=base.autores)
-        bronze_salvo += salvar_bronze(banco, ra.bronze, chave_id="codigo_autor")
+        bronze_salvo += _sb(banco, ra.bronze, chave_id="codigo_autor")
         if ra.estado in _PROCESSAVEL and ra.prata is not None:
             ca = salvar_autores_orcamentarios(
                 banco, ra.prata.aprovados, lookup, lookup_senador_nome)
@@ -433,7 +441,7 @@ def ingerir(
                 cliente_transparencia, ano,
                 canario_validado=canario_validado,
                 linha_base=base.emendas, politica=politica)
-            bronze_salvo += salvar_bronze(
+            bronze_salvo += _sb(
                 banco, re_.bronze, chave_id="codigoEmenda")
             if re_.estado in _PROCESSAVEL and re_.prata is not None:
                 emendas_salvas += salvar_emendas(banco, re_.prata.aprovados, lookup)
@@ -451,7 +459,7 @@ def ingerir(
                     canario_validado=canario_validado, linha_base=base.discursos,
                     data_inicio=d_ini.isoformat(), data_fim=d_fim.isoformat(),
                     politica=politica)
-                bronze_salvo += salvar_bronze(
+                bronze_salvo += _sb(
                     banco, rdi.bronze,
                     id_na_fonte_de=lambda r, did=d["id_fonte"]: (
                         f"{did}:{r.payload.get('dataHoraInicio')}"))
@@ -467,40 +475,42 @@ def ingerir(
                     linha_base=base.discursos_senado,
                     data_inicio=d_ini.isoformat(), data_fim=d_fim.isoformat(),
                     politica=politica)
-                bronze_salvo += salvar_bronze(
+                bronze_salvo += _sb(
                     banco, rds.bronze, chave_id="CodigoPronunciamento")
                 if rds.estado in _PROCESSAVEL and rds.prata is not None:
                     discursos_salvos += salvar_discursos(
                         banco, rds.prata.aprovados, lookup,
                         source="senado.discursos", source_url=BASE_SENADO)
 
-    # -- 3. Proposições: bronze + proposicao ---------------------------------
-    prop = prop_mod.rodada(
-        cliente_http,
-        ate=ate, janela=janela,
-        canario_validado=canario_validado,
-        linha_base=base.proposicoes,
-        politica=politica,
-    )
-    bronze_salvo += salvar_bronze(banco, prop.bronze)
+    # -- 3. Proposições + tramitações (Câmara) — gated -----------------------
     proposicoes_salvas = 0
     tramitacoes_salvas = 0
-    if prop.estado in _PROCESSAVEL and prop.prata is not None:
-        proposicoes_salvas = salvar_proposicoes(banco, prop.prata.aprovados)
+    prop = ResultadoRodada(EstadoContrato.OK, "proposições desligadas", [], None)
+    if coletar_proposicoes:
+        prop = prop_mod.rodada(
+            cliente_http,
+            ate=ate, janela=janela,
+            canario_validado=canario_validado,
+            linha_base=base.proposicoes,
+            politica=politica,
+        )
+        bronze_salvo += _sb(banco, prop.bronze)
+        if prop.estado in _PROCESSAVEL and prop.prata is not None:
+            proposicoes_salvas = salvar_proposicoes(banco, prop.prata.aprovados)
 
-        # -- 3b. Tramitações: uma rodada por proposição aprovada -------------
-        # A tramitação prende-se à proposição já persistida (FK). Por isso vem
-        # depois de salvar as proposições, e só para as que passaram o portão.
-        for p in prop.prata.aprovados:
-            rt = rodada_tramitacoes(
-                cliente_http, p["id_fonte"],
-                canario_validado=canario_validado,
-                linha_base=base.tramitacoes,
-                politica=politica,
-            )
-            bronze_salvo += salvar_bronze(banco, rt.bronze)
-            if rt.estado in _PROCESSAVEL and rt.prata is not None:
-                tramitacoes_salvas += salvar_tramitacoes(banco, rt.prata.aprovados)
+            # -- 3b. Tramitações: uma rodada por proposição aprovada ---------
+            # A tramitação prende-se à proposição já persistida (FK). Por isso vem
+            # depois de salvar as proposições, e só para as que passaram o portão.
+            for p in prop.prata.aprovados:
+                rt = rodada_tramitacoes(
+                    cliente_http, p["id_fonte"],
+                    canario_validado=canario_validado,
+                    linha_base=base.tramitacoes,
+                    politica=politica,
+                )
+                bronze_salvo += _sb(banco, rt.bronze)
+                if rt.estado in _PROCESSAVEL and rt.prata is not None:
+                    tramitacoes_salvas += salvar_tramitacoes(banco, rt.prata.aprovados)
 
     # -- 3c. Matérias do Senado (proposições, bicameral §17) -----------------
     # Mesma tabela `proposicao` (casa_origem='senado'), mesma janela móvel. Sob
@@ -513,7 +523,7 @@ def ingerir(
             cliente_http, data_inicio=m_ini.isoformat(), data_fim=m_fim.isoformat(),
             canario_validado=canario_validado, linha_base=base.materias_senado,
             politica=politica)
-        bronze_salvo += salvar_bronze(banco, rm.bronze, chave_id="Codigo")
+        bronze_salvo += _sb(banco, rm.bronze, chave_id="Codigo")
         if rm.estado in _PROCESSAVEL and rm.prata is not None:
             materias_senado_salvas = salvar_proposicoes(
                 banco, rm.prata.aprovados,
@@ -530,7 +540,7 @@ def ingerir(
                     cliente_http, id_proc, m["id_fonte"],
                     canario_validado=canario_validado,
                     linha_base=base.tramitacoes_senado, politica=politica)
-                bronze_salvo += salvar_bronze(banco, rts.bronze, chave_id="id")
+                bronze_salvo += _sb(banco, rts.bronze, chave_id="id")
                 if rts.estado in _PROCESSAVEL and rts.prata is not None:
                     tramitacoes_senado_salvas += salvar_tramitacoes(
                         banco, rts.prata.aprovados,
@@ -545,7 +555,7 @@ def ingerir(
         rev = rodada_eventos(
             cliente_http, data_inicio=ev_ini.isoformat(), data_fim=ev_fim.isoformat(),
             canario_validado=canario_validado, linha_base=base.eventos)
-        bronze_salvo += salvar_bronze(banco, rev.bronze)
+        bronze_salvo += _sb(banco, rev.bronze)
         if rev.estado in _PROCESSAVEL and rev.prata is not None:
             eventos_salvos += salvar_eventos(
                 banco, rev.prata.aprovados,
@@ -556,7 +566,7 @@ def ingerir(
             revs = rodada_eventos_senado(
                 cliente_http, f"{y}{m:02d}",
                 canario_validado=canario_validado, linha_base=base.eventos_senado)
-            bronze_salvo += salvar_bronze(banco, revs.bronze, chave_id="codigo")
+            bronze_salvo += _sb(banco, revs.bronze, chave_id="codigo")
             if revs.estado in _PROCESSAVEL and revs.prata is not None:
                 eventos_salvos += salvar_eventos(
                     banco, revs.prata.aprovados,
@@ -566,36 +576,37 @@ def ingerir(
                 m = 1
                 y += 1
 
-    # -- 4/5. Votações + votos nominais --------------------------------------
-    inicio, fim = janela.intervalo(ate)
-    vot = rodada_votacoes(
-        cliente_http,
-        data_inicio=inicio.isoformat(), data_fim=fim.isoformat(),
-        canario_validado=canario_validado,
-        linha_base=base.votacoes,
-        lookup=lookup,
-        politica=politica,
-    )
-    bronze_salvo += salvar_bronze(banco, vot.votacoes_bronze)
-    # Bronze das outras duas requisições da área (§3.1, preservação completa):
-    # o detalhe de cada votação (id = id da votação) e os votos (id COMPOSTO
-    # votação:deputado — o voto não tem id de fonte próprio).
-    bronze_salvo += salvar_bronze(banco, vot.detalhes_bronze)
-    for vid, votos_bronze in vot.votos_bronze.items():
-        bronze_salvo += salvar_bronze(
-            banco, votos_bronze,
-            id_na_fonte_de=lambda r, vid=vid: (
-                f"{vid}:{(r.payload.get('deputado_') or {}).get('id')}"
-            ),
-        )
+    # -- 4/5. Votações + votos nominais (Câmara) — gated ---------------------
     votacoes_salvas = 0
     votos_salvos = 0
-    if vot.estado in _PROCESSAVEL and vot.votacoes_prata is not None:
-        votacoes_salvas = salvar_votacoes(banco, vot.votacoes_prata.aprovados)
-        for votacao_id_fonte, resultado_votos in vot.nominais.items():
-            votos_salvos += salvar_votos_nominais(
-                banco, votacao_id_fonte, resultado_votos.resolvidos
+    vot = None
+    if coletar_votacoes:
+        inicio, fim = janela.intervalo(ate)
+        vot = rodada_votacoes(
+            cliente_http,
+            data_inicio=inicio.isoformat(), data_fim=fim.isoformat(),
+            canario_validado=canario_validado,
+            linha_base=base.votacoes,
+            lookup=lookup,
+            politica=politica,
+        )
+        bronze_salvo += _sb(banco, vot.votacoes_bronze)
+        # Bronze das outras duas requisições da área (§3.1): o detalhe de cada
+        # votação e os votos (id COMPOSTO votação:deputado — voto não tem id).
+        bronze_salvo += _sb(banco, vot.detalhes_bronze)
+        for vid, votos_bronze in vot.votos_bronze.items():
+            bronze_salvo += _sb(
+                banco, votos_bronze,
+                id_na_fonte_de=lambda r, vid=vid: (
+                    f"{vid}:{(r.payload.get('deputado_') or {}).get('id')}"
+                ),
             )
+        if vot.estado in _PROCESSAVEL and vot.votacoes_prata is not None:
+            votacoes_salvas = salvar_votacoes(banco, vot.votacoes_prata.aprovados)
+            for votacao_id_fonte, resultado_votos in vot.nominais.items():
+                votos_salvos += salvar_votos_nominais(
+                    banco, votacao_id_fonte, resultado_votos.resolvidos
+                )
 
     # -- 5b. Votações + votos nominais do Senado (bicameral §10/§5.2) ---------
     # Placar e nominais vêm inline do /votacao (substituto). Resolve o senador
@@ -608,7 +619,7 @@ def ingerir(
             cliente_http, data_inicio=vs_ini.isoformat(), data_fim=vs_fim.isoformat(),
             canario_validado=canario_validado, linha_base=base.votacoes_senado,
             lookup=lookup, politica=politica)
-        bronze_salvo += salvar_bronze(banco, rvs.bronze, chave_id="codigoSessaoVotacao")
+        bronze_salvo += _sb(banco, rvs.bronze, chave_id="codigoSessaoVotacao")
         if rvs.estado in _PROCESSAVEL and rvs.votacoes_prata is not None:
             votacoes_senado_salvas = salvar_votacoes(
                 banco, rvs.votacoes_prata.aprovados,
@@ -648,5 +659,5 @@ def ingerir(
         votacoes_salvas=votacoes_salvas,
         votos_salvos=votos_salvos,
         bronze_salvo=bronze_salvo,
-        placar_violacoes=vot.placar_violacoes,
+        placar_violacoes=vot.placar_violacoes if vot else {},
     )
