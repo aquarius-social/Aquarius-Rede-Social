@@ -84,9 +84,11 @@ class TestConstruirVinculos(unittest.TestCase):
         vs = construir_vinculos_senado([m], "5672")
         self.assertEqual([v["partido_sigla_fonte"] for v in vs], ["REPUBLICANOS"])
 
-    def test_suplente(self):
+    def test_suplente_e_pulado(self):
+        """Suplente (roster) não rende vínculo por ora: exigiria titular_profile_id
+        + vigência de exercício real (§6.4, constraint vinculo_suplente_coerente)."""
         vs = construir_vinculos_senado([_mandato(part="1º Suplente")], "5672")
-        self.assertEqual(vs[0]["ocupacao"], "suplente_em_exercicio")
+        self.assertEqual(vs, [])
 
 
 class TestRodada(unittest.TestCase):

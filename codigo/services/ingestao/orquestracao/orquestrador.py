@@ -335,9 +335,14 @@ def ingerir(
                 politica=politica)
             bronze_salvo += salvar_bronze(banco, rms.bronze, chave_id="CodigoMandato")
             if rms.estado in _PROCESSAVEL and rms.vinculos:
-                vinculos_senado_salvos += salvar_vinculos_temporais(
-                    banco, rms.vinculos, lookup, lookup_partido=lookup_partido,
-                    source="senado.mandatos", source_url=BASE_SENADO)
+                # Resiliência: um vínculo incoerente de UM senador (constraint do
+                # banco) não pode derrubar a rodada inteira — pula aquele e segue.
+                try:
+                    vinculos_senado_salvos += salvar_vinculos_temporais(
+                        banco, rms.vinculos, lookup, lookup_partido=lookup_partido,
+                        source="senado.mandatos", source_url=BASE_SENADO)
+                except Exception as e:  # noqa: BLE001
+                    print(f"  [vínculo senado pulado: {s.get('id_fonte')} — {e}]")
 
     # -- 2c-senado. Despesas CEAPS do Senado (Área A) — CSV por exercício -----
     # Fonte CSV (não JSON), resolvida por NOME. Constrói o mapa nome→perfil dos

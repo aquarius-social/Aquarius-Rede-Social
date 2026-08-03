@@ -98,6 +98,15 @@ def construir_vinculos_senado(
         leg = prim.get("NumeroLegislatura")
         if not m_ini or not uf:
             continue
+        # SÓ TITULARES rendem vínculo aqui. O roster completo (245) inclui
+        # suplentes que NUNCA sentaram — cujo "mandato" cobriria a legislatura
+        # inteira, dado incorreto. E um `suplente_em_exercicio` exige
+        # `titular_profile_id` + vigência = período REAL de exercício (constraint
+        # `vinculo_suplente_coerente`, §6.4). Fazer isso direito (resolver o
+        # titular pela lista `Titular` e clipar aos `Exercicios`) é refinamento
+        # próprio; até lá, o suplente é pulado — degradação honesta.
+        if ocup != "titular":
+            continue
 
         partidos = _como_lista((m.get("Partidos") or {}).get("Partido"))
         periodos: list[tuple[str, str | None, str | None]] = []
