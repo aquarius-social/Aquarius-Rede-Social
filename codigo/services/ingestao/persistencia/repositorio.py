@@ -71,6 +71,23 @@ class ClienteBanco(Protocol):
 # Bronze — imutável, insert ignorando conflito
 # -----------------------------------------------------------------------------
 
+def _upsert_lote(
+    cliente: ClienteBanco, tabela: str, linhas: list[dict], *, conflito: str
+) -> int:
+    """Upsert de MUITAS linhas numa chamada (o adaptador loteia por baixo).
+    Deduplica por chave de conflito — a última vence — porque o upsert em lote do
+    Postgres recusa a mesma chave duas vezes na mesma requisição. Devolve quantas
+    linhas DISTINTAS foram enviadas. Corta o nº de requisições de milhares para
+    poucas (essencial no backfill histórico; ver supabase_adapter)."""
+    cols = [c.strip() for c in conflito.split(",")]
+    unicos: dict[tuple, dict] = {}
+    for linha in linhas:
+        unicos[tuple(linha.get(c) for c in cols)] = linha
+    if unicos:
+        cliente.upsert(tabela, list(unicos.values()), conflito=conflito)
+    return len(unicos)
+
+
 def salvar_bronze(
     cliente: ClienteBanco,
     registros: Iterable[Any],
@@ -464,18 +481,21 @@ def salvar_discursos(
     autor por `id_externo` (sistema='camara'|'senado') antes de gravar — sem o
     perfil ingerido, o discurso é pulado (integridade referencial §6), não
     inventado. Upsert por (casa, id_fonte)."""
-    n = 0
+    cache: dict[tuple, str | None] = {}
+    linhas: list[dict] = []
     for d in aprovados:
-        perfil_id = lookup(d["sistema"], d["parlamentar_id_fonte"])
+        chave = (d["sistema"], d["parlamentar_id_fonte"])
+        if chave not in cache:
+            cache[chave] = lookup(*chave)
+        perfil_id = cache[chave]
         if perfil_id is None:
             continue
         linha = {c: d.get(c) for c in _COLS_DISCURSO}
         linha["profile_id"] = perfil_id
         linha["source"] = source
         linha["source_url"] = source_url
-        cliente.upsert("discurso", [linha], conflito="casa,id_fonte")
-        n += 1
-    return n
+        linhas.append(linha)
+    return _upsert_lote(cliente, "discurso", linhas, conflito="casa,id_fonte")
 
 
 def _daterange(inicio: str, fim: str | None) -> str:
@@ -549,21 +569,21 @@ def salvar_proposicoes(
     source: str = "camara.proposicoes",
     source_url: str = BASE_CAMARA,
 ) -> int:
-    for p in aprovados:
-        cliente.upsert("proposicao", [{
-            "casa_origem": p["casa_origem"],
-            "id_na_fonte": p["id_fonte"],
-            "tipo": p["tipo"],
-            "numero": p["numero"],
-            "ano": p["ano"],
-            "identificador": p["identificador"],
-            "ementa": p["ementa"],
-            "situacao": p.get("situacao"),
-            "data_apresentacao": _data(p.get("data_apresentacao")),
-            "source": source,
-            "source_url": source_url,
-        }], conflito="casa_origem,id_na_fonte")
-    return len(aprovados)
+    linhas = [{
+        "casa_origem": p["casa_origem"],
+        "id_na_fonte": p["id_fonte"],
+        "tipo": p["tipo"],
+        "numero": p["numero"],
+        "ano": p["ano"],
+        "identificador": p["identificador"],
+        "ementa": p["ementa"],
+        "situacao": p.get("situacao"),
+        "data_apresentacao": _data(p.get("data_apresentacao")),
+        "source": source,
+        "source_url": source_url,
+    } for p in aprovados]
+    return _upsert_lote(cliente, "proposicao", linhas,
+                        conflito="casa_origem,id_na_fonte")
 
 
 # -----------------------------------------------------------------------------
@@ -581,12 +601,16 @@ def salvar_despesas(
     """Persiste despesas da cota parlamentar. Resolve `perfil_id` pelo lookup de
     id_externo (mesmo dos votos); sem o parlamentar ingerido, pula sem inventar.
     Upsert por (perfil_id, cod_documento, parcela)."""
-    salvas = 0
+    cache: dict[str, str | None] = {}   # lookup uma vez por deputado (não por linha)
+    linhas: list[dict] = []
     for d in aprovados:
-        perfil_id = lookup("camara", d["deputado_id_fonte"])
+        did = d["deputado_id_fonte"]
+        if did not in cache:
+            cache[did] = lookup("camara", did)
+        perfil_id = cache[did]
         if perfil_id is None:
             continue
-        cliente.upsert("despesa", [{
+        linhas.append({
             "perfil_id": perfil_id,
             "ano": d["ano"], "mes": d["mes"],
             "tipo_despesa": d.get("tipo_despesa"),
@@ -604,9 +628,9 @@ def salvar_despesas(
             "fornecedor_cnpj_cpf": d.get("fornecedor_cnpj_cpf"),
             "url_documento": d.get("url_documento"),
             "source": source, "source_url": source_url,
-        }], conflito="perfil_id,cod_documento,parcela")
-        salvas += 1
-    return salvas
+        })
+    return _upsert_lote(cliente, "despesa", linhas,
+                        conflito="perfil_id,cod_documento,parcela")
 
 
 def salvar_despesas_senado(
@@ -621,12 +645,16 @@ def salvar_despesas_senado(
     NOME (a fonte não traz código): `lookup_senador(nome)` → profile_id (uuid).
     Sem perfil resolvido, pula (§6, não inventa). Upsert por (perfil_id,
     cod_documento, parcela) — parcela=0 no Senado torna a chave efetiva."""
-    salvas = 0
+    cache: dict[str, str | None] = {}
+    linhas: list[dict] = []
     for d in aprovados:
-        perfil_id = lookup_senador(d.get("senador_nome"))
+        nome = d.get("senador_nome")
+        if nome not in cache:
+            cache[nome] = lookup_senador(nome)
+        perfil_id = cache[nome]
         if perfil_id is None:
             continue
-        cliente.upsert("despesa", [{
+        linhas.append({
             "perfil_id": perfil_id,
             "ano": d["ano"], "mes": d["mes"],
             "tipo_despesa": d.get("tipo_despesa"),
@@ -642,9 +670,9 @@ def salvar_despesas_senado(
             "fornecedor_cnpj_cpf": d.get("fornecedor_cnpj_cpf"),
             "url_documento": d.get("url_documento"),
             "source": source, "source_url": source_url,
-        }], conflito="perfil_id,cod_documento,parcela")
-        salvas += 1
-    return salvas
+        })
+    return _upsert_lote(cliente, "despesa", linhas,
+                        conflito="perfil_id,cod_documento,parcela")
 
 
 # -----------------------------------------------------------------------------
@@ -662,16 +690,19 @@ def salvar_tramitacoes(
     uuid; sem a proposição persistida, não há a quem prender — pula sem inventar.
     Upsert por (proposicao_id, sequencia), a constraint `tramitacao_unica_por_seq`.
     """
-    salvas = 0
+    cache: dict[tuple, str | None] = {}   # resolve a proposição uma vez, não por linha
+    linhas: list[dict] = []
     for t in aprovados:
-        prop = cliente.selecionar_um(
-            "proposicao",
-            {"casa_origem": t["casa"], "id_na_fonte": t["proposicao_id_fonte"]},
-        )
-        if prop is None:
+        chave = (t["casa"], t["proposicao_id_fonte"])
+        if chave not in cache:
+            prop = cliente.selecionar_um(
+                "proposicao", {"casa_origem": chave[0], "id_na_fonte": chave[1]})
+            cache[chave] = prop["id"] if prop else None
+        proposicao_id = cache[chave]
+        if proposicao_id is None:
             continue
-        cliente.upsert("tramitacao", [{
-            "proposicao_id": prop["id"],
+        linhas.append({
+            "proposicao_id": proposicao_id,
             "sequencia": t["sequencia"],
             "data_hora": t["data_hora"],
             "orgao_sigla": t.get("orgao_sigla"),
@@ -679,9 +710,9 @@ def salvar_tramitacoes(
             "despacho": t.get("despacho"),
             "source": source,
             "source_url": source_url,
-        }], conflito="proposicao_id,sequencia")
-        salvas += 1
-    return salvas
+        })
+    return _upsert_lote(cliente, "tramitacao", linhas,
+                        conflito="proposicao_id,sequencia")
 
 
 # -----------------------------------------------------------------------------

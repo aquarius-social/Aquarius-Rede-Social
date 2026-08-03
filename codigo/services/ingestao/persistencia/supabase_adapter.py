@@ -29,28 +29,70 @@ Mapeamento para a API do PostgREST/supabase-py v2:
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+import time
+from typing import Any, Callable, Sequence
 
 # Chave de conflito do bronze (constraint `bronze_unico_por_coleta`). O único
 # uso de `inserir_ignorando_conflito` é a persistência de bronze.
 BRONZE_CONFLITO = "fonte,id_na_fonte,hash_conteudo"
 
+# Tamanho do lote de upsert. O PostgREST aceita muitas linhas por requisição;
+# lotear corta drasticamente o nº de requisições (uma ingestão histórica faz
+# milhares de linhas por área) — o que evita esgotar a conexão HTTP/2.
+LOTE_UPSERT = 500
+
+# Erros de TRANSPORTE (não de dados): a conexão HTTP/2 do supabase-py é encerrada
+# pelo servidor após muitos streams; a próxima chamada reabre. Retry só para
+# estes — erro de constraint (dado) sobe na hora para quem chama tratar.
+_ERROS_CONEXAO = frozenset({
+    "RemoteProtocolError", "ConnectError", "ConnectTimeout", "ReadError",
+    "ReadTimeout", "WriteError", "PoolTimeout", "ConnectionTerminated",
+})
+
+
+def _e_erro_conexao(e: Exception) -> bool:
+    if type(e).__name__ in _ERROS_CONEXAO:
+        return True
+    txt = str(e)
+    return "ConnectionTerminated" in txt or "Server disconnected" in txt
+
+
+def _com_retry(fn: Callable[[], Any], *, tentativas: int = 5, espera: float = 1.0) -> Any:
+    """Executa `fn`, repetindo só em erro de conexão (com backoff). Outros erros
+    (constraint, etc.) sobem imediatamente."""
+    ultima: Exception | None = None
+    for i in range(tentativas):
+        try:
+            return fn()
+        except Exception as e:  # noqa: BLE001
+            if not _e_erro_conexao(e):
+                raise
+            ultima = e
+            time.sleep(espera * (i + 1))
+    assert ultima is not None
+    raise ultima
+
 
 class BancoSupabase:
     """Implementa `ClienteBanco` sobre um cliente supabase-py injetado."""
 
-    def __init__(self, client: Any):
+    def __init__(self, client: Any, *, lote: int = LOTE_UPSERT):
         self._c = client
+        self._lote = lote
 
     def upsert(
         self, tabela: str, linhas: list[dict], *, conflito: str
     ) -> list[dict]:
-        resp = (
-            self._c.table(tabela)
-            .upsert(list(linhas), on_conflict=conflito)
-            .execute()
-        )
-        return list(getattr(resp, "data", None) or [])
+        linhas = list(linhas)
+        if not linhas:
+            return []
+        out: list[dict] = []
+        for i in range(0, len(linhas), self._lote):
+            lote = linhas[i:i + self._lote]
+            resp = _com_retry(lambda l=lote: (
+                self._c.table(tabela).upsert(l, on_conflict=conflito).execute()))
+            out.extend(list(getattr(resp, "data", None) or []))
+        return out
 
     def inserir_ignorando_conflito(
         self, tabela: str, linhas: Sequence[dict]
@@ -58,23 +100,20 @@ class BancoSupabase:
         linhas = list(linhas)
         if not linhas:
             return 0
-        resp = (
-            self._c.table(tabela)
-            .upsert(linhas, on_conflict=BRONZE_CONFLITO, ignore_duplicates=True)
-            .execute()
-        )
-        # Com ignore-duplicates, a resposta traz apenas as linhas inseridas —
-        # as ignoradas ficam de fora. len = quantas de fato entraram.
-        return len(getattr(resp, "data", None) or [])
+        total = 0
+        for i in range(0, len(linhas), self._lote):
+            lote = linhas[i:i + self._lote]
+            resp = _com_retry(lambda l=lote: (
+                self._c.table(tabela)
+                .upsert(l, on_conflict=BRONZE_CONFLITO, ignore_duplicates=True)
+                .execute()))
+            # Com ignore-duplicates, a resposta traz só as linhas inseridas.
+            total += len(getattr(resp, "data", None) or [])
+        return total
 
     def selecionar_um(self, tabela: str, onde: dict) -> dict | None:
-        resp = (
-            self._c.table(tabela)
-            .select("*")
-            .match(dict(onde))
-            .limit(1)
-            .execute()
-        )
+        resp = _com_retry(lambda: (
+            self._c.table(tabela).select("*").match(dict(onde)).limit(1).execute()))
         dados = list(getattr(resp, "data", None) or [])
         return dados[0] if dados else None
 
