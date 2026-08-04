@@ -513,11 +513,14 @@ def ingerir(
                     tramitacoes_salvas += salvar_tramitacoes(banco, rt.prata.aprovados)
 
     # -- 3c. Matérias do Senado (proposições, bicameral §17) -----------------
-    # Mesma tabela `proposicao` (casa_origem='senado'), mesma janela móvel. Sob
-    # o mesmo gate do Senado. Tramitações/votações do Senado são passos próprios.
+    # Mesma tabela `proposicao` (casa_origem='senado'), mesma janela móvel.
+    # Gate DUPLO: `coletar_senado` E `coletar_proposicoes` — desempacota o
+    # legislativo do Senado da coleta de senadores+CEAPS. Assim a base de dinheiro
+    # (senado ligado, proposições desligadas) traz só senadores + despesas, sem
+    # arrastar matérias/tramitações do Senado (que comeriam o Free).
     materias_senado_salvas = 0
     tramitacoes_senado_salvas = 0
-    if coletar_senado:
+    if coletar_senado and coletar_proposicoes:
         m_ini, m_fim = janela.intervalo(ate)
         rm = rodada_materias(
             cliente_http, data_inicio=m_ini.isoformat(), data_fim=m_fim.isoformat(),
@@ -611,9 +614,11 @@ def ingerir(
     # -- 5b. Votações + votos nominais do Senado (bicameral §10/§5.2) ---------
     # Placar e nominais vêm inline do /votacao (substituto). Resolve o senador
     # pelo mesmo lookup (id_externo sistema='senado'). Secreta não tem nominal.
+    # Gate DUPLO: `coletar_senado` E `coletar_votacoes` — mesmo desempacotamento
+    # das matérias: a base de dinheiro (votações off) não puxa os votos do Senado.
     votacoes_senado_salvas = votos_senado_salvos = 0
     placar_violacoes_senado: dict = {}
-    if coletar_senado:
+    if coletar_senado and coletar_votacoes:
         vs_ini, vs_fim = janela.intervalo(ate)
         rvs = rodada_votacoes_senado(
             cliente_http, data_inicio=vs_ini.isoformat(), data_fim=vs_fim.isoformat(),

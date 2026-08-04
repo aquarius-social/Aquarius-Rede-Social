@@ -396,6 +396,32 @@ class TestOrquestrador(unittest.TestCase):
         self.assertEqual(ext_sen[0]["profile_id"], ana_camara["profile_id"])
         self.assertEqual(ext_sen[0]["metodo"], "convergencia")
 
+    def test_config_dinheiro_senado_traz_ceaps_sem_legislativo(self):
+        """Desempacotamento CEAPS: com o Senado LIGADO mas proposições/votações
+        DESLIGADAS (a base de dinheiro no Free), entram senadores + CEAPS e NÃO
+        entram matérias nem votações do Senado — o gate duplo em ação."""
+        http = _mundo()
+        banco = FakeBanco()
+        ceaps_csv = (
+            '"ANO";"MES";"SENADOR";"TIPO_DESPESA";"CNPJ_CPF";"FORNECEDOR";'
+            '"DOCUMENTO";"DATA";"DETALHAMENTO";"VALOR_REEMBOLSADO";"COD_DOCUMENTO"\n'
+            '"2023";"6";"ANA SENADORA";"Aluguel";"00.0/0001-00";"X";"1";'
+            '"10/06/2023";"";"1.000,00";"555"\n')
+        r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
+                    id_legislatura=57, coletar_senado=True,
+                    coletar_proposicoes=False, coletar_votacoes=False,
+                    baixar_ceaps=lambda url: ceaps_csv, anos_ceaps=[2023])
+        # dinheiro do Senado ENTRA: senador resolvido (§17) + CEAPS
+        self.assertEqual(r.despesas_senado_salvas, 1)
+        self.assertEqual(r.senadores_vinculados, 1)
+        # legislativo do Senado NÃO entra (desempacotado do coletar_senado)
+        self.assertEqual(r.materias_senado_salvas, 0)
+        self.assertEqual(r.votacoes_senado_salvas, 0)
+        self.assertEqual(r.votos_senado_salvos, 0)
+        self.assertNotIn("votacao", banco.tabelas)
+        casas_prop = {p["casa_origem"] for p in banco.tabelas.get("proposicao", [])}
+        self.assertNotIn("senado", casas_prop)
+
     def test_materias_do_senado_entram_na_tabela_proposicao(self):
         """Área B bicameral: a matéria do Senado cai na MESMA tabela `proposicao`
         (casa_origem='senado'), ao lado das proposições da Câmara."""
