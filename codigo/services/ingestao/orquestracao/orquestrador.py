@@ -67,6 +67,7 @@ from persistencia.repositorio import (
     salvar_partidos,
     salvar_perfis_coletivos,
     salvar_proposicoes,
+    resolver_autores_emenda_por_nome,
     salvar_senadores,
     salvar_tramitacoes,
     salvar_vinculos_temporais,
@@ -138,6 +139,8 @@ class ResultadoIngestao:
     # Curadoria autor-de-emenda → perfil (§6.3): resolvidos por braço.
     autores_camara_resolvidos: int = 0
     autores_senado_resolvidos: int = 0
+    # Fallback por nome (deputado/senador fora do mapa curado) — com_ressalva.
+    autores_emenda_por_nome: int = 0
     # Senado (§17): perfis novos, os vinculados a um deputado (mesma pessoa), e
     # os marcados pendentes de conferência (match por 1 sinal só).
     senadores_novos: int = 0
@@ -333,6 +336,37 @@ def ingerir(
                 _mapa_sen[normalizar(s["nome"])] = pid
         lookup_senador_nome = lambda nome: _mapa_sen.get(normalizar(nome or ""))
 
+    # Mapa nome→perfil UNIFICADO (deputados + senadores) para resolver autor de
+    # emenda por NOME (§6.3, fallback do mapa curado, que não cobre todos). Nome
+    # que colide entre dois parlamentares vira AMBÍGUO → não resolve (homônimo
+    # não se atribui, §6.3). Deputados sempre entram; senadores quando ingeridos.
+    _mapa_parl: dict[str, str] = {}
+    _parl_ambiguos: set[str] = set()
+
+    def _reg_nome_parl(nome, pid):
+        if not pid or not nome:
+            return
+        chave = normalizar(nome)
+        if not chave:
+            return
+        anterior = _mapa_parl.get(chave)
+        if anterior is not None and anterior != pid:
+            _parl_ambiguos.add(chave)   # dois perfis, mesmo nome → ambíguo
+        else:
+            _mapa_parl[chave] = pid
+
+    for _c in candidatos_dep:
+        _reg_nome_parl(_c.get("nome"), _c.get("profile_id"))
+    if senadores_prata is not None:
+        for _s in senadores_prata.aprovados:
+            _reg_nome_parl(_s.get("nome"), lookup("senado", _s["id_fonte"]))
+
+    def lookup_parlamentar_nome(nome):
+        chave = normalizar(nome or "")
+        if not chave or chave in _parl_ambiguos:
+            return None
+        return _mapa_parl.get(chave)
+
     # -- 2s. Mandato histórico do Senado → vinculo_temporal (§4/§17) ----------
     # Depois do lookup (o senador já tem id_externo). Uma rodada por senador
     # (81, endpoint estável). Períodos partidários acurados — corrige o §4
@@ -438,6 +472,7 @@ def ingerir(
     # Autor resolvido por id_externo 'autor_orcamentario' (§6.3) — null enquanto
     # o mapa de autores não é carregado por curadoria (furo conhecido).
     emendas_salvas = 0
+    autores_emenda_por_nome = 0
     if cliente_transparencia is not None and anos_emendas:
         for ano in anos_emendas:
             re_ = rodada_emendas(
@@ -447,6 +482,11 @@ def ingerir(
             bronze_salvo += _sb(
                 banco, re_.bronze, chave_id="codigoEmenda")
             if re_.estado in _PROCESSAVEL and re_.prata is not None:
+                # Fallback §6.3: autor que o mapa curado não pegou, casado por
+                # nome (com_ressalva + pendente). ANTES de salvar_emendas, para
+                # que o id_externo já exista quando a emenda resolver o autor.
+                autores_emenda_por_nome += resolver_autores_emenda_por_nome(
+                    banco, re_.prata.aprovados, lookup, lookup_parlamentar_nome)
                 emendas_salvas += salvar_emendas(banco, re_.prata.aprovados, lookup)
 
     # -- 2e. Discursos das DUAS casas (Área G) — por parlamentar, na janela ---
@@ -646,6 +686,7 @@ def ingerir(
         vinculos_salvos=vinculos_salvos,
         despesas_salvas=despesas_salvas,
         emendas_salvas=emendas_salvas,
+        autores_emenda_por_nome=autores_emenda_por_nome,
         autores_camara_resolvidos=autores_camara_resolvidos,
         autores_senado_resolvidos=autores_senado_resolvidos,
         senadores_novos=senadores_novos,

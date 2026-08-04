@@ -409,6 +409,62 @@ _COLS_EMENDA = (
 )
 
 
+def _autor_emenda_coletivo(nome: str) -> bool:
+    """Autoria coletiva (bancada estadual, comissão) NÃO tem um parlamentar autor
+    único — fica sem perfil por design (§6.3, não se inventa 'bancada')."""
+    n = (nome or "").strip().upper()
+    return n.startswith("BANCADA") or n.startswith("COMISS")
+
+
+def resolver_autores_emenda_por_nome(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    lookup,
+    lookup_parlamentar_nome,
+) -> int:
+    """Fallback §6.3 do mapa curado: autores de emenda que o mapa NÃO resolveu,
+    casados por NOME contra os parlamentares ingeridos (deputado OU senador).
+
+    Materializa `id_externo(autor_orcamentario → perfil)` com grau
+    'com_ressalva' + `pendente_conferencia` — match por nome é 1 sinal, e §5.3
+    manda não afirmar o que um sinal isolado não sustenta. `salvar_emendas`
+    (chamado depois) resolve `autor_profile_id` por esse mesmo id_externo.
+
+    Fica SEM atribuição (honesto): autoria coletiva (bancada/comissão), nome
+    ambíguo (homônimo — `lookup_parlamentar_nome` devolve None) e código que o
+    mapa curado já resolveu (2+ sinais, não se rebaixa). Idempotente."""
+    if lookup is None or lookup_parlamentar_nome is None:
+        return 0
+    vistos: set[str] = set()
+    novos: list[dict] = []
+    for e in aprovados:
+        cod = e.get("autor_codigo")
+        nome = e.get("autor_nome")
+        if not cod or not nome or cod in vistos:
+            continue
+        vistos.add(cod)
+        if _autor_emenda_coletivo(nome):
+            continue
+        if lookup("autor_orcamentario", cod) is not None:
+            continue  # o mapa curado já resolveu este código (não rebaixa)
+        pid = lookup_parlamentar_nome(nome)
+        if pid is None:
+            continue  # sem match ou ambíguo → fica null (§6.3)
+        novos.append({
+            "profile_id": pid,
+            "sistema": "autor_orcamentario",
+            "identificador": cod,
+            "metodo": "convergencia",
+            "grau": "com_ressalva",
+            "sinais": ["nome"],
+            "versao_regra": VERSAO_REGRA,
+            "pendente_conferencia": True,
+        })
+    if novos:
+        _upsert_lote(cliente, "id_externo", novos, conflito="sistema,identificador")
+    return len(novos)
+
+
 def salvar_emendas(
     cliente: ClienteBanco,
     aprovados: Sequence[dict],

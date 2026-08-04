@@ -353,6 +353,48 @@ class TestEmendas(unittest.TestCase):
         salvar_emendas(banco, [self._emenda()], lookup)
         self.assertEqual(banco.tabelas["emenda"][0]["autor_profile_id"], "P-CANZIANI")
 
+    def test_fallback_por_nome_resolve_individual_recusa_o_resto(self):
+        """§6.3 fallback: autor fora do mapa curado casa por NOME → id_externo
+        com_ressalva + pendente, e alimenta salvar_emendas. Recusa (fica null):
+        coletivo (bancada), ambíguo (homônimo → lookup None), e já-resolvido pelo
+        mapa (grau 'direto' NÃO é rebaixado)."""
+        from persistencia.repositorio import (
+            resolver_autores_emenda_por_nome, lookup_id_externo)
+        banco = FakeBanco()
+        # já resolvido pelo mapa curado (2 sinais) — não pode ser rebaixado
+        banco.tabelas.setdefault("id_externo", []).append({
+            "sistema": "autor_orcamentario", "identificador": "4034",
+            "profile_id": "P-CANZIANI", "grau": "direto"})
+        lookup = lookup_id_externo(banco)
+        lookup_nome = lambda nome: "P-ZUCCO" if (nome or "").strip().upper() == "ZUCCO" else None
+        emendas = [
+            {"codigo_emenda": "E1", "ano": 2024, "autor_codigo": "4484", "autor_nome": "ZUCCO"},
+            {"codigo_emenda": "E2", "ano": 2024, "autor_codigo": "7120",
+             "autor_nome": "BANCADA DO RIO DE JANEIRO"},
+            {"codigo_emenda": "E3", "ano": 2024, "autor_codigo": "5555",
+             "autor_nome": "FULANO HOMONIMO"},
+            {"codigo_emenda": "E4", "ano": 2024, "autor_codigo": "4034",
+             "autor_nome": "LUISA CANZIANI"},
+        ]
+        n = resolver_autores_emenda_por_nome(banco, emendas, lookup, lookup_nome)
+        self.assertEqual(n, 1)  # só o Zucco entrou
+
+        ext = {e["identificador"]: e for e in banco.tabelas["id_externo"]
+               if e["sistema"] == "autor_orcamentario"}
+        self.assertEqual(set(ext), {"4034", "4484"})       # bancada e homônimo fora
+        self.assertEqual(ext["4484"]["grau"], "com_ressalva")
+        self.assertTrue(ext["4484"]["pendente_conferencia"])
+        self.assertEqual(ext["4484"]["sinais"], ["nome"])
+        self.assertEqual(ext["4034"]["grau"], "direto")    # NÃO rebaixado
+
+        # a chain: salvar_emendas resolve o autor pelo id_externo recém-criado
+        salvar_emendas(banco, emendas, lookup)
+        por_cod = {e["codigo_emenda"]: e for e in banco.tabelas["emenda"]}
+        self.assertEqual(por_cod["E1"]["autor_profile_id"], "P-ZUCCO")   # nome
+        self.assertEqual(por_cod["E4"]["autor_profile_id"], "P-CANZIANI")  # mapa
+        self.assertIsNone(por_cod["E2"]["autor_profile_id"])   # bancada → null
+        self.assertIsNone(por_cod["E3"]["autor_profile_id"])   # homônimo → null
+
 
 def _senador(cod="5672", nome="Alan Rick", civil="Alan Rick Miranda",
              nasc="1976-10-23", mun="Rio Branco", uf_nasc="AC",

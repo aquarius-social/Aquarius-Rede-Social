@@ -111,6 +111,7 @@ def main() -> None:
                 f"proposicoes={r.proposicoes_salvas} votos={r.votos_salvos} "
                 f"despesas={r.despesas_salvas} discursos={r.discursos_salvos} "
                 f"eventos={r.eventos_salvos} emendas={r.emendas_salvas} "
+                f"autores_nome={r.autores_emenda_por_nome} "
                 f"materias_sen={r.materias_senado_salvas} "
                 f"votos_sen={r.votos_senado_salvos} despesas_sen={r.despesas_senado_salvas} "
                 f"bronze={r.bronze_salvo}",
