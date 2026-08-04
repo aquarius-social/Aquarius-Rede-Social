@@ -96,6 +96,7 @@ def main() -> None:
                 cliente_transparencia=cliente_transp,
                 anos_emendas=[ano],
                 coletar_senado=_flag("AQUARIUS_SENADO"),
+                coletar_despesas_senado=_flag("AQUARIUS_CEAPS"),
                 coletar_discursos=_flag("AQUARIUS_DISCURSOS"),
                 coletar_eventos=_flag("AQUARIUS_EVENTOS"),
                 persistir_bronze=_flag("AQUARIUS_BRONZE"),

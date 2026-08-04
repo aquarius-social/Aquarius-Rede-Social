@@ -396,6 +396,27 @@ class TestOrquestrador(unittest.TestCase):
         self.assertEqual(ext_sen[0]["profile_id"], ana_camara["profile_id"])
         self.assertEqual(ext_sen[0]["metodo"], "convergencia")
 
+    def test_ceaps_off_ainda_ingere_senadores_para_resolver_autor(self):
+        """Fase 1 da curadoria de autor-senador: com CEAPS desligado
+        (coletar_despesas_senado=False) mas Senado ligado, os senadores AINDA
+        entram — é o que mantém o `lookup_senador_nome` vivo para resolver os
+        autores de emenda —, e nenhuma despesa de CEAPS é gravada."""
+        http = _mundo()
+        banco = FakeBanco()
+        r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
+                    id_legislatura=57, coletar_senado=True,
+                    coletar_despesas_senado=False,
+                    baixar_ceaps=lambda url: "", anos_ceaps=[2023])
+        # CEAPS NÃO grava (o flag desligou o passo)
+        self.assertEqual(r.despesas_senado_salvas, 0)
+        ceaps = [d for d in banco.tabelas.get("despesa", [])
+                 if d.get("source") == "senado.ceaps"]
+        self.assertEqual(ceaps, [])
+        # mas o senador entrou e foi unificado (§17) — braço de resolução vivo
+        self.assertEqual(r.senadores_vinculados, 1)
+        self.assertEqual(len([e for e in banco.tabelas["id_externo"]
+                              if e["sistema"] == "senado"]), 1)
+
     def test_config_dinheiro_senado_traz_ceaps_sem_legislativo(self):
         """Desempacotamento CEAPS: com o Senado LIGADO mas proposições/votações
         DESLIGADAS (a base de dinheiro no Free), entram senadores + CEAPS e NÃO

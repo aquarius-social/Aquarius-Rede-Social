@@ -197,6 +197,9 @@ def ingerir(
     persistir_bronze: bool = True,
     coletar_proposicoes: bool = True,
     coletar_votacoes: bool = True,
+    # CEAPS do Senado é opt-out independente: permite re-rodar senadores+emendas
+    # (para resolver o autor-senador por nome) SEM re-churnar os 73k de CEAPS.
+    coletar_despesas_senado: bool = True,
     baixar_ceaps: "Callable[[str], str] | None" = None,
     anos_ceaps: list[int] | None = None,
     politica: PoliticaRetry = PoliticaRetry(),
@@ -356,8 +359,8 @@ def ingerir(
     # Fonte CSV (não JSON), resolvida por NOME. Constrói o mapa nome→perfil dos
     # senadores já ingeridos. Só roda com um fetcher (baixar_ceaps) + anos.
     despesas_senado_salvas = 0
-    if (coletar_senado and baixar_ceaps is not None and anos_ceaps
-            and lookup_senador_nome is not None):
+    if (coletar_senado and coletar_despesas_senado and baixar_ceaps is not None
+            and anos_ceaps and lookup_senador_nome is not None):
         for ano in anos_ceaps:
             rce = rodada_ceaps(
                 baixar_ceaps, ano, canario_validado=canario_validado,
