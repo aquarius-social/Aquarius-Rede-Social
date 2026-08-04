@@ -33,12 +33,23 @@ do `CLAUDE.md`.
   de 2025; autores fora dele ficam `null`, degradação declarada, não erro).
   Custou só ~5 MB/ano — emenda é fração do tamanho da despesa. Exige a chave
   pessoal `AQUARIUS_TRANSPARENCIA_KEY` (agora cadastrada).
-- **Combo de dinheiro público completo:** despesas/CEAP (708.170 lançamentos) +
-  emendas (19.444) — as duas frentes de "dinheiro público", o maior gap de
-  mercado, agora vivas no banco. Base enxuta (bronze/legislativo off) cabe no Free.
-- **Folga:** o combo fechou sob **~455 MB** de 500 (as emendas somaram só ~9 MB
-  aos 446 já medidos). O Pro (8 GB) fica reservado para quando o volume de
-  usuários/áreas pedir — não é gargalo agora.
+- **Despesas do Senado / CEAPS 2023–2026 (bicameral, §8/§17) concluído** —
+  **73.459 lançamentos** (18.328 / 21.182 / 23.385 / 10.564 por ano). Entraram via
+  o **desempacotamento CEAPS** (senado ligado, legislativo off — gate duplo
+  `coletar_senado AND coletar_proposicoes/votacoes`), estreando os 245 perfis de
+  senador no banco. **Débito conhecido:** o senador 5718 tem períodos de vínculo
+  sobrepostos na fonte → uma linha de `vinculo_temporal` recusada pela §4
+  (não-fatal; perfil e despesas OK; refinamento §4 pendente).
+- **Combo de dinheiro público BICAMERAL completo:** despesas/CEAP Câmara (708.170)
+  + Senado (73.459) + **emendas federais** 2023–2026 (19.444). As emendas **já
+  cobrem as duas casas na fonte** — o Portal da Transparência é federal, não
+  por-casa; emendas de senador já estão no banco (o que é fraco é a resolução
+  autor→perfil de senador, pois o mapa curado é da Câmara — melhorar é curadoria,
+  ~0 espaço, não ingestão). As duas frentes de dinheiro, nas duas casas — o maior
+  gap de mercado, vivo no banco.
+- **Free praticamente no teto:** banco em **476 MB de 500 (95%)**. Não cabe mais
+  ingestão em massa no Free — a próxima expansão (legislativo bicameral, bronze,
+  discursos) é território do **Pro** (8 GB). Money data no Free está maximizada.
 - **Persistência endurecida** (`supabase_adapter.py` + `repositorio.py`): upsert
   **em lote** (`LOTE_UPSERT=500`) + **retry** só de erros de conexão (com backoff)
   + **dedup-antes-do-lote**. Motivo real: o HTTP/2 do supabase-py encerra a conexão
