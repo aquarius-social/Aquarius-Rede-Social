@@ -410,10 +410,14 @@ _COLS_EMENDA = (
 
 
 def _autor_emenda_coletivo(nome: str) -> bool:
-    """Autoria coletiva (bancada estadual, comissão) NÃO tem um parlamentar autor
-    único — fica sem perfil por design (§6.3, não se inventa 'bancada')."""
+    """Autoria coletiva (bancada estadual, comissão, relator) NÃO tem um
+    parlamentar autor único — fica sem perfil por design (§6.3, não se inventa
+    'bancada'). A fonte abrevia comissão de duas formas: `COMISSÃO…` e `COM. …`
+    (com ponto) — ambas contam; `COM ` sem ponto NÃO, para não pegar um nome
+    próprio que comece com essas três letras."""
     n = (nome or "").strip().upper()
-    return n.startswith("BANCADA") or n.startswith("COMISS")
+    return (n.startswith("BANCADA") or n.startswith("COMISS")
+            or n.startswith("COM.") or n.startswith("RELATOR"))
 
 
 def resolver_autores_emenda_por_nome(

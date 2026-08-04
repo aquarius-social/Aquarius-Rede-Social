@@ -371,6 +371,8 @@ class TestEmendas(unittest.TestCase):
             {"codigo_emenda": "E1", "ano": 2024, "autor_codigo": "4484", "autor_nome": "ZUCCO"},
             {"codigo_emenda": "E2", "ano": 2024, "autor_codigo": "7120",
              "autor_nome": "BANCADA DO RIO DE JANEIRO"},
+            {"codigo_emenda": "E2b", "ano": 2024, "autor_codigo": "5041",
+             "autor_nome": "COM. DA SAUDE"},   # comissão abreviada → coletivo
             {"codigo_emenda": "E3", "ano": 2024, "autor_codigo": "5555",
              "autor_nome": "FULANO HOMONIMO"},
             {"codigo_emenda": "E4", "ano": 2024, "autor_codigo": "4034",
@@ -393,6 +395,7 @@ class TestEmendas(unittest.TestCase):
         self.assertEqual(por_cod["E1"]["autor_profile_id"], "P-ZUCCO")   # nome
         self.assertEqual(por_cod["E4"]["autor_profile_id"], "P-CANZIANI")  # mapa
         self.assertIsNone(por_cod["E2"]["autor_profile_id"])   # bancada → null
+        self.assertIsNone(por_cod["E2b"]["autor_profile_id"])  # comissão (COM.) → null
         self.assertIsNone(por_cod["E3"]["autor_profile_id"])   # homônimo → null
 
 
