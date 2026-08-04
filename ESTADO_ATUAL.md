@@ -40,6 +40,19 @@ do `CLAUDE.md`.
   senador no banco. **Débito conhecido:** o senador 5718 tem períodos de vínculo
   sobrepostos na fonte → uma linha de `vinculo_temporal` recusada pela §4
   (não-fatal; perfil e despesas OK; refinamento §4 pendente).
+- **Resolução de autor de emenda por nome (§6.3) — concluída.** O mapa curado
+  (628) não cobre todos, então um **braço de nome unificado** (deputado OU senador,
+  com guarda de ambiguidade/homônimo) casa o `autor_nome` da própria emenda contra
+  os parlamentares ingeridos, materializando `id_externo(autor_orcamentario)` com
+  grau `com_ressalva` + `pendente_conferencia` (nome = 1 sinal). Resultado nos 4
+  anos: **17.135/19.444 = 88% com autor**; 841 coletivas (bancada 740 + comissão
+  101 — a fonte abrevia comissão como `COM.`, agora filtrado como coletivo, `null`
+  correto). **Débito de curadoria (§6.3):** ~1.500 emendas (8%) são individuais cujo
+  nome não bate por igualdade EXATA (títulos/patentes/apelidos: "ZUCCO"=Coronel
+  Zucco, "DR. ALLAN GARCES") — a Metodologia manda NÃO auto-afirmar esses (match por
+  remoção de título é "detectar, não afirmar"; §6.3) e deixá-los para conferência
+  humana. É tarefa de curadoria (mapa por pessoa), não de código; ~0 impacto de
+  espaço. Base honesta: todo `null` tem razão (coletivo real ou pendente-humano).
 - **Combo de dinheiro público BICAMERAL completo:** despesas/CEAP Câmara (708.170)
   + Senado (73.459) + **emendas federais** 2023–2026 (19.444). As emendas **já
   cobrem as duas casas na fonte** — o Portal da Transparência é federal, não
