@@ -8,6 +8,39 @@ do `CLAUDE.md`.
 
 **Onda 0 — Fundação de identidade: concluída.**
 
+**Deploy real + base de dinheiro público: concluído (2026-08-04).**
+- Supabase **provisionado** (projeto `nqebfmyzchpkufsytvyf`), migrations 0001–0012
+  aplicadas, ingestão rodando **de verdade** contra o Postgres gerenciado (não é
+  mais só fake/duble — o adaptador concreto está em produção).
+- **Backfill de despesas/CEAP 2023–2026 (57ª legislatura) concluído** — **708.170
+  lançamentos** de cota parlamentar, **732 deputados** (titulares + suplentes que
+  assumiram), banco em **441 MB**. 2026 completo até a disponibilidade da fonte
+  (meses 1–7 + início do 8); a cauda decrescente reflete a **defasagem de reembolso
+  da CEAP** (o deputado protocola semanas depois), não corte de rede. Idempotente:
+  a tabela guarda a união de todos os runs, sem duplicar (chave
+  `perfil_id,cod_documento,parcela`).
+- **Estratégia caminho B (Free enxuto, dinheiro primeiro):** o Free do Supabase
+  (500 MB) obriga base enxuta. **Flags de área** em `run_backfill.py`
+  (`AQUARIUS_BRONZE/PROPOSICOES/VOTACOES/DISCURSOS/EVENTOS/SENADO/HISTORICO/
+  ENRIQUECER`, padrão LIGADO) desligam as áreas pesadas; a rodada de dinheiro roda
+  só deputados + despesas. **Bronze (JSON cru) era o maior peso** — o app lê da
+  camada OURO, não do bronze, então `AQUARIUS_BRONZE=0` corta storage sem perder
+  o produto.
+- **Folga apertada:** 441/500 MB (88% cheio). **Emendas** (o outro "dinheiro
+  público", Área F) provavelmente NÃO cabe junto dos 4 anos no Free — decisão
+  futura: enxugar anos OU subir para o Pro (8 GB). Emendas ainda pendente: exige a
+  chave gratuita `AQUARIUS_TRANSPARENCIA_KEY` (Portal da Transparência), que o
+  usuário ainda não cadastrou.
+- **Persistência endurecida** (`supabase_adapter.py` + `repositorio.py`): upsert
+  **em lote** (`LOTE_UPSERT=500`) + **retry** só de erros de conexão (com backoff)
+  + **dedup-antes-do-lote**. Motivo real: o HTTP/2 do supabase-py encerra a conexão
+  após ~20k streams — o upsert linha-a-linha esgotava (`ConnectionTerminated`). O
+  Postgres também recusa afetar a mesma chave de conflito 2× no mesmo lote → dedup
+  obrigatória. run_backfill tem **checkpoint por ano** (Ctrl+C e rerodar continua).
+- ⚠️ **Pendência de segurança:** a service/secret key circulou no chat durante os
+  testes e **precisa ser rotacionada** (Supabase → Settings → API Keys → revoke +
+  gerar nova). Não quebra o app (usa a `anon`).
+
 **Onda 1 — Ingestão da Câmara: em progresso.**
 - Proposições: coletor pronto, 27 testes. Campos conferidos contra a API viva
   (2026-07-29) — sem divergência.
@@ -222,7 +255,7 @@ cd codigo/services/ingestao
 py -m unittest discover -s . -t .
 ```
 
-Deve dar `Ran 300 tests` e `OK`. Se algum falhar, é o primeiro problema
+Deve dar `Ran 302 tests` e `OK`. Se algum falhar, é o primeiro problema
 a resolver, não seguir em frente.
 
 ```
@@ -273,9 +306,11 @@ Detalhado em `ANALISE-Metodologia-vs-Codigo.md` (itens V1–V4). Estado:
     não vista tende a devolver placar parcial ou `None` — degradação honesta,
     não invenção. "Quórum" NÃO é lido como total (conservador).
 
-Base de testes: **300 passando** (+17 dos discursos bicamerais: coletores da
+Base de testes: **302 passando** (+17 dos discursos bicamerais: coletores da
 Câmara e do Senado, portão, rodada com vazio-legítimo, persistência que resolve
-o autor pelas duas casas, e a prova ponta a ponta no orquestrador), sem rede.
+o autor pelas duas casas, a prova ponta a ponta no orquestrador; +2 das flags de
+área: fronteiras de `legislatura_do_ano` e a config enxuta que só grava dinheiro
+sem bronze/proposição/votação), sem rede.
 
 ### 3b. Coletor de deputados — primeiro passe ✅
 
@@ -311,10 +346,14 @@ Falta neste coletor (etapas próprias, não feitas):
   PII** (§3.5 — a view é a fronteira, já que RLS não corta coluna). É a camada
   que o app/Prometeus leem. Verificado: todas as colunas existem, nenhuma PII
   projetada. (SQL validado no deploy, como as demais migrations.)
-- **Deploy / infra operacional** — o que falta para a base ficar viva:
-  1. provisionar o projeto Supabase + aplicar migrations 0001–0007;
-  2. pôr `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` nos secrets do repo (aí o
-     agendador começa a rodar sozinho, 2×/dia).
+- **Deploy / infra operacional** — provisionamento **feito** (projeto Supabase
+  vivo, migrations 0001–0012 aplicadas, ingestão local rodando de verdade). O que
+  falta para o piloto automático:
+  1. **rotacionar a service key** que vazou no chat (ver marco 2026-08-04);
+  2. pôr `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` (a nova) nos secrets do repo (aí o
+     agendador `.github/workflows/ingestao.yml` roda sozinho, 2×/dia);
+  3. resolver o loader de `.env` para o usuário parar de colar chave na mão a cada
+     rodada.
 - **Linhagem de partidos (§4)** — siglas históricas (PMDB→MDB) e fusões
   (DEM/PSL→UNIÃO) precisam de `partido_sigla_historico` + `partido_linhagem`
   por curadoria; sem fonte de curadoria, o `partido_id` de períodos antigos
