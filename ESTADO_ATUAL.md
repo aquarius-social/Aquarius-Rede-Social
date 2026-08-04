@@ -26,11 +26,19 @@ do `CLAUDE.md`.
   só deputados + despesas. **Bronze (JSON cru) era o maior peso** — o app lê da
   camada OURO, não do bronze, então `AQUARIUS_BRONZE=0` corta storage sem perder
   o produto.
-- **Folga apertada:** 441/500 MB (88% cheio). **Emendas** (o outro "dinheiro
-  público", Área F) provavelmente NÃO cabe junto dos 4 anos no Free — decisão
-  futura: enxugar anos OU subir para o Pro (8 GB). Emendas ainda pendente: exige a
-  chave gratuita `AQUARIUS_TRANSPARENCIA_KEY` (Portal da Transparência), que o
-  usuário ainda não cadastrou.
+- **Backfill de emendas parlamentares 2023–2026 (Área F, Portal da Transparência)
+  concluído** — **19.444 emendas** (empenhado/liquidado/pago + restos). Autor
+  resolvido pela curadoria §6.3: 328 autores distintos em 2023, ~557–578 em
+  2024–2026 (a resolução menor de 2023 é honesta — o mapa curado é da composição
+  de 2025; autores fora dele ficam `null`, degradação declarada, não erro).
+  Custou só ~5 MB/ano — emenda é fração do tamanho da despesa. Exige a chave
+  pessoal `AQUARIUS_TRANSPARENCIA_KEY` (agora cadastrada).
+- **Combo de dinheiro público completo:** despesas/CEAP (708.170 lançamentos) +
+  emendas (19.444) — as duas frentes de "dinheiro público", o maior gap de
+  mercado, agora vivas no banco. Base enxuta (bronze/legislativo off) cabe no Free.
+- **Folga:** o combo fechou sob **~455 MB** de 500 (as emendas somaram só ~9 MB
+  aos 446 já medidos). O Pro (8 GB) fica reservado para quando o volume de
+  usuários/áreas pedir — não é gargalo agora.
 - **Persistência endurecida** (`supabase_adapter.py` + `repositorio.py`): upsert
   **em lote** (`LOTE_UPSERT=500`) + **retry** só de erros de conexão (com backoff)
   + **dedup-antes-do-lote**. Motivo real: o HTTP/2 do supabase-py encerra a conexão
