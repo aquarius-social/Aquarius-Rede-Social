@@ -594,6 +594,14 @@ def salvar_vinculos_temporais(
         partido_id = v.get("partido_id")
         if partido_id is None and lookup_partido is not None:
             partido_id = lookup_partido(v.get("partido_sigla_fonte"))
+        # §6.4: suplente em exercício PRECISA do titular resolvido (constraint
+        # `vinculo_suplente_coerente`). Sem o titular ingerido, pula — não grava
+        # um suplente órfão.
+        titular_profile_id = None
+        if v.get("titular_id_fonte"):
+            titular_profile_id = lookup(v.get("casa", "camara"), v["titular_id_fonte"])
+        if v["ocupacao"] == "suplente_em_exercicio" and titular_profile_id is None:
+            continue
         cliente.upsert("vinculo_temporal", [{
             "profile_id": perfil_id,
             "casa": v["casa"],
@@ -602,6 +610,8 @@ def salvar_vinculos_temporais(
             "partido_id": partido_id,
             "partido_sigla_fonte": v.get("partido_sigla_fonte"),
             "ocupacao": v["ocupacao"],
+            "titular_profile_id": titular_profile_id,
+            "causa": v.get("causa"),
             "vigencia": _daterange(v["vigencia_inicio"], v.get("vigencia_fim")),
             "source": source,
             "source_url": source_url,

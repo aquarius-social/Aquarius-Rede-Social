@@ -81,12 +81,38 @@ def _mais_cedo(a: str | None, b: str | None) -> str | None:
     return a if a <= b else b
 
 
+def _periodos_partidarios(
+    partidos: list[dict], janela_ini: str, janela_fim: str | None,
+) -> list[tuple[str, str | None, str | None]]:
+    """Filiações partidárias clipadas a [janela_ini, janela_fim]. Sem `Partidos`,
+    rende um período único da janela inteira com sigla None."""
+    periodos: list[tuple[str, str | None, str | None]] = []
+    for pt in partidos:
+        inicio = _mais_tarde(pt.get("DataFiliacao"), janela_ini)
+        fim = pt.get("DataDesfiliacao")
+        if janela_fim:
+            fim = _mais_cedo(fim, janela_fim)
+        if fim is not None and inicio >= fim:
+            continue
+        periodos.append((inicio, fim, pt.get("Sigla")))
+    if not periodos:
+        periodos.append((janela_ini, janela_fim, None))
+    return sorted(periodos, key=lambda p: p[0])
+
+
 def construir_vinculos_senado(
     mandatos: list[dict], codigo: str, *, casa: str = "senado",
 ) -> list[dict]:
     """Cruza cada mandato (legislatura + UF + ocupação) com seus períodos
-    partidários, clipando cada filiação à janela do mandato. Sem `Partidos`,
-    rende um vínculo do mandato inteiro com `partido_sigla_fonte` None."""
+    partidários, clipando cada filiação à janela do mandato.
+
+    §6.4 — TITULAR e SUPLENTE:
+      • Titular: vínculo sobre a janela do mandato (filiações clipadas).
+      • Suplente em exercício: NÃO cobre a legislatura inteira (seria dado falso).
+        Um vínculo por PERÍODO REAL de exercício (`Exercicios`), com o titular
+        resolvido (`Titular.CodigoParlamentar` → `titular_id_fonte`) e a causa do
+        afastamento (`DescricaoCausaAfastamento`). Sem titular na fonte, pula (a
+        constraint `vinculo_suplente_coerente` exige `titular_profile_id`)."""
     vinculos: list[dict] = []
     for m in mandatos:
         uf = m.get("UfParlamentar")
@@ -96,44 +122,40 @@ def construir_vinculos_senado(
         m_ini = prim.get("DataInicio")
         m_fim = seg.get("DataFim") or prim.get("DataFim")
         leg = prim.get("NumeroLegislatura")
-        if not m_ini or not uf:
+        if not uf:
             continue
-        # SÓ TITULARES rendem vínculo aqui. O roster completo (245) inclui
-        # suplentes que NUNCA sentaram — cujo "mandato" cobriria a legislatura
-        # inteira, dado incorreto. E um `suplente_em_exercicio` exige
-        # `titular_profile_id` + vigência = período REAL de exercício (constraint
-        # `vinculo_suplente_coerente`, §6.4). Fazer isso direito (resolver o
-        # titular pela lista `Titular` e clipar aos `Exercicios`) é refinamento
-        # próprio; até lá, o suplente é pulado — degradação honesta.
-        if ocup != "titular":
-            continue
-
         partidos = _como_lista((m.get("Partidos") or {}).get("Partido"))
-        periodos: list[tuple[str, str | None, str | None]] = []
-        for pt in partidos:
-            inicio = _mais_tarde(pt.get("DataFiliacao"), m_ini)   # clip início
-            fim = pt.get("DataDesfiliacao")
-            if m_fim:
-                fim = _mais_cedo(fim, m_fim)                       # clip fim
-            # filiação inteiramente fora da janela do mandato → descarta
-            if fim is not None and inicio >= fim:
-                continue
-            periodos.append((inicio, fim, pt.get("Sigla")))
-        if not partidos:
-            periodos.append((m_ini, m_fim, None))
 
-        periodos.sort(key=lambda p: p[0])
-        for inicio, fim, sigla in periodos:
-            vinculos.append({
-                "id_fonte": str(codigo),
-                "casa": casa,
-                "legislatura": int(leg) if leg else None,
-                "uf": uf,
-                "partido_sigla_fonte": sigla,
-                "ocupacao": ocup,
-                "vigencia_inicio": inicio,
-                "vigencia_fim": fim,
-            })
+        if ocup == "titular":
+            if not m_ini:
+                continue
+            for inicio, fim, sigla in _periodos_partidarios(partidos, m_ini, m_fim):
+                vinculos.append({
+                    "id_fonte": str(codigo), "casa": casa,
+                    "legislatura": int(leg) if leg else None, "uf": uf,
+                    "partido_sigla_fonte": sigla, "ocupacao": "titular",
+                    "vigencia_inicio": inicio, "vigencia_fim": fim,
+                })
+            continue
+
+        # Suplente: um vínculo por período REAL de exercício.
+        titular_cod = (m.get("Titular") or {}).get("CodigoParlamentar")
+        if not titular_cod:
+            continue  # sem titular não há como prender (§6.4, constraint)
+        for ex in _como_lista((m.get("Exercicios") or {}).get("Exercicio")):
+            ex_ini = ex.get("DataInicio")
+            ex_fim = ex.get("DataFim")
+            if not ex_ini:
+                continue
+            causa = ex.get("DescricaoCausaAfastamento")
+            for inicio, fim, sigla in _periodos_partidarios(partidos, ex_ini, ex_fim):
+                vinculos.append({
+                    "id_fonte": str(codigo), "casa": casa,
+                    "legislatura": int(leg) if leg else None, "uf": uf,
+                    "partido_sigla_fonte": sigla, "ocupacao": "suplente_em_exercicio",
+                    "vigencia_inicio": inicio, "vigencia_fim": fim,
+                    "titular_id_fonte": str(titular_cod), "causa": causa,
+                })
     return vinculos
 
 

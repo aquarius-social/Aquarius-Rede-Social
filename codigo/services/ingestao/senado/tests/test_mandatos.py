@@ -31,7 +31,7 @@ class ClienteFake:
 
 
 def _mandato(uf="AC", part="Titular", leg="57", ini="2023-02-01", fim="2027-01-31",
-            partidos=None, seg_fim=None):
+            partidos=None, seg_fim=None, titular=None, exercicios=None):
     m = {"CodigoMandato": "596", "UfParlamentar": uf,
          "DescricaoParticipacao": part,
          "PrimeiraLegislaturaDoMandato": {"NumeroLegislatura": leg,
@@ -41,6 +41,10 @@ def _mandato(uf="AC", part="Titular", leg="57", ini="2023-02-01", fim="2027-01-3
                                             "DataInicio": "2027-02-01", "DataFim": seg_fim}
     if partidos is not None:
         m["Partidos"] = {"Partido": partidos}
+    if titular is not None:
+        m["Titular"] = titular
+    if exercicios is not None:
+        m["Exercicios"] = {"Exercicio": exercicios}
     return m
 
 
@@ -84,11 +88,40 @@ class TestConstruirVinculos(unittest.TestCase):
         vs = construir_vinculos_senado([m], "5672")
         self.assertEqual([v["partido_sigla_fonte"] for v in vs], ["REPUBLICANOS"])
 
-    def test_suplente_e_pulado(self):
-        """Suplente (roster) não rende vínculo por ora: exigiria titular_profile_id
-        + vigência de exercício real (§6.4, constraint vinculo_suplente_coerente)."""
-        vs = construir_vinculos_senado([_mandato(part="1º Suplente")], "5672")
+    def test_suplente_sem_titular_e_pulado(self):
+        """Suplente sem o nó `Titular` não rende vínculo — a constraint
+        `vinculo_suplente_coerente` exige `titular_profile_id` (§6.4)."""
+        vs = construir_vinculos_senado([_mandato(part="1º Suplente",
+            exercicios=[{"DataInicio": "2024-02-21", "DataFim": "2024-06-01",
+                         "DescricaoCausaAfastamento": "Licença"}])], "6358")
         self.assertEqual(vs, [])
+
+    def test_suplente_sem_exercicio_nao_rende_vinculo(self):
+        """Suplente de banco (nunca sentou → sem `Exercicios`) não vira vínculo —
+        não cobre a legislatura inteira (seria dado falso, §6.4)."""
+        vs = construir_vinculos_senado([_mandato(part="1º Suplente",
+            titular={"CodigoParlamentar": "4605", "NomeParlamentar": "Flávio Dino"})], "6358")
+        self.assertEqual(vs, [])
+
+    def test_suplente_em_exercicio_rende_vinculo_com_titular_e_causa(self):
+        """§6.4: suplente com `Titular` + `Exercicios` → um vínculo por período
+        REAL de exercício, preso ao titular, com a causa; filiação clipada ao
+        período (não à legislatura)."""
+        m = _mandato(uf="MA", part="1º Suplente", ini="2023-02-01", fim="2027-01-31",
+            partidos=[{"Sigla": "PSB", "DataFiliacao": "2022-01-01"}],
+            titular={"CodigoParlamentar": "4605", "NomeParlamentar": "Flávio Dino"},
+            exercicios=[{"DataInicio": "2024-02-21", "DataFim": "2026-07-30",
+                         "DescricaoCausaAfastamento": "Licença com convocação de suplente"}])
+        vs = construir_vinculos_senado([m], "6358")
+        self.assertEqual(len(vs), 1)
+        v = vs[0]
+        self.assertEqual(v["ocupacao"], "suplente_em_exercicio")
+        self.assertEqual(v["titular_id_fonte"], "4605")
+        self.assertEqual(v["causa"], "Licença com convocação de suplente")
+        self.assertEqual(v["vigencia_inicio"], "2024-02-21")   # início do EXERCÍCIO
+        self.assertEqual(v["vigencia_fim"], "2026-07-30")
+        self.assertEqual(v["partido_sigla_fonte"], "PSB")      # clipada ao exercício
+        self.assertEqual(v["uf"], "MA")
 
 
 class TestRodada(unittest.TestCase):
