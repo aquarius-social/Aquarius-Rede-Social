@@ -53,10 +53,14 @@ left join lateral (
 ) vt on true
 left join partido pa on pa.id = vt.partido_id
 where p.tipo = 'parlamentar'
-  -- em exercício HOJE, OU titular fora de exercício (licenciado) — este último
-  -- só aparece se tiver mandato vigente (vt) e for titular; suplente de banco
-  -- (nunca assumiu) fica fora.
-  and (p.ativo or vt.ocupacao = 'titular');
+  -- CURRENT-NESS: só quem tem MANDATO VIGENTE hoje (vínculo vigente). O flag
+  -- `p.ativo` NÃO serve para deputado (o coletor marca todo deputado como ativo,
+  -- de TODAS as legislaturas — 55ª/56ª/57ª —, então filtrar por `ativo` mostrava
+  -- ex-deputados de 2018-2022 como se atuais). O vínculo vigente é o sinal certo:
+  -- resolve deputado e senador, inclui o titular licenciado (mandato em curso,
+  -- `ativo=false`) e exclui quem já saiu. Suplente em exercício ainda sem vínculo
+  -- (§6.4) fica temporariamente de fora até a etapa dos suplentes.
+  and vt.profile_id is not null;
 
 comment on view parlamentar_publico is
   'Camada ouro. Perfil de parlamentar SEM PII (§3.5); partido/UF/casa na data de '
