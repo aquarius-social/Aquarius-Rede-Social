@@ -3,9 +3,9 @@ import { View, Text, ScrollView, ActivityIndicator, Pressable, Linking, StyleShe
 import { useLocalSearchParams } from 'expo-router';
 import {
   obterParlamentar, resumoDespesas, resumoEmendas, ANO_DESPESAS,
-  type Parlamentar, type ResumoDespesas, type ResumoEmendas, type EmendaLinha,
+  type Parlamentar, type ResumoDespesas, type ResumoEmendas,
 } from '../../lib/dados';
-import { reais, kbr, dataBR, urlEmendaGov, frescor } from '../../lib/formato';
+import { reais, kbr, dataBR, URL_EMENDAS_CONSULTA, frescor } from '../../lib/formato';
 import { cor, raio } from '../../lib/tema';
 import {
   Avatar, Cover, PartyChip, Tag, Stat, Card, SectionHeader, Divider, AlignmentBar,
@@ -382,7 +382,7 @@ function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
   const [aberta, setAberta] = useState<string | null>(null);
   if (!emd) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
 
-  const abrirGov = (e: EmendaLinha) => Linking.openURL(urlEmendaGov(e.codigo));
+  const abrirGov = () => Linking.openURL(URL_EMENDAS_CONSULTA);
 
   return (
     <View style={{ padding: 14 }}>
@@ -416,7 +416,7 @@ function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
                       {/* Área / destino — o que a fonte federal descreve */}
                       <View style={st.detRow}><Text style={st.detK}>Área</Text><Text style={st.detV}>{[e.finalidade, e.subfuncao].filter(Boolean).join(' › ') || '—'}</Text></View>
                       <View style={st.detRow}><Text style={st.detK}>Destino</Text><Text style={st.detV}>{e.uf ?? '—'}</Text></View>
-                      <View style={st.detRow}><Text style={st.detK}>Código</Text><Text style={[st.detV, { fontVariant: ['tabular-nums'] }]}>{e.codigo ?? '—'}</Text></View>
+                      <View style={st.detRow}><Text style={st.detK}>Código</Text><Text selectable style={[st.detV, { fontVariant: ['tabular-nums'] }]}>{e.codigo ?? '—'}</Text></View>
 
                       {/* Estágios — NUNCA somados entre si (§13) */}
                       <Text style={[st.secHeadTitle, { marginTop: 10, marginBottom: 6 }]}>Execução orçamentária</Text>
@@ -426,10 +426,18 @@ function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
                       <EstagioLinha rotulo="Restos inscritos" valor={e.restoInscrito} />
                       <EstagioLinha rotulo="Restos pagos" valor={e.restoPago} />
 
-                      <Text style={st.detNota}>A fonte federal descreve a emenda por área e destino — não há "nome de projeto" nesse nível. O objeto detalhado (ação, beneficiário) está no Portal da Transparência.</Text>
-                      <Pressable onPress={() => abrirGov(e)} style={st.govBtn}>
+                      <View style={st.comoAcessar}>
+                        <Text style={st.comoAcessarTit}>Ver o objeto e quem recebeu</Text>
+                        <Text style={st.comoAcessarTxt}>
+                          Abra o Portal da Transparência no botão abaixo. Na seção{' '}
+                          <Text style={{ fontWeight: '700', color: cor.navy }}>“Código da Emenda”</Text>, cole o código{' '}
+                          <Text style={{ fontWeight: '700', color: cor.navy }}>{e.codigo ?? ''}</Text> (toque e segure no código acima para copiar) e clique em{' '}
+                          <Text style={{ fontWeight: '700', color: cor.navy }}>Consultar</Text>. Lá aparecem a ação orçamentária, o convênio e o beneficiário.
+                        </Text>
+                      </View>
+                      <Pressable onPress={abrirGov} style={st.govBtn}>
                         <Icon name="doc" size={14} color={cor.white} />
-                        <Text style={st.govBtnTxt}>Ver no Portal da Transparência ↗</Text>
+                        <Text style={st.govBtnTxt}>Abrir Consulta no Portal da Transparência ↗</Text>
                       </Pressable>
                     </View>
                   ) : null}
@@ -581,7 +589,9 @@ const st = StyleSheet.create({
   estagioLinha: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   estagioRot: { fontSize: 12.5, color: cor.muted },
   estagioVal: { fontSize: 12.5, color: cor.navy, fontWeight: '600' },
-  detNota: { fontSize: 11, color: cor.mutedSoft, lineHeight: 15, marginTop: 10, fontStyle: 'italic' },
+  comoAcessar: { marginTop: 12, padding: 12, borderRadius: raio.cardPequeno, backgroundColor: cor.light, borderWidth: 1, borderColor: cor.border },
+  comoAcessarTit: { fontSize: 11, fontWeight: '800', color: cor.navy, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 5 },
+  comoAcessarTxt: { fontSize: 12, color: cor.muted, lineHeight: 18 },
   govBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 10, paddingVertical: 10, borderRadius: 9999, backgroundColor: cor.navy },
   govBtnTxt: { color: cor.white, fontWeight: '700', fontSize: 12.5 },
 });

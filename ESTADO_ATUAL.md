@@ -94,6 +94,33 @@ do `CLAUDE.md`.
   `@aquarius/ui` quando o monorepo Metro for ligado). Rodar: `.env` com a chave
   anon + `npm run web` (ver `codigo/apps/app/README.md`).
 
+**PLANEJADO (TODO, não iniciado) — Objeto das emendas: convênios/transferências.**
+- **Problema:** a API de emendas (execução) descreve a emenda só por função/
+  subfunção/localidade + estágios — **não há "nome de projeto"/objeto**. O objeto
+  real (quem recebeu, para quê) mora um nível abaixo: **convênios** e
+  **transferências** vinculados à emenda. A Consulta Detalhada do Portal
+  (`/emendas/consulta`) confirma os campos: Número do Convênio, Ação Orçamentária,
+  Plano Orçamentário, Apoiador/Beneficiário.
+- **Objetivo:** trazer o objeto/beneficiário para dentro do app (hoje só via link
+  externo).
+- **Fontes (Portal da Transparência, mesma chave `chave-api-dados`):**
+  `/api-de-dados/convenios` e `/api-de-dados/transferencias` (e "Transferências
+  Especiais"/emenda-PIX). Ligação emenda↔convênio pelo número do convênio.
+- **Plano (mesma disciplina da ingestão):**
+  1. Verificar campos reais das APIs de convênios/transferências ao vivo (objeto,
+     favorecido/beneficiário, município, valores, situação, órgão).
+  2. Migration nova (`00NN_convenios.sql`): tabela(s) `convenio`/`transferencia`
+     com FK/vínculo à `emenda` (por código/nº convênio) + view ouro sem PII.
+  3. Coletor(es) em `transparencia/` no pipeline bronze→prata→ouro, portão §5.2
+     (valores/estágios coerentes), proveniência+frescor. Paginado por exercício.
+  4. Resolver o vínculo emenda→convênio→beneficiário; §17 (emendas cobrem as duas
+     casas → convênios também: bicameral por natureza da fonte).
+  5. View ouro + nova seção "Objeto/Beneficiário" no detalhe da emenda no app.
+- **Considerações:** volume ALTO (convênios/transferências são muitos) → quase
+  certo que exige **Supabase Pro** antes de ligar. É uma **onda própria**, não um
+  ajuste. Prioridade: alta (fecha o "para onde foi o dinheiro" — o cerne do
+  produto), mas depois de resolver Free→Pro.
+
 **Onda 1 — Ingestão da Câmara: em progresso.**
 - Proposições: coletor pronto, 27 testes. Campos conferidos contra a API viva
   (2026-07-29) — sem divergência.

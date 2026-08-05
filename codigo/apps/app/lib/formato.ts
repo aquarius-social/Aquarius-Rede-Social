@@ -33,12 +33,12 @@ export function dataBR(iso: string | null | undefined): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
-/** Página oficial da emenda no Portal da Transparência (fonte para conferência). */
-export function urlEmendaGov(codigo: string | null | undefined): string {
-  return codigo
-    ? `https://portaldatransparencia.gov.br/emendas/${encodeURIComponent(codigo)}`
-    : 'https://portaldatransparencia.gov.br/emendas';
-}
+/**
+ * Consulta Detalhada de emendas no Portal da Transparência — página PÚBLICA
+ * (sem chave, sem 404). O usuário filtra pelo "Código da Emenda". Não usamos um
+ * link direto por código porque o portal não expõe URL estável por emenda.
+ */
+export const URL_EMENDAS_CONSULTA = 'https://portaldatransparencia.gov.br/emendas/consulta';
 
 /** "sincronizado em 04/08/2026" — o frescor da fonte (§3.1). */
 export function frescor(syncedAt: string | null | undefined): string {
