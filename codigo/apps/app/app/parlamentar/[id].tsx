@@ -119,7 +119,7 @@ export default function PerfilParlamentar() {
         {tab === 'votacoes' && <TabVotacoes />}
         {tab === 'presenca' && <TabPresenca />}
         {tab === 'despesas' && <TabDespesas desp={desp} />}
-        {tab === 'emendas' && <TabEmendas emd={emd} nome={p.nome} />}
+        {tab === 'emendas' && <TabEmendas emd={emd} />}
         {tab === 'discursos' && <TabDiscursos />}
         {tab === 'agenda' && <TabAgenda />}
         {tab === 'orgaos' && <TabOrgaos />}
@@ -378,7 +378,7 @@ function EstagioLinha({ rotulo, valor, forte }: { rotulo: string; valor: number 
   );
 }
 
-function TabEmendas({ emd, nome }: { emd: ResumoEmendas | null; nome: string }) {
+function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
   const [aberta, setAberta] = useState<string | null>(null);
   if (!emd) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
 
@@ -426,20 +426,10 @@ function TabEmendas({ emd, nome }: { emd: ResumoEmendas | null; nome: string }) 
                       <EstagioLinha rotulo="Restos inscritos" valor={e.restoInscrito} />
                       <EstagioLinha rotulo="Restos pagos" valor={e.restoPago} />
 
-                      <View style={st.comoAcessar}>
-                        <Text style={st.comoAcessarTit}>Fonte oficial</Text>
-                        <Text style={st.comoAcessarTxt}>
-                          Os valores acima vêm direto do{' '}
-                          <Text style={{ fontWeight: '700', color: cor.navy }}>Portal da Transparência</Text> (a mesma base do governo) — já são o dado oficial.{'\n\n'}
-                          Para explorar mais lá, abra o botão abaixo e, na Consulta de Emendas, preencha{' '}
-                          <Text style={{ fontWeight: '700', color: cor.navy }}>Nome do Autor da Emenda</Text> ({nome}) escolhendo na lista, adicione{' '}
-                          <Text style={{ fontWeight: '700', color: cor.navy }}>Ano da Emenda</Text> {e.ano}, e clique em{' '}
-                          <Text style={{ fontWeight: '700', color: cor.navy }}>Atualizar</Text>. O portal não tem link direto por emenda.
-                        </Text>
-                      </View>
+                      <Text style={st.fonteOficial}>Fonte: Portal da Transparência.</Text>
                       <Pressable onPress={abrirGov} style={st.govBtn}>
                         <Icon name="doc" size={14} color={cor.white} />
-                        <Text style={st.govBtnTxt}>Abrir Consulta de Emendas ↗</Text>
+                        <Text style={st.govBtnTxt}>Ver no Portal — filtre por autor e ano ↗</Text>
                       </Pressable>
                     </View>
                   ) : null}
@@ -591,9 +581,7 @@ const st = StyleSheet.create({
   estagioLinha: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   estagioRot: { fontSize: 12.5, color: cor.muted },
   estagioVal: { fontSize: 12.5, color: cor.navy, fontWeight: '600' },
-  comoAcessar: { marginTop: 12, padding: 12, borderRadius: raio.cardPequeno, backgroundColor: cor.light, borderWidth: 1, borderColor: cor.border },
-  comoAcessarTit: { fontSize: 11, fontWeight: '800', color: cor.navy, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 5 },
-  comoAcessarTxt: { fontSize: 12, color: cor.muted, lineHeight: 18 },
-  govBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 10, paddingVertical: 10, borderRadius: 9999, backgroundColor: cor.navy },
+  fonteOficial: { fontSize: 11.5, color: cor.mutedSoft, marginTop: 12 },
+  govBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 8, paddingVertical: 10, borderRadius: 9999, backgroundColor: cor.navy },
   govBtnTxt: { color: cor.white, fontWeight: '700', fontSize: 12.5 },
 });
