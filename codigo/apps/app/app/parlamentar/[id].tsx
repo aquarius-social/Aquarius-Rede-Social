@@ -84,6 +84,32 @@ export default function PerfilParlamentar() {
             <Text style={st.nome}>{p.nome}</Text>
             <Text style={st.sub}>{p.legislatura ? `${p.legislatura}ª legislatura` : 'Legislatura atual'}</Text>
 
+            {/* §6.4 — transição suplente↔titular */}
+            {p.situacao === 'suplente_em_exercicio' && p.titular_profile_id ? (
+              <Link href={{ pathname: '/parlamentar/[id]', params: { id: p.titular_profile_id } }} asChild>
+                <Pressable style={st.transCard}>
+                  <Icon name="info" size={14} color={cor.sky} />
+                  <Text style={st.transTxt}>
+                    Assumiu em {dataBR(p.assumiu_em)} no lugar de{' '}
+                    <Text style={{ fontWeight: '700', color: cor.navy }}>{p.titular_nome}</Text>
+                    {p.causa ? ` · ${p.causa}` : ''}
+                  </Text>
+                  <Icon name="chevR" size={14} color={cor.mutedSoft} />
+                </Pressable>
+              </Link>
+            ) : null}
+            {p.situacao === 'licenciado' && p.suplente_profile_id ? (
+              <Link href={{ pathname: '/parlamentar/[id]', params: { id: p.suplente_profile_id } }} asChild>
+                <Pressable style={st.transCard}>
+                  <Icon name="info" size={14} color={cor.warn} />
+                  <Text style={st.transTxt}>
+                    Licenciado — <Text style={{ fontWeight: '700', color: cor.navy }}>{p.suplente_nome}</Text> assumiu em {dataBR(p.suplente_desde)}
+                  </Text>
+                  <Icon name="chevR" size={14} color={cor.mutedSoft} />
+                </Pressable>
+              </Link>
+            ) : null}
+
             {/* Stats — presença/aliado/proposições ainda são placeholder do design */}
             <View style={st.stats}>
               <Stat value={`${KPI_PLACEHOLDER.presenca}%`} label="Presença" tone="pos" sub="acima da média" />
@@ -540,6 +566,8 @@ const st = StyleSheet.create({
   avatarRing: { borderRadius: 9999, borderWidth: 3, borderColor: cor.white },
   nome: { marginTop: 12, fontWeight: '800', fontSize: 24, color: cor.navy, letterSpacing: -0.4 },
   sub: { fontSize: 12.5, color: cor.muted, fontWeight: '500', marginTop: 2 },
+  transCard: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, padding: 10, borderRadius: raio.cardPequeno, backgroundColor: cor.light, borderWidth: 1, borderColor: cor.border },
+  transTxt: { flex: 1, fontSize: 12, color: cor.muted, lineHeight: 16 },
   stats: { marginTop: 14, flexDirection: 'row', gap: 6, backgroundColor: cor.light, borderRadius: raio.card, paddingVertical: 12, paddingHorizontal: 14 },
   statDiv: { width: 1, backgroundColor: cor.border },
   ctaGhost: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.borderStrong },

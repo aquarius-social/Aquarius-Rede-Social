@@ -22,6 +22,14 @@ export interface Parlamentar {
   partido_id: string | null;
   casa_atual: string | null; // 'camara' | 'senado'
   situacao: string | null;   // 'em_exercicio' | 'licenciado' | 'suplente_em_exercicio'
+  // §6.4 — transição suplente↔titular (só quando aplicável)
+  titular_profile_id: string | null;
+  titular_nome: string | null;
+  assumiu_em: string | null;   // suplente: quando assumiu
+  causa: string | null;        // suplente: causa do afastamento (procedural)
+  suplente_profile_id: string | null;
+  suplente_nome: string | null;
+  suplente_desde: string | null; // titular licenciado: desde quando o suplente cobre
   legislatura: number | null;
   source: string;
   source_url: string | null;
