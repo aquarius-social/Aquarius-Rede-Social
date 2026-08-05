@@ -73,6 +73,27 @@ do `CLAUDE.md`.
   testes e **precisa ser rotacionada** (Supabase → Settings → API Keys → revoke +
   gerar nova). Não quebra o app (usa a `anon`).
 
+**App (Expo) — primeiro vertical: perfil parlamentar. Em progresso (2026-08-04).**
+- Scaffold do app React Native/Expo em `codigo/apps/app/` (Expo Router), lendo a
+  **camada OURO** do Supabase pela chave **anon** (pública, RLS) — nunca a service
+  key. `tsc` limpo e **bundle Metro (web) compila** (634 módulos).
+- **Tela de perfil parlamentar COMPLETA e fiel ao Claude Design** (portada de
+  `aq-foundation.jsx` + `aq-screens-2.jsx` via o MCP do Design): header cover com
+  onda, avatar-gradiente, chips, faixa de stats, botões; **9 abas** (Feed,
+  Proposições, Votações, Presença, Despesas, Emendas, Discursos, Agenda, Órgãos).
+  Componentes e charts (Donut/Line/Bar) portados com `react-native-svg` +
+  `expo-linear-gradient`.
+- **Dado REAL** em **Despesas** (donut por categoria + total + histórico mensal,
+  de `despesa_publica`) e **Emendas** (empenhado/pago/qtd + lista, de
+  `emenda_publica`), com fonte+frescor e estágios nunca somados (§13). As demais
+  abas replicam o layout do design com **dado-exemplo** rotulado "não ingerido"
+  (honesto — não finge dado real).
+- **Débito conhecido:** stats do topo (presença/alinhamento/proposições) e as 6
+  abas não-monetárias são placeholder do protótipo até essas áreas serem
+  ingeridas; `lib/tema.ts` é cópia dos tokens de `packages/ui` (trocar por
+  `@aquarius/ui` quando o monorepo Metro for ligado). Rodar: `.env` com a chave
+  anon + `npm run web` (ver `codigo/apps/app/README.md`).
+
 **Onda 1 — Ingestão da Câmara: em progresso.**
 - Proposições: coletor pronto, 27 testes. Campos conferidos contra a API viva
   (2026-07-29) — sem divergência.
