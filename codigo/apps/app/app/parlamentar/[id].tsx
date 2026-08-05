@@ -119,7 +119,7 @@ export default function PerfilParlamentar() {
         {tab === 'votacoes' && <TabVotacoes />}
         {tab === 'presenca' && <TabPresenca />}
         {tab === 'despesas' && <TabDespesas desp={desp} />}
-        {tab === 'emendas' && <TabEmendas emd={emd} />}
+        {tab === 'emendas' && <TabEmendas emd={emd} nome={p.nome} />}
         {tab === 'discursos' && <TabDiscursos />}
         {tab === 'agenda' && <TabAgenda />}
         {tab === 'orgaos' && <TabOrgaos />}
@@ -378,7 +378,7 @@ function EstagioLinha({ rotulo, valor, forte }: { rotulo: string; valor: number 
   );
 }
 
-function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
+function TabEmendas({ emd, nome }: { emd: ResumoEmendas | null; nome: string }) {
   const [aberta, setAberta] = useState<string | null>(null);
   if (!emd) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
 
@@ -427,17 +427,19 @@ function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
                       <EstagioLinha rotulo="Restos pagos" valor={e.restoPago} />
 
                       <View style={st.comoAcessar}>
-                        <Text style={st.comoAcessarTit}>Ver o objeto e quem recebeu</Text>
+                        <Text style={st.comoAcessarTit}>Fonte oficial</Text>
                         <Text style={st.comoAcessarTxt}>
-                          Abra o Portal da Transparência no botão abaixo. Na seção{' '}
-                          <Text style={{ fontWeight: '700', color: cor.navy }}>“Código da Emenda”</Text>, cole o código{' '}
-                          <Text style={{ fontWeight: '700', color: cor.navy }}>{e.codigo ?? ''}</Text> (toque e segure no código acima para copiar) e clique em{' '}
-                          <Text style={{ fontWeight: '700', color: cor.navy }}>Consultar</Text>. Lá aparecem a ação orçamentária, o convênio e o beneficiário.
+                          Os valores acima vêm direto do{' '}
+                          <Text style={{ fontWeight: '700', color: cor.navy }}>Portal da Transparência</Text> (a mesma base do governo) — já são o dado oficial.{'\n\n'}
+                          Para explorar mais lá, abra o botão abaixo e, na Consulta de Emendas, preencha{' '}
+                          <Text style={{ fontWeight: '700', color: cor.navy }}>Nome do Autor da Emenda</Text> ({nome}) escolhendo na lista, adicione{' '}
+                          <Text style={{ fontWeight: '700', color: cor.navy }}>Ano da Emenda</Text> {e.ano}, e clique em{' '}
+                          <Text style={{ fontWeight: '700', color: cor.navy }}>Atualizar</Text>. O portal não tem link direto por emenda.
                         </Text>
                       </View>
                       <Pressable onPress={abrirGov} style={st.govBtn}>
                         <Icon name="doc" size={14} color={cor.white} />
-                        <Text style={st.govBtnTxt}>Abrir Consulta no Portal da Transparência ↗</Text>
+                        <Text style={st.govBtnTxt}>Abrir Consulta de Emendas ↗</Text>
                       </Pressable>
                     </View>
                   ) : null}
