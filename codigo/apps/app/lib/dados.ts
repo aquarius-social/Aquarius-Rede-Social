@@ -21,6 +21,7 @@ export interface Parlamentar {
   partido_sigla_atual: string | null;
   partido_id: string | null;
   casa_atual: string | null; // 'camara' | 'senado'
+  situacao: string | null;   // 'em_exercicio' | 'licenciado' | 'suplente_em_exercicio'
   legislatura: number | null;
   source: string;
   source_url: string | null;

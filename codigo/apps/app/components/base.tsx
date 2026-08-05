@@ -127,6 +127,13 @@ export function Tag({ children, tone = 'muted' }: { children: React.ReactNode; t
   );
 }
 
+/* ── Selo de situação (licenciado / suplente em exercício) ─────────────── */
+export function SituacaoBadge({ situacao }: { situacao: string | null | undefined }) {
+  if (situacao === 'licenciado') return <Tag tone="warn">Licenciado</Tag>;
+  if (situacao === 'suplente_em_exercicio') return <Tag tone="sky">Suplente em exercício</Tag>;
+  return null; // em exercício (normal) → sem selo
+}
+
 /* ── Stat (célula da faixa de KPIs) ────────────────────────────────────── */
 export function Stat({ value, label, sub, tone }: { value: React.ReactNode; label: string; sub?: string; tone?: 'pos' | 'neg' }) {
   return (

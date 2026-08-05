@@ -8,7 +8,7 @@ import {
 import { reais, kbr, dataBR, URL_EMENDAS_CONSULTA, frescor } from '../../lib/formato';
 import { cor, raio } from '../../lib/tema';
 import {
-  Avatar, Cover, PartyChip, Tag, Stat, Card, SectionHeader, Divider, AlignmentBar,
+  Avatar, Cover, PartyChip, Tag, SituacaoBadge, Stat, Card, SectionHeader, Divider, AlignmentBar,
   AIPill, AICard, AIBanner, FollowButton, BottomNav, Icon, Donut, LineChart, BarChart,
 } from '../../components/base';
 import {
@@ -77,6 +77,7 @@ export default function PerfilParlamentar() {
                     </Link>
                   ) : null}
                   <Tag tone="muted">{rotuloCargo(p.ocupacao_atual)}</Tag>
+                  <SituacaoBadge situacao={p.situacao} />
                 </View>
               </View>
             </View>

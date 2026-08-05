@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { listarParlamentares, type Parlamentar } from '../lib/dados';
-import { Avatar, PartyChip } from '../components/base';
+import { Avatar, PartyChip, SituacaoBadge } from '../components/base';
 import { cor, raio } from '../lib/tema';
 
 export default function ListaParlamentares() {
@@ -62,8 +62,9 @@ export default function ListaParlamentares() {
                 <Avatar nome={item.nome} size={44} />
                 <View style={{ flex: 1, gap: 5 }}>
                   <Text style={estilo.nome}>{item.nome}</Text>
-                  <View style={{ flexDirection: 'row' }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                     <PartyChip sigla={item.partido_sigla_atual} uf={item.uf_atual} />
+                    <SituacaoBadge situacao={item.situacao} />
                   </View>
                 </View>
                 <Text style={estilo.seta}>›</Text>

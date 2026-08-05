@@ -8,7 +8,7 @@ import {
 import { reais, kbr, frescor } from '../../lib/formato';
 import { cor, raio } from '../../lib/tema';
 import {
-  Cover, Monogram, Avatar, PartyChip, Tag, Stat, Card, SectionHeader, Divider,
+  Cover, Monogram, Avatar, PartyChip, Tag, SituacaoBadge, Stat, Card, SectionHeader, Divider,
   AlignmentBar, AIPill, AICard, BottomNav, Icon,
 } from '../../components/base';
 import {
@@ -146,9 +146,10 @@ function TabMembros({ membros, camara, senado, ufs }: { membros: Parlamentar[]; 
                 <Avatar nome={m.nome} size={40} />
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text style={{ fontSize: 13.5, fontWeight: '700', color: cor.navy }}>{m.nome}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                     <PartyChip sigla={m.partido_sigla_atual} uf={m.uf_atual} />
                     <Text style={{ fontSize: 10.5, color: cor.mutedSoft }}>{m.casa_atual === 'senado' ? 'Senado' : 'Câmara'}</Text>
+                    <SituacaoBadge situacao={m.situacao} />
                   </View>
                 </View>
                 <Icon name="chevR" size={15} color={cor.mutedSoft} />
