@@ -102,6 +102,22 @@ do `CLAUDE.md`.
   `@aquarius/ui` quando o monorepo Metro for ligado). Rodar: `.env` com a chave
   anon + `npm run web` (ver `codigo/apps/app/README.md`).
 
+**Vínculo Câmara + situação do parlamentar — feito (2026-08-05).**
+- Ingerido o **histórico de mandatos da Câmara** (`AQUARIUS_HISTORICO=1`, leg 57):
+  2.253 vínculos / ~567 deputados. Antes, a base de dinheiro rodou com histórico
+  off, então deputado ficava **sem partido/UF** no app (só senador tinha). Agora
+  resolve.
+- **View `parlamentar_publico` (migration 0013):** (a) projeta `situacao`
+  (em_exercicio/licenciado/suplente_em_exercicio) e **não esconde o titular
+  licenciado** (§4 — os atos dele são dele); (b) **current-ness pelo vínculo
+  vigente**, não por `p.ativo` (o coletor marca todo deputado ativo, de todas as
+  legislaturas — filtrar por ativo mostrava ex-deputados de 2018-2022). Resultado:
+  a view caiu de 1.352 para **581 (parlamento atual), 580 com partido (99,8%)**.
+- App: selo `SituacaoBadge` (Licenciado / Suplente em exercício) no perfil, lista
+  e bancada. **Pendente §6.4 (próxima):** suplente em exercício ainda sem vínculo
+  (fica fora da lista até lá) + link suplente↔titular + datas de transição (a
+  fonte `/senador/{cod}/mandatos` tem `Exercicios` + causa do afastamento).
+
 **PLANEJADO (TODO, não iniciado) — Objeto das emendas: convênios/transferências.**
 - **Problema:** a API de emendas (execução) descreve a emenda só por função/
   subfunção/localidade + estágios — **não há "nome de projeto"/objeto**. O objeto
