@@ -88,6 +88,14 @@ do `CLAUDE.md`.
   `emenda_publica`), com fonte+frescor e estágios nunca somados (§13). As demais
   abas replicam o layout do design com **dado-exemplo** rotulado "não ingerido"
   (honesto — não finge dado real).
+- **Tela de Partido (bancada + dinheiro) — feita.** `/partido/[sigla]` (chip do
+  partido no perfil abre). Header colorido (cor do partido) + monograma + 4 abas.
+  **Dado real:** Membros (lista da bancada + contagem Câmara/Senado + filtro UF, de
+  `parlamentar_publico.casa_atual`) e Emendas (empenhado/pago + por função,
+  **agregado das emendas dos membros** via um `IN` só, somado no cliente — sem
+  migration). Lideranças/Proposições/Coesão = placeholder rotulado (mesmo padrão do
+  perfil). Direção do MVP: **explorador de dinheiro primeiro** (Explorar → Perfil →
+  Partido). Backlog completo em `MELHORIAS.md`.
 - **Débito conhecido:** stats do topo (presença/alinhamento/proposições) e as 6
   abas não-monetárias são placeholder do protótipo até essas áreas serem
   ingeridas; `lib/tema.ts` é cópia dos tokens de `packages/ui` (trocar por

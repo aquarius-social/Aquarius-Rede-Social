@@ -15,7 +15,6 @@
       "adaptiveIcon": { "backgroundColor": "#0D2B5E" }
     },
     "web": { "bundler": "metro", "output": "single" },
-    "plugins": ["expo-router"],
-    "experiments": { "typedRoutes": true }
+    "plugins": ["expo-router"]
   }
 }

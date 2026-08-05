@@ -6,7 +6,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, type ViewStyle, type TextStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Polygon, Line, Rect, G, Text as SvgText, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
-import { cor, raio, gradienteAvatar, iniciais } from '../lib/tema';
+import { cor, raio, gradienteAvatar, iniciais, shade } from '../lib/tema';
 import { PARTIDO_COR } from '../lib/mock';
 
 /* ── Ícones (subconjunto usado no perfil), 24×24, stroke 2 ─────────────── */
@@ -59,12 +59,28 @@ export function Avatar({ nome, size = 40, ring = false }: { nome: string; size?:
   );
 }
 
-/* ── Banner cover com onda Sky ─────────────────────────────────────────── */
-export function Cover({ height = 88 }: { height?: number }) {
+/* ── Monograma de partido/órgão (círculo colorido com sigla) ───────────── */
+export function Monogram({ sigla, size = 72, color = cor.navy }: { sigla: string; size?: number; color?: string }) {
+  const txt = sigla.length > 4 ? sigla.slice(0, 1) : sigla.slice(0, 4);
+  return (
+    <LinearGradient
+      colors={[color, shade(color, -0.18)]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Text style={{ color: cor.white, fontWeight: '800', fontSize: size * 0.34, letterSpacing: -0.3 }}>{txt}</Text>
+    </LinearGradient>
+  );
+}
+
+/* ── Banner cover com onda Sky (cor base opcional p/ partido) ──────────── */
+export function Cover({ height = 88, base }: { height?: number; base?: string }) {
+  const colors = base ? [base, shade(base, 0.18), cor.sky] : [cor.navy, cor.blue, cor.sky];
   return (
     <View style={{ height, position: 'relative' }}>
       <LinearGradient
-        colors={[cor.navy, cor.blue, cor.sky]}
+        colors={colors as [string, string, string]}
         locations={[0, 0.7, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

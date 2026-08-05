@@ -19,10 +19,37 @@ export interface Parlamentar {
   uf_atual: string | null;
   ocupacao_atual: string | null;
   partido_sigla_atual: string | null;
+  partido_id: string | null;
+  casa_atual: string | null; // 'camara' | 'senado'
   legislatura: number | null;
   source: string;
   source_url: string | null;
   synced_at: string;
+}
+
+export interface Partido {
+  id: string;
+  nome: string;
+  slug: string;
+  sigla_atual: string;
+  nome_atual: string;
+  numero_urna: number | null;
+  source: string;
+  source_url: string | null;
+  synced_at: string;
+}
+
+export interface AreaGasto {
+  funcao: string;
+  total: number;
+}
+
+export interface ResumoEmendasPartido {
+  totalPago: number;
+  totalEmpenhado: number;
+  quantidade: number;
+  areas: AreaGasto[]; // por função, desc por total
+  frescor: string | null;
 }
 
 export interface Lancamento {
@@ -161,4 +188,53 @@ export async function resumoEmendas(perfilId: string): Promise<ResumoEmendas> {
   });
   out.sort((a, b) => (b.pago ?? 0) - (a.pago ?? 0));
   return { totalPago: pago, totalEmpenhado: empenhado, quantidade: out.length, linhas: out, frescor };
+}
+
+export async function obterPartido(sigla: string): Promise<Partido | null> {
+  const { data, error } = await supabase
+    .from('partido_publico')
+    .select('*')
+    .eq('sigla_atual', sigla)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as Partido) ?? null;
+}
+
+export async function membrosDoPartido(sigla: string): Promise<Parlamentar[]> {
+  const { data, error } = await supabase
+    .from('parlamentar_publico')
+    .select('*')
+    .eq('partido_sigla_atual', sigla)
+    .order('nome', { ascending: true })
+    .limit(600);
+  if (error) throw error;
+  return (data ?? []) as Parlamentar[];
+}
+
+/** Agrega as emendas de TODOS os membros do partido (uma consulta com IN). */
+export async function resumoEmendasPartido(membroIds: string[]): Promise<ResumoEmendasPartido> {
+  if (membroIds.length === 0) return { totalPago: 0, totalEmpenhado: 0, quantidade: 0, areas: [], frescor: null };
+  const { data, error } = await supabase
+    .from('emenda_publica')
+    .select('funcao, valor_pago, valor_empenhado, synced_at')
+    .in('autor_profile_id', membroIds)
+    .limit(20000);
+  if (error) throw error;
+  const linhas = (data ?? []) as any[];
+  const porFuncao = new Map<string, number>();
+  let pago = 0;
+  let empenhado = 0;
+  let frescor: string | null = null;
+  for (const l of linhas) {
+    const p = Number(l.valor_pago) || 0;
+    pago += p;
+    empenhado += Number(l.valor_empenhado) || 0;
+    const f = l.funcao || 'Não informada';
+    porFuncao.set(f, (porFuncao.get(f) ?? 0) + p);
+    if (l.synced_at) frescor = l.synced_at;
+  }
+  const areas = [...porFuncao.entries()]
+    .map(([funcao, total]) => ({ funcao, total }))
+    .sort((a, b) => b.total - a.total);
+  return { totalPago: pago, totalEmpenhado: empenhado, quantidade: linhas.length, areas, frescor };
 }

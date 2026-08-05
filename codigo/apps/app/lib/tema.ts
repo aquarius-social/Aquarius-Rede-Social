@@ -44,6 +44,13 @@ export function gradienteAvatar(nome: string): [string, string] {
   return a === b ? [cor.navy, cor.sky] : [a, b];
 }
 
+/** Clareia (amt>0) ou escurece (amt<0) um hex. Cópia de aq-screens-4.jsx. */
+export function shade(hex: string, amt: number): string {
+  const h = hex.replace('#', '');
+  const c = (i: number) => Math.max(0, Math.min(255, parseInt(h.substr(i, 2), 16) + Math.round(255 * amt)));
+  return '#' + [c(0), c(2), c(4)].map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
 export function iniciais(nome: string): string {
   const partes = nome.trim().split(/\s+/).filter(Boolean);
   const primeiro = partes[0];

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Pressable, Linking, StyleSheet } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, Link } from 'expo-router';
 import {
   obterParlamentar, resumoDespesas, resumoEmendas, ANO_DESPESAS,
   type Parlamentar, type ResumoDespesas, type ResumoEmendas,
@@ -71,7 +71,11 @@ export default function PerfilParlamentar() {
               <View style={st.avatarRing}><Avatar nome={p.nome} size={72} /></View>
               <View style={{ flex: 1, paddingBottom: 6 }}>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  <PartyChip sigla={p.partido_sigla_atual} uf={p.uf_atual} />
+                  {p.partido_sigla_atual ? (
+                    <Link href={{ pathname: '/partido/[sigla]', params: { sigla: p.partido_sigla_atual } }} asChild>
+                      <Pressable><PartyChip sigla={p.partido_sigla_atual} uf={p.uf_atual} /></Pressable>
+                    </Link>
+                  ) : null}
                   <Tag tone="muted">{rotuloCargo(p.ocupacao_atual)}</Tag>
                 </View>
               </View>

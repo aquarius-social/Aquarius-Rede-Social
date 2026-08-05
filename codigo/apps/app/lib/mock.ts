@@ -68,6 +68,20 @@ export const AGENDA = [
   { data: 'Sex 29 · 19:00', titulo: 'Sabatina Universidade Federal do ABC', local: 'Santo André — SP', tipo: 'Externa' },
 ];
 
+/** Partido — placeholders (Coesão, Lideranças) das áreas ainda não ingeridas. */
+export const PARTIDO_KPI_PLACEHOLDER = { coesao: 89, presenca: 88.4 };
+export const PARTIDO_COESAO = [
+  { label: 'Convergência com o líder', pct: 91, color: cor.navy },
+  { label: 'Convergência com o governo', pct: 42, color: cor.sky },
+  { label: 'Oposição declarada', pct: 73, color: cor.muted },
+];
+export const PARTIDO_LIDERANCAS = [
+  { nome: 'Líder na Câmara', uf: 'RJ', cargo: 'Líder na Câmara', mandato: 3 },
+  { nome: 'Líder no Senado', uf: 'RJ', cargo: 'Líder no Senado', mandato: 1 },
+  { nome: '1º Vice-líder', uf: 'SC', cargo: 'Vice-líder', mandato: 2 },
+  { nome: 'Secretário-geral', uf: 'SP', cargo: 'Secretário-geral', mandato: 2 },
+];
+
 export const ORGAOS = [
   { id: 'o1', nome: 'Comissão de Educação (CE)', cargo: 'Membro Titular', cor: '#1A4FA0' },
   { id: 'o2', nome: 'Comissão de Ciência, Tecnologia e Inovação (CCTI)', cargo: '2ª Vice-presidente', cor: '#2E7DD1' },
