@@ -26,6 +26,20 @@ export function kbr(valor: number | null | undefined): string {
   return `R$ ${(valor / 1e3).toFixed(1).replace('.', ',')}K`;
 }
 
+/** AAAA-MM-DD → DD/MM/AAAA. */
+export function dataBR(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+
+/** Página oficial da emenda no Portal da Transparência (fonte para conferência). */
+export function urlEmendaGov(codigo: string | null | undefined): string {
+  return codigo
+    ? `https://portaldatransparencia.gov.br/emendas/${encodeURIComponent(codigo)}`
+    : 'https://portaldatransparencia.gov.br/emendas';
+}
+
 /** "sincronizado em 04/08/2026" — o frescor da fonte (§3.1). */
 export function frescor(syncedAt: string | null | undefined): string {
   if (!syncedAt) return 'frescor não informado';

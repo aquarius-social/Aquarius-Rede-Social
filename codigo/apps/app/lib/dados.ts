@@ -25,9 +25,18 @@ export interface Parlamentar {
   synced_at: string;
 }
 
+export interface Lancamento {
+  data: string | null;        // data_documento (AAAA-MM-DD)
+  fornecedor: string | null;
+  cnpjCpf: string | null;
+  valorLiquido: number;
+  urlDocumento: string | null; // nota fiscal oficial na Câmara
+}
+
 export interface CategoriaGasto {
   tipo: string;
   total: number;
+  itens: Lancamento[]; // lançamentos individuais, desc por valor
 }
 
 export interface ResumoDespesas {
@@ -41,11 +50,16 @@ export interface ResumoDespesas {
 
 export interface EmendaLinha {
   id: string;
+  codigo: string | null;
   ano: number;
-  finalidade: string | null;
-  uf: string | null;
-  pago: number | null;
+  finalidade: string | null;  // funcao
+  subfuncao: string | null;
+  uf: string | null;          // localidade_gasto
   empenhado: number | null;
+  liquidado: number | null;
+  pago: number | null;
+  restoInscrito: number | null;
+  restoPago: number | null;
 }
 
 export interface ResumoEmendas {
@@ -81,13 +95,13 @@ export async function obterParlamentar(id: string): Promise<Parlamentar | null> 
 export async function resumoDespesas(perfilId: string): Promise<ResumoDespesas> {
   const { data, error } = await supabase
     .from('despesa_publica')
-    .select('tipo_despesa, mes, valor_liquido, synced_at')
+    .select('tipo_despesa, mes, valor_liquido, data_documento, fornecedor_nome, fornecedor_cnpj_cpf, url_documento, synced_at')
     .eq('perfil_id', perfilId)
     .eq('ano', ANO_DESPESAS)
     .limit(3000);
   if (error) throw error;
   const linhas = data ?? [];
-  const porTipo = new Map<string, number>();
+  const grupos = new Map<string, { total: number; itens: Lancamento[] }>();
   const mensal = new Array(12).fill(0) as number[];
   let total = 0;
   let frescor: string | null = null;
@@ -95,13 +109,22 @@ export async function resumoDespesas(perfilId: string): Promise<ResumoDespesas> 
     const v = Number(l.valor_liquido) || 0;
     total += v;
     const t = l.tipo_despesa || 'Outros';
-    porTipo.set(t, (porTipo.get(t) ?? 0) + v);
+    const g = grupos.get(t) ?? { total: 0, itens: [] };
+    g.total += v;
+    g.itens.push({
+      data: l.data_documento ?? null,
+      fornecedor: l.fornecedor_nome ?? null,
+      cnpjCpf: l.fornecedor_cnpj_cpf ?? null,
+      valorLiquido: v,
+      urlDocumento: l.url_documento ?? null,
+    });
+    grupos.set(t, g);
     const mi = (Number(l.mes) || 1) - 1;
     if (mi >= 0 && mi < 12) mensal[mi] += v;
     if (l.synced_at) frescor = l.synced_at;
   }
-  const categorias = [...porTipo.entries()]
-    .map(([tipo, tot]) => ({ tipo, total: tot }))
+  const categorias = [...grupos.entries()]
+    .map(([tipo, g]) => ({ tipo, total: g.total, itens: g.itens.sort((a, b) => b.valorLiquido - a.valorLiquido) }))
     .sort((a, b) => b.total - a.total);
   return { ano: ANO_DESPESAS, totalLiquido: total, lancamentos: linhas.length, categorias, mensal, frescor };
 }
@@ -109,7 +132,7 @@ export async function resumoDespesas(perfilId: string): Promise<ResumoDespesas> 
 export async function resumoEmendas(perfilId: string): Promise<ResumoEmendas> {
   const { data, error } = await supabase
     .from('emenda_publica')
-    .select('id, ano, funcao, localidade_gasto, valor_pago, valor_empenhado, synced_at')
+    .select('id, codigo_emenda, ano, funcao, subfuncao, localidade_gasto, valor_empenhado, valor_liquidado, valor_pago, valor_resto_inscrito, valor_resto_pago, synced_at')
     .eq('autor_profile_id', perfilId)
     .limit(2000);
   if (error) throw error;
@@ -117,17 +140,23 @@ export async function resumoEmendas(perfilId: string): Promise<ResumoEmendas> {
   let pago = 0;
   let empenhado = 0;
   let frescor: string | null = null;
+  const num = (x: any) => (x === null || x === undefined ? null : Number(x));
   const out: EmendaLinha[] = linhas.map((l) => {
     pago += Number(l.valor_pago) || 0;
     empenhado += Number(l.valor_empenhado) || 0;
     if (l.synced_at) frescor = l.synced_at;
     return {
       id: l.id,
+      codigo: l.codigo_emenda ?? null,
       ano: l.ano,
       finalidade: l.funcao,
+      subfuncao: l.subfuncao ?? null,
       uf: l.localidade_gasto,
-      pago: l.valor_pago === null ? null : Number(l.valor_pago),
-      empenhado: l.valor_empenhado === null ? null : Number(l.valor_empenhado),
+      empenhado: num(l.valor_empenhado),
+      liquidado: num(l.valor_liquidado),
+      pago: num(l.valor_pago),
+      restoInscrito: num(l.valor_resto_inscrito),
+      restoPago: num(l.valor_resto_pago),
     };
   });
   out.sort((a, b) => (b.pago ?? 0) - (a.pago ?? 0));

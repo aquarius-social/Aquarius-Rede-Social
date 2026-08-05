@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Pressable, Linking, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import {
   obterParlamentar, resumoDespesas, resumoEmendas, ANO_DESPESAS,
-  type Parlamentar, type ResumoDespesas, type ResumoEmendas,
+  type Parlamentar, type ResumoDespesas, type ResumoEmendas, type EmendaLinha,
 } from '../../lib/dados';
-import { reais, kbr, frescor } from '../../lib/formato';
+import { reais, kbr, dataBR, urlEmendaGov, frescor } from '../../lib/formato';
 import { cor, raio } from '../../lib/tema';
 import {
   Avatar, Cover, PartyChip, Tag, Stat, Card, SectionHeader, Divider, AlignmentBar,
@@ -275,6 +275,7 @@ function TabPresenca() {
 
 /* ── DESPESAS (REAL) ── */
 function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
+  const [catAberta, setCatAberta] = useState<string | null>(null);
   if (!desp) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
   const donutData = desp.categorias.slice(0, 7).map((c, i) => ({ valor: c.total, cor: PALETA[i % PALETA.length] }));
   const temMensal = desp.mensal.some((v) => v > 0);
@@ -300,21 +301,51 @@ function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
           <View style={{ height: 12 }} />
           <AIBanner hint="Comparar com a média do partido e da bancada" cta="Analisar" />
           <View style={{ height: 14 }} />
-          <SectionHeader title="Por categoria" />
+          <SectionHeader title="Por categoria" sub="toque para ver os lançamentos" />
           <Card padding={0}>
-            {desp.categorias.map((c, i) => (
-              <View key={c.tipo}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: PALETA[i % PALETA.length] }} />
-                  <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: cor.navy }} numberOfLines={1}>{c.tipo}</Text>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: cor.navy }}>{kbr(c.total)}</Text>
-                    <Text style={{ fontSize: 10.5, color: cor.muted, marginTop: 2 }}>{((c.total / desp.totalLiquido) * 100).toFixed(1).replace('.', ',')}%</Text>
-                  </View>
+            {desp.categorias.map((c, i) => {
+              const aberta = catAberta === c.tipo;
+              return (
+                <View key={c.tipo}>
+                  <Pressable onPress={() => setCatAberta(aberta ? null : c.tipo)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: PALETA[i % PALETA.length] }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: cor.navy }} numberOfLines={1}>{c.tipo}</Text>
+                      <Text style={{ fontSize: 10.5, color: cor.mutedSoft, marginTop: 2 }}>{c.itens.length} lançamento{c.itens.length !== 1 ? 's' : ''}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: cor.navy }}>{kbr(c.total)}</Text>
+                      <Text style={{ fontSize: 10.5, color: cor.muted, marginTop: 2 }}>{((c.total / desp.totalLiquido) * 100).toFixed(1).replace('.', ',')}%</Text>
+                    </View>
+                    <View style={{ transform: [{ rotate: aberta ? '90deg' : '0deg' }] }}>
+                      <Icon name="chevR" size={16} color={cor.mutedSoft} />
+                    </View>
+                  </Pressable>
+                  {aberta ? (
+                    <View style={{ backgroundColor: cor.surface, paddingHorizontal: 14, paddingBottom: 6, paddingTop: 2 }}>
+                      {c.itens.slice(0, 15).map((it, j) => (
+                        <View key={j} style={st.lancamento}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 12.5, color: cor.ink, fontWeight: '600' }} numberOfLines={1}>{it.fornecedor ?? 'Fornecedor não informado'}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                              <Text style={st.plMeta}>{dataBR(it.data)}</Text>
+                              {it.urlDocumento ? (
+                                <Pressable onPress={() => Linking.openURL(it.urlDocumento!)}>
+                                  <Text style={st.link}>ver nota fiscal ↗</Text>
+                                </Pressable>
+                              ) : null}
+                            </View>
+                          </View>
+                          <Text style={{ fontSize: 12.5, fontWeight: '700', color: cor.navy }}>{reais(it.valorLiquido)}</Text>
+                        </View>
+                      ))}
+                      {c.itens.length > 15 ? <Text style={st.maisItens}>+ {c.itens.length - 15} outros lançamentos</Text> : null}
+                    </View>
+                  ) : null}
+                  {i < desp.categorias.length - 1 ? <Divider inset={34} /> : null}
                 </View>
-                {i < desp.categorias.length - 1 ? <Divider inset={34} /> : null}
-              </View>
-            ))}
+              );
+            })}
           </Card>
           {temMensal ? (
             <>
@@ -337,45 +368,77 @@ function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
 }
 
 /* ── EMENDAS (REAL) ── */
+function EstagioLinha({ rotulo, valor, forte }: { rotulo: string; valor: number | null; forte?: boolean }) {
+  if (valor === null || valor === 0) return null;
+  return (
+    <View style={st.estagioLinha}>
+      <Text style={[st.estagioRot, forte ? { color: cor.navy, fontWeight: '700' } : null]}>{rotulo}</Text>
+      <Text style={[st.estagioVal, forte ? { color: cor.pos } : null]}>{reais(valor)}</Text>
+    </View>
+  );
+}
+
 function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
+  const [aberta, setAberta] = useState<string | null>(null);
   if (!emd) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
+
+  const abrirGov = (e: EmendaLinha) => Linking.openURL(urlEmendaGov(e.codigo));
+
   return (
     <View style={{ padding: 14 }}>
       <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-        <Card padding={12} style={{ flex: 1 }}>
-          <Text style={st.kpiVal}>{kbr(emd.totalEmpenhado)}</Text>
-          <Text style={st.kpiLbl}>Empenhado</Text>
-        </Card>
-        <Card padding={12} style={{ flex: 1 }}>
-          <Text style={st.kpiVal}>{kbr(emd.totalPago)}</Text>
-          <Text style={st.kpiLbl}>Pago</Text>
-        </Card>
-        <Card padding={12} style={{ flex: 1 }}>
-          <Text style={st.kpiVal}>{emd.quantidade}</Text>
-          <Text style={st.kpiLbl}>Emendas</Text>
-        </Card>
+        <Card padding={12} style={{ flex: 1 }}><Text style={st.kpiVal}>{kbr(emd.totalEmpenhado)}</Text><Text style={st.kpiLbl}>Empenhado</Text></Card>
+        <Card padding={12} style={{ flex: 1 }}><Text style={st.kpiVal}>{kbr(emd.totalPago)}</Text><Text style={st.kpiLbl}>Pago</Text></Card>
+        <Card padding={12} style={{ flex: 1 }}><Text style={st.kpiVal}>{emd.quantidade}</Text><Text style={st.kpiLbl}>Emendas</Text></Card>
       </View>
       {emd.quantidade === 0 ? (
         <Card padding={16}><Text style={st.vazio}>Nenhuma emenda atribuída a este parlamentar (autoria individual). Emendas de bancada/comissão são coletivas.</Text></Card>
       ) : (
         <>
-          <AIPill label="Resumir emendas com IA" />
-          <View style={{ height: 14 }} />
-          <SectionHeader title="Emendas individuais" action={<Text style={{ fontSize: 11.5, fontWeight: '600', color: cor.sky }}>Ver todas</Text>} />
+          <SectionHeader title="Emendas individuais" sub="toque para ver o detalhe e a fonte oficial" />
           <Card padding={0}>
-            {emd.linhas.slice(0, 8).map((e, i) => (
-              <View key={e.id}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: cor.navy }} numberOfLines={1}>{e.finalidade ?? 'Finalidade não informada'}</Text>
-                    <Text style={{ fontSize: 11, color: cor.muted, marginTop: 2 }}>{[e.uf, String(e.ano)].filter(Boolean).join(' · ')}</Text>
-                  </View>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: cor.navy }}>{kbr(e.pago ?? 0)}</Text>
+            {emd.linhas.slice(0, 20).map((e, i, arr) => {
+              const ab = aberta === e.id;
+              return (
+                <View key={e.id}>
+                  <Pressable onPress={() => setAberta(ab ? null : e.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: cor.navy }} numberOfLines={1}>{e.finalidade ?? 'Área não informada'}</Text>
+                      <Text style={{ fontSize: 11, color: cor.muted, marginTop: 2 }} numberOfLines={1}>
+                        {[e.subfuncao, e.uf, String(e.ano)].filter(Boolean).join(' · ')}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: cor.navy }}>{kbr(e.pago ?? 0)}</Text>
+                    <View style={{ transform: [{ rotate: ab ? '90deg' : '0deg' }] }}><Icon name="chevR" size={16} color={cor.mutedSoft} /></View>
+                  </Pressable>
+                  {ab ? (
+                    <View style={st.emendaDet}>
+                      {/* Área / destino — o que a fonte federal descreve */}
+                      <View style={st.detRow}><Text style={st.detK}>Área</Text><Text style={st.detV}>{[e.finalidade, e.subfuncao].filter(Boolean).join(' › ') || '—'}</Text></View>
+                      <View style={st.detRow}><Text style={st.detK}>Destino</Text><Text style={st.detV}>{e.uf ?? '—'}</Text></View>
+                      <View style={st.detRow}><Text style={st.detK}>Código</Text><Text style={[st.detV, { fontVariant: ['tabular-nums'] }]}>{e.codigo ?? '—'}</Text></View>
+
+                      {/* Estágios — NUNCA somados entre si (§13) */}
+                      <Text style={[st.secHeadTitle, { marginTop: 10, marginBottom: 6 }]}>Execução orçamentária</Text>
+                      <EstagioLinha rotulo="Empenhado" valor={e.empenhado} />
+                      <EstagioLinha rotulo="Liquidado" valor={e.liquidado} />
+                      <EstagioLinha rotulo="Pago" valor={e.pago} forte />
+                      <EstagioLinha rotulo="Restos inscritos" valor={e.restoInscrito} />
+                      <EstagioLinha rotulo="Restos pagos" valor={e.restoPago} />
+
+                      <Text style={st.detNota}>A fonte federal descreve a emenda por área e destino — não há "nome de projeto" nesse nível. O objeto detalhado (ação, beneficiário) está no Portal da Transparência.</Text>
+                      <Pressable onPress={() => abrirGov(e)} style={st.govBtn}>
+                        <Icon name="doc" size={14} color={cor.white} />
+                        <Text style={st.govBtnTxt}>Ver no Portal da Transparência ↗</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                  {i < arr.length - 1 ? <Divider inset={14} /> : null}
                 </View>
-                {i < Math.min(emd.linhas.length, 8) - 1 ? <Divider inset={14} /> : null}
-              </View>
-            ))}
+              );
+            })}
           </Card>
+          {emd.linhas.length > 20 ? <Text style={st.maisItens}>+ {emd.linhas.length - 20} outras emendas</Text> : null}
         </>
       )}
       <Fonte texto={`Portal da Transparência · dado real · estágios nunca somados · ${frescor(emd.frescor)}`} />
@@ -506,4 +569,19 @@ const st = StyleSheet.create({
   timeline: { position: 'absolute', left: 6, top: 6, bottom: 6, width: 2, backgroundColor: cor.border },
   timelineDot: { position: 'absolute', left: -22, top: 8, width: 14, height: 14, borderRadius: 7, backgroundColor: cor.white, borderWidth: 2.5, borderColor: cor.sky },
   orgIcon: { width: 38, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  // drill-down despesas
+  lancamento: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: cor.border },
+  link: { fontSize: 11, fontWeight: '600', color: cor.sky },
+  maisItens: { fontSize: 11.5, color: cor.mutedSoft, textAlign: 'center', paddingVertical: 10, fontStyle: 'italic' },
+  // drill-down emendas
+  emendaDet: { backgroundColor: cor.surface, paddingHorizontal: 14, paddingTop: 6, paddingBottom: 14 },
+  detRow: { flexDirection: 'row', paddingVertical: 4, gap: 12 },
+  detK: { width: 64, fontSize: 12, color: cor.mutedSoft, fontWeight: '600' },
+  detV: { flex: 1, fontSize: 12.5, color: cor.ink, fontWeight: '600' },
+  estagioLinha: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  estagioRot: { fontSize: 12.5, color: cor.muted },
+  estagioVal: { fontSize: 12.5, color: cor.navy, fontWeight: '600' },
+  detNota: { fontSize: 11, color: cor.mutedSoft, lineHeight: 15, marginTop: 10, fontStyle: 'italic' },
+  govBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 10, paddingVertical: 10, borderRadius: 9999, backgroundColor: cor.navy },
+  govBtnTxt: { color: cor.white, fontWeight: '700', fontSize: 12.5 },
 });
