@@ -95,7 +95,10 @@ def _ocupacao(condicao: Any, situacao: Any) -> str | None:
             return "suplente_em_exercicio"
     if situacao == "Convocado":
         return "suplente_em_exercicio"
-    if situacao in ("Licenciado", "Afastado"):
+    # A Câmara usa "Licença" (não "Licenciado"); cobre também variantes
+    # ("Licença para Tratar...", etc.) e afastamentos.
+    if situacao and (situacao in ("Licenciado", "Afastado", "Suspenso")
+                     or situacao.startswith("Licença")):
         return "licenciado"
     return None
 

@@ -59,6 +59,12 @@ class TestOcupacao(unittest.TestCase):
     def test_licenciado(self):
         self.assertEqual(_ocupacao("Titular", "Licenciado"), "licenciado")
 
+    def test_licenca_e_licenciado(self):
+        """A Câmara usa 'Licença' (não 'Licenciado') — é o valor real (ex.: Marina
+        Silva, ministra). Sem isto, licenciado não era capturado e sumia da lista."""
+        self.assertEqual(_ocupacao("Titular", "Licença"), "licenciado")
+        self.assertEqual(_ocupacao("Titular", "Licença para Tratar de Interesses Particulares"), "licenciado")
+
     def test_fim_de_mandato_nao_e_ocupacao(self):
         self.assertIsNone(_ocupacao("Titular", "Fim de Mandato"))
 
