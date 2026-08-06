@@ -114,9 +114,21 @@ do `CLAUDE.md`.
   legislaturas — filtrar por ativo mostrava ex-deputados de 2018-2022). Resultado:
   a view caiu de 1.352 para **581 (parlamento atual), 580 com partido (99,8%)**.
 - App: selo `SituacaoBadge` (Licenciado / Suplente em exercício) no perfil, lista
-  e bancada. **Pendente §6.4 (próxima):** suplente em exercício ainda sem vínculo
-  (fica fora da lista até lá) + link suplente↔titular + datas de transição (a
-  fonte `/senador/{cod}/mandatos` tem `Exercicios` + causa do afastamento).
+  e bancada.
+
+**§6.4 (licenciado × suplente) — concluído (2026-08-06).** View mostra 623 atuais:
+573 em exercício, **25 licenciados**, **25 suplentes em exercício** (antes sumiam).
+- **Senado (0014):** suplente com vínculo por período REAL de exercício
+  (`Exercicios`) + `titular_profile_id` + causa; card "assumiu em [data] no lugar
+  de [titular]" no app. Coletor `senado/mandatos.py` reescrito; +3 testes.
+- **Câmara (0015/0016):** corrigido o bug do `situacao="Licença"` (era só
+  "Licenciado") — licenciado (ex.: Padilha) deixa de sumir; suplente sai da
+  quarentena e aparece. A Câmara **não expõe o link titular↔suplente** (dado
+  eleitoral/TSE), então o suplente da Câmara aparece **sem** "no lugar de X" —
+  constraint `vinculo_suplente_coerente` relaxada (titular opcional). +2 testes.
+- **Pendente (backlog):** link titular↔suplente da Câmara via **TSE** (ordem de
+  suplência por coligação) — onda própria; e o senador 5718 (filiações sobrepostas
+  na fonte, débito §4).
 
 **PLANEJADO (TODO, não iniciado) — Objeto das emendas: convênios/transferências.**
 - **Problema:** a API de emendas (execução) descreve a emenda só por função/
