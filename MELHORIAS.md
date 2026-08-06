@@ -55,15 +55,15 @@ isso é ⛔Pro, não código novo.
   1 linha de `vinculo_temporal` recusada. Refinar `construir_vinculos_senado`.
 - 🟡 — **Linhagem de partidos (§4)** — siglas históricas (PMDB→MDB) e fusões
   (DEM/PSL→UNIÃO); `partido_id` de períodos antigos fica null sem curadoria.
-- 🟡 — **Suplente em exercício (§6.4) — Câmara.** O **Senado está FEITO** (suplente
-  ganha vínculo por período real de exercício + titular + causa; view 0014 + card
-  no app). Falta a **Câmara** — e é ela que cobre casos como a **Marina Silva**
-  (deputada licenciada para ser ministra). Dois problemas próprios da Câmara:
-  (1) a lista `/deputados` só devolve quem está **sentado**, então o titular
-  licenciado (Marina) talvez nem esteja ingerido — só o suplente dele; precisa de
-  fonte com o roster completo/afastamentos. (2) `camara/mandatos.py` põe o suplente
-  em quarentena. Investigar a estrutura da Câmara (equivalente a `Exercicios`/
-  `Titular` do Senado).
+- 🟢 — **Suplente/licenciado (§6.4) — Senado e Câmara: FEITO** (com 1 ressalva).
+  Senado: suplente com vínculo real + titular + causa (card no app). Câmara:
+  licença agora reconhecida (era o bug do "Licença" vs "Licenciado"), suplente sai
+  da quarentena e aparece. **Ressalva:** a Câmara **não expõe o link
+  titular↔suplente** (é dado eleitoral/coligação), então o suplente da Câmara
+  aparece **sem** o "no lugar de X".
+- 🟡 ⛔fonte — **Link titular↔suplente da Câmara (via TSE).** Para dar o "no lugar
+  de X" na Câmara, ingerir a **ordem de suplência** do TSE (por coligação/UF). É a
+  única fonte com esse vínculo. Onda própria.
 - 🟢 — **Presidência de votação (Artigo 17)** — hoje computada, sem coluna alvo.
 - 🟡 — **Mapa de autores de emenda por ano** — hoje o mapa é de 2025; autores de
   outros anos fora do mapa não resolvem.
