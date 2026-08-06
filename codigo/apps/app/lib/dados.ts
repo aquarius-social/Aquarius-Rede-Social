@@ -9,7 +9,6 @@
  */
 import { supabase } from './supabase';
 
-export const ANO_DESPESAS = 2025; // último ano-calendário fechado
 
 export interface Parlamentar {
   id: string;
@@ -76,11 +75,10 @@ export interface CategoriaGasto {
 }
 
 export interface ResumoDespesas {
-  ano: number;
-  totalLiquido: number;
+  totalLiquido: number;         // mandato inteiro
   lancamentos: number;
   categorias: CategoriaGasto[]; // ordenadas desc por total
-  mensal: number[]; // 12 posições (jan..dez) em reais
+  anual: { ano: number; total: number }[]; // por ano, asc
   frescor: string | null;
 }
 
@@ -129,16 +127,16 @@ export async function obterParlamentar(id: string): Promise<Parlamentar | null> 
 }
 
 export async function resumoDespesas(perfilId: string): Promise<ResumoDespesas> {
+  // Mandato inteiro (a base de despesas cobre 2023–2026); sem filtro de ano.
   const { data, error } = await supabase
     .from('despesa_publica')
-    .select('tipo_despesa, mes, valor_liquido, data_documento, fornecedor_nome, fornecedor_cnpj_cpf, url_documento, synced_at')
+    .select('tipo_despesa, ano, valor_liquido, data_documento, fornecedor_nome, fornecedor_cnpj_cpf, url_documento, synced_at')
     .eq('perfil_id', perfilId)
-    .eq('ano', ANO_DESPESAS)
-    .limit(3000);
+    .limit(8000);
   if (error) throw error;
   const linhas = data ?? [];
   const grupos = new Map<string, { total: number; itens: Lancamento[] }>();
-  const mensal = new Array(12).fill(0) as number[];
+  const porAno = new Map<number, number>();
   let total = 0;
   let frescor: string | null = null;
   for (const l of linhas as any[]) {
@@ -155,14 +153,15 @@ export async function resumoDespesas(perfilId: string): Promise<ResumoDespesas> 
       urlDocumento: l.url_documento ?? null,
     });
     grupos.set(t, g);
-    const mi = (Number(l.mes) || 1) - 1;
-    if (mi >= 0 && mi < 12) mensal[mi] += v;
+    const ano = Number(l.ano) || 0;
+    if (ano) porAno.set(ano, (porAno.get(ano) ?? 0) + v);
     if (l.synced_at) frescor = l.synced_at;
   }
   const categorias = [...grupos.entries()]
     .map(([tipo, g]) => ({ tipo, total: g.total, itens: g.itens.sort((a, b) => b.valorLiquido - a.valorLiquido) }))
     .sort((a, b) => b.total - a.total);
-  return { ano: ANO_DESPESAS, totalLiquido: total, lancamentos: linhas.length, categorias, mensal, frescor };
+  const anual = [...porAno.entries()].map(([ano, tot]) => ({ ano, total: tot })).sort((a, b) => a.ano - b.ano);
+  return { totalLiquido: total, lancamentos: linhas.length, categorias, anual, frescor };
 }
 
 export async function resumoEmendas(perfilId: string): Promise<ResumoEmendas> {

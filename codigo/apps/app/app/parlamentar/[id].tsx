@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Pressable, Linking, StyleSheet } from 'react-native';
 import { useLocalSearchParams, Link } from 'expo-router';
 import {
-  obterParlamentar, resumoDespesas, resumoEmendas, ANO_DESPESAS,
+  obterParlamentar, resumoDespesas, resumoEmendas,
   type Parlamentar, type ResumoDespesas, type ResumoEmendas,
 } from '../../lib/dados';
 import { reais, kbr, dataBR, URL_EMENDAS_CONSULTA, frescor } from '../../lib/formato';
@@ -309,22 +309,20 @@ function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
   const [catAberta, setCatAberta] = useState<string | null>(null);
   if (!desp) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
   const donutData = desp.categorias.slice(0, 7).map((c, i) => ({ valor: c.total, cor: PALETA[i % PALETA.length] }));
-  const temMensal = desp.mensal.some((v) => v > 0);
-  const media = temMensal ? desp.mensal.filter((v) => v > 0).reduce((s, v) => s + v, 0) / desp.mensal.filter((v) => v > 0).length : 0;
-  const pico = Math.max(0, ...desp.mensal);
+  const anos = desp.anual.length ? `${desp.anual[0].ano}–${desp.anual[desp.anual.length - 1].ano}` : 'mandato';
   return (
     <View style={{ padding: 14 }}>
       {desp.lancamentos === 0 ? (
-        <Card padding={16}><Text style={st.vazio}>Sem despesas de cota parlamentar registradas em {ANO_DESPESAS}.</Text></Card>
+        <Card padding={16}><Text style={st.vazio}>Não registrou despesas de cota parlamentar neste mandato — pode estar licenciado (quem usa a cota é o suplente que assumiu).</Text></Card>
       ) : (
         <>
           <Card padding={14}>
             <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-              <Donut data={donutData} w={130} valueLabel={kbr(desp.totalLiquido)} sub={`${ANO_DESPESAS} · ANO`} />
+              <Donut data={donutData} w={130} valueLabel={kbr(desp.totalLiquido)} sub="MANDATO" />
               <View style={{ flex: 1 }}>
                 <Text style={st.secHeadTitle}>Cota Parlamentar</Text>
                 <Text style={{ marginTop: 6, fontSize: 12.5, color: cor.muted, lineHeight: 19 }}>
-                  {desp.lancamentos} lançamentos líquidos em {ANO_DESPESAS}, verificados pela identidade documento − glosa = líquido.
+                  {desp.lancamentos} lançamentos líquidos no mandato ({anos}), verificados pela identidade documento − glosa = líquido.
                 </Text>
               </View>
             </View>
@@ -378,15 +376,19 @@ function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
               );
             })}
           </Card>
-          {temMensal ? (
+          {desp.anual.length > 0 ? (
             <>
               <View style={{ height: 14 }} />
-              <SectionHeader title={`Histórico mensal · ${ANO_DESPESAS}`} />
+              <SectionHeader title="Por ano" sub="cota parlamentar por exercício" />
               <Card padding={14}>
-                <BarChart data={desp.mensal} labels={['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']} w={310} h={120} accent={cor.navy} />
+                <BarChart data={desp.anual.map((a) => a.total)} labels={desp.anual.map((a) => String(a.ano))} w={310} h={120} accent={cor.navy} />
                 <View style={[st.rowBetween, { marginTop: 10 }]}>
-                  <Text style={st.plMeta}>Média mensal: {kbr(media)}</Text>
-                  <Text style={st.plMeta}>Pico: {kbr(pico)}</Text>
+                  {desp.anual.map((a) => (
+                    <View key={a.ano} style={{ alignItems: 'center', flex: 1 }}>
+                      <Text style={st.plMeta}>{a.ano}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: cor.navy }}>{kbr(a.total)}</Text>
+                    </View>
+                  ))}
                 </View>
               </Card>
             </>
