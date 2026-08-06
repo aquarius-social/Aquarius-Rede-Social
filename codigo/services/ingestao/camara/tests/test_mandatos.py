@@ -116,18 +116,19 @@ class TestConstruirVinculos(unittest.TestCase):
         _, v = r.quarentena[0]
         self.assertEqual(v.dimensao, "completude")
 
-    def test_suplente_em_exercicio_vai_para_quarentena(self):
-        """Sem resolver o titular da cadeira (§6.4), a constraint recusaria —
-        quarentena honesta em vez de dado errado."""
+    def test_suplente_em_exercicio_entra_sem_titular(self):
+        """§6.4: o suplente em exercício ENTRA (não some mais). A Câmara não expõe
+        o titular da cadeira, então vai sem link — a constraint relaxada (0016)
+        permite `titular_profile_id` nulo."""
         hist = [
             _snap("2019-05-01T10:00", "PT", "SP", "Suplente", "Convocado"),
             _snap("2019-08-01T10:00", "PT", "SP", "Titular", "Fim de Mandato"),
         ]
         r = construir_vinculos(hist, "999")
-        self.assertEqual(r.aprovados, [])
-        self.assertEqual(len(r.quarentena), 1)
-        _, v = r.quarentena[0]
-        self.assertEqual(v.dimensao, "integridade_referencial")
+        self.assertEqual(len(r.aprovados), 1)
+        self.assertEqual(r.aprovados[0]["ocupacao"], "suplente_em_exercicio")
+        self.assertNotIn("titular_id_fonte", r.aprovados[0])  # Câmara não dá
+        self.assertEqual(r.quarentena, [])
 
     def test_funde_periodos_consecutivos_identicos(self):
         """Dois snapshots seguidos com mesmo (uf, partido, ocupação) viram um

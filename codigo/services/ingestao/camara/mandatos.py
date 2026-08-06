@@ -156,17 +156,12 @@ def construir_vinculos(
     # Funde períodos consecutivos idênticos em (uf, partido, ocupacao).
     fundidos = _fundir_consecutivos(crus)
 
-    for v in fundidos:
-        if v["ocupacao"] == "suplente_em_exercicio":
-            resultado.quarentena.append((
-                v, Violacao(
-                    "integridade_referencial",
-                    "suplente em exercício exige resolver o titular da cadeira "
-                    "(§6.4) — etapa própria; sem ele a constraint recusaria",
-                ),
-            ))
-            continue
-        resultado.aprovados.append(v)
+    # §6.4: o suplente em exercício ENTRA. A Câmara não expõe o titular da cadeira
+    # (dado eleitoral/coligação do TSE — nem o detalhe do deputado nem o histórico
+    # trazem), então vai SEM `titular_id_fonte`; a constraint relaxada (0016)
+    # permite `titular_profile_id` nulo. Mostra 'Suplente em exercício' sem o link
+    # 'no lugar de X' — melhor que sumir da lista (dado ausente declarado, §1).
+    resultado.aprovados.extend(fundidos)
     return resultado
 
 
