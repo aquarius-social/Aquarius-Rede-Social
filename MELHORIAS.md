@@ -55,8 +55,15 @@ isso é ⛔Pro, não código novo.
   1 linha de `vinculo_temporal` recusada. Refinar `construir_vinculos_senado`.
 - 🟡 — **Linhagem de partidos (§4)** — siglas históricas (PMDB→MDB) e fusões
   (DEM/PSL→UNIÃO); `partido_id` de períodos antigos fica null sem curadoria.
-- 🟡 — **Suplente em exercício (§6.4)** — vincular o suplente à cadeira
-  (cross-referência ao titular).
+- 🟡 — **Suplente em exercício (§6.4) — Câmara.** O **Senado está FEITO** (suplente
+  ganha vínculo por período real de exercício + titular + causa; view 0014 + card
+  no app). Falta a **Câmara** — e é ela que cobre casos como a **Marina Silva**
+  (deputada licenciada para ser ministra). Dois problemas próprios da Câmara:
+  (1) a lista `/deputados` só devolve quem está **sentado**, então o titular
+  licenciado (Marina) talvez nem esteja ingerido — só o suplente dele; precisa de
+  fonte com o roster completo/afastamentos. (2) `camara/mandatos.py` põe o suplente
+  em quarentena. Investigar a estrutura da Câmara (equivalente a `Exercicios`/
+  `Titular` do Senado).
 - 🟢 — **Presidência de votação (Artigo 17)** — hoje computada, sem coluna alvo.
 - 🟡 — **Mapa de autores de emenda por ano** — hoje o mapa é de 2025; autores de
   outros anos fora do mapa não resolvem.
