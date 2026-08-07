@@ -24,6 +24,15 @@ Design). Já portados: `aq-foundation`, `aq-screens-2` (perfil), `aq-screens-4`
   dependem de reingestão ⛔Pro/⛔fonte). Listagem real das 89 comissões.
 - **15 · Frente** — perfil enxuto igual: identidade real + composição/atividade
   rotuladas "em breve". Listagem real das 1443 frentes.
+- **01 · Splash** — navy + logo branca animada; mostrado durante a carga.
+- **02 · Login (OTP e-mail)** — visual do protótipo; login real por e-mail via
+  Supabase Auth (SMS/WhatsApp "em breve"). Gate de rota por sessão + onboarding.
+- **03 · Onboarding** — intro → temas → partidos → sobre (opt-in, LGPD) → montando;
+  prefs salvas no perfil (user_metadata). Gate por estado (link mágico ou código).
+- **18 · Configurações** — conta, Plano Free, "Complete seu perfil" (anel %), feed
+  (temas/partidos), grupos LGPD/App, **Sair**. Ações não-essenciais: "em breve".
+- **19 · Editar perfil** — completude + Nome/CEP/idade/gênero + dados opt-in
+  (escolaridade/renda/ocupação), salvos no perfil.
 
 ## Inventário do que falta
 
