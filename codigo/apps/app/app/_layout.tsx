@@ -1,6 +1,7 @@
-import { Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text } from 'react-native';
+import { Text } from 'react-native';
 import {
   useFonts,
   Inter_400Regular,
@@ -10,6 +11,8 @@ import {
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter';
 import { cor, fonte } from '../lib/tema';
+import { AuthProvider, useAuth } from '../lib/auth';
+import { Splash } from '../components/splash';
 
 // Default global de fonte: prefixa Inter Regular no estilo de TODO <Text>, de
 // modo que o texto de corpo (sem peso) use Inter, mas estilos com fontFamily
@@ -41,29 +44,51 @@ export default function RootLayout() {
   });
 
   // Trava o render até a Inter carregar (evita flash com a fonte do sistema).
-  // Se der erro no carregamento, segue mesmo assim para não travar o app.
-  if (!fontsLoaded && !fontError) {
-    return <View style={{ flex: 1, backgroundColor: cor.surface }} />;
-  }
+  if (!fontsLoaded && !fontError) return <Splash />;
 
   return (
-    <>
+    <AuthProvider>
       <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: cor.surface },
-          headerTintColor: cor.navy,
-          headerTitleStyle: { fontFamily: 'Inter_800ExtraBold', color: cor.navy },
-          contentStyle: { backgroundColor: cor.surface },
-        }}
-      >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="listagem/[tipo]" options={{ title: 'Explorar' }} />
-        <Stack.Screen name="parlamentar/[id]" options={{ title: 'Perfil' }} />
-        <Stack.Screen name="partido/[sigla]" options={{ title: 'Partido' }} />
-        <Stack.Screen name="comissao/[id]" options={{ title: 'Comissão' }} />
-        <Stack.Screen name="frente/[id]" options={{ title: 'Frente' }} />
-      </Stack>
-    </>
+      <Gate />
+    </AuthProvider>
+  );
+}
+
+/**
+ * Gate de rota: sem sessão, só a tela de login é acessível; com sessão, o app
+ * inteiro. Enquanto a sessão inicial resolve, mostra o Splash.
+ */
+function Gate() {
+  const { session, carregando } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (carregando) return;
+    const emLogin = segments[0] === 'login';
+    if (!session && !emLogin) router.replace('/login');
+    else if (session && emLogin) router.replace('/');
+  }, [session, carregando, segments, router]);
+
+  if (carregando) return <Splash />;
+
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: cor.surface },
+        headerTintColor: cor.navy,
+        headerTitleStyle: { fontFamily: 'Inter_800ExtraBold', color: cor.navy },
+        contentStyle: { backgroundColor: cor.surface },
+      }}
+    >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="listagem/[tipo]" options={{ title: 'Explorar' }} />
+      <Stack.Screen name="parlamentar/[id]" options={{ title: 'Perfil' }} />
+      <Stack.Screen name="partido/[sigla]" options={{ title: 'Partido' }} />
+      <Stack.Screen name="comissao/[id]" options={{ title: 'Comissão' }} />
+      <Stack.Screen name="frente/[id]" options={{ title: 'Frente' }} />
+    </Stack>
   );
 }

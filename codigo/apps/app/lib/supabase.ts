@@ -7,6 +7,8 @@
  * servidor). Nada é consultado ao vivo na fonte oficial; só o banco curado.
  */
 import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -22,5 +24,12 @@ if (!url || !anon) {
 }
 
 export const supabase = createClient(url, anon, {
-  auth: { persistSession: false },
+  auth: {
+    // Persistência da sessão de login (OTP). No web usa localStorage (default);
+    // no nativo, AsyncStorage. detectSessionInUrl só faz sentido no web.
+    storage: Platform.OS === 'web' ? undefined : AsyncStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: Platform.OS === 'web',
+  },
 });
