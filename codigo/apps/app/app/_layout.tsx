@@ -59,16 +59,22 @@ export default function RootLayout() {
  * inteiro. Enquanto a sessão inicial resolve, mostra o Splash.
  */
 function Gate() {
-  const { session, carregando } = useAuth();
+  const { session, carregando, onboarded } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (carregando) return;
     const emLogin = segments[0] === 'login';
-    if (!session && !emLogin) router.replace('/login');
-    else if (session && emLogin) router.replace('/');
-  }, [session, carregando, segments, router]);
+    const emOnboarding = segments[0] === 'onboarding';
+    if (!session && !emLogin) {
+      router.replace('/login');                         // não logado → login
+    } else if (session && !onboarded && !emOnboarding) {
+      router.replace('/onboarding');                    // logado sem onboarding → onboarding
+    } else if (session && onboarded && (emLogin || emOnboarding)) {
+      router.replace('/');                              // já resolvido → app
+    }
+  }, [session, onboarded, carregando, segments, router]);
 
   if (carregando) return <Splash />;
 

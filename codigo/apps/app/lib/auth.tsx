@@ -9,13 +9,25 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+export interface PrefsOnboarding {
+  temas: string[];
+  partidos: string[];
+  cep?: string;
+  idade?: string;
+  genero?: string;
+}
+
 interface AuthCtx {
   session: Session | null;
   carregando: boolean; // enquanto resolve a sessão inicial
+  /** true quando o usuário já concluiu o onboarding (guardado no metadata). */
+  onboarded: boolean;
   /** Envia o código de 6 dígitos para o e-mail. */
   enviarCodigo: (email: string) => Promise<void>;
   /** Verifica o código; em sucesso, a sessão passa a existir. */
   verificarCodigo: (email: string, codigo: string) => Promise<void>;
+  /** Marca o onboarding como concluído e salva as preferências no perfil. */
+  concluirOnboarding: (prefs: PrefsOnboarding) => Promise<void>;
   sair: () => Promise<void>;
 }
 
@@ -55,10 +67,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
+  const concluirOnboarding = async (prefs: PrefsOnboarding) => {
+    // Guarda no metadata do usuário (server-side, cross-device) — não em flag
+    // local, para o gate funcionar em qualquer entrada (link mágico ou código).
+    const { error } = await supabase.auth.updateUser({ data: { onboarded: true, prefs } });
+    if (error) throw error;
+  };
+
   const sair = async () => { await supabase.auth.signOut(); };
 
+  const onboarded = Boolean(session?.user?.user_metadata?.onboarded);
+
   return (
-    <Ctx.Provider value={{ session, carregando, enviarCodigo, verificarCodigo, sair }}>
+    <Ctx.Provider value={{ session, carregando, onboarded, enviarCodigo, verificarCodigo, concluirOnboarding, sair }}>
       {children}
     </Ctx.Provider>
   );

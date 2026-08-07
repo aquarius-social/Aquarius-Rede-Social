@@ -3,7 +3,6 @@ import {
   View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../lib/auth';
 import { cor, raio, fonte } from '../lib/tema';
@@ -12,7 +11,6 @@ import { Logo } from '../components/base';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
-  const router = useRouter();
   const { enviarCodigo, verificarCodigo } = useAuth();
   const [step, setStep] = useState<0 | 1>(0);
   const [email, setEmail] = useState('');
@@ -55,7 +53,8 @@ export default function Login() {
     setErro(null); setVerificando(true);
     try {
       await verificarCodigo(email, cod);
-      router.replace('/onboarding');
+      // Não navega aqui: o gate roteia pela sessão (→ onboarding se ainda não
+      // fez, senão → app). Vale tanto para o código quanto para o link mágico.
     } catch (e: any) {
       setErro(traduzErro(e?.message));
       setCodigo(['', '', '', '', '', '']);

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, Animated, Easing, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../lib/auth';
 import { cor, raio, fonte } from '../lib/tema';
 import { Logo, Icon } from '../components/base';
 
@@ -16,6 +16,7 @@ const ORDEM: Step[] = ['intro', 'temas', 'partidos', 'sobre', 'montando'];
 
 export default function Onboarding() {
   const router = useRouter();
+  const { concluirOnboarding } = useAuth();
   const [step, setStep] = useState<Step>('intro');
   const [temas, setTemas] = useState<string[]>([]);
   const [partidos, setPartidos] = useState<string[]>([]);
@@ -30,10 +31,14 @@ export default function Onboarding() {
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   const concluir = async () => {
+    // Marca onboarded no perfil (server-side). Em sucesso, o GATE leva ao app
+    // quando onboarded=true propaga (evita corrida com um replace prematuro).
+    // Em falha de rede, faz replace como fallback para não travar no spinner.
     try {
-      await AsyncStorage.setItem('aq.onboarding', JSON.stringify({ temas, partidos, cep, idade, genero, em: Date.now() }));
-    } catch { /* não bloqueia a entrada no app */ }
-    router.replace('/');
+      await concluirOnboarding({ temas, partidos, cep, idade, genero });
+    } catch {
+      router.replace('/');
+    }
   };
 
   useEffect(() => {
