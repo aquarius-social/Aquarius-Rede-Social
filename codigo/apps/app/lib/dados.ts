@@ -104,18 +104,86 @@ export interface ResumoEmendas {
   frescor: string | null;
 }
 
+export interface Comissao {
+  id: string;
+  nome: string;
+  sigla: string | null;
+  slug: string;
+  source: string;
+  source_url: string | null;
+  synced_at: string;
+}
+
+export interface Frente {
+  id: string;
+  nome: string;
+  slug: string;
+  source: string;
+  source_url: string | null;
+  synced_at: string;
+}
+
 export interface Contagens {
   parlamentares: number;
   partidos: number;
+  comissoes: number;
+  frentes: number;
 }
 
 /** Contagens para o hub Explorar (só o que a camada ouro expõe ao anon). */
 export async function contagens(): Promise<Contagens> {
-  const [p, pa] = await Promise.all([
-    supabase.from('parlamentar_publico').select('*', { count: 'exact', head: true }),
-    supabase.from('partido_publico').select('*', { count: 'exact', head: true }),
+  const head = { count: 'exact' as const, head: true };
+  const [p, pa, co, fr] = await Promise.all([
+    supabase.from('parlamentar_publico').select('*', head),
+    supabase.from('partido_publico').select('*', head),
+    supabase.from('comissao_publica').select('*', head),
+    supabase.from('frente_publica').select('*', head),
   ]);
-  return { parlamentares: p.count ?? 0, partidos: pa.count ?? 0 };
+  return {
+    parlamentares: p.count ?? 0,
+    partidos: pa.count ?? 0,
+    comissoes: co.count ?? 0,
+    frentes: fr.count ?? 0,
+  };
+}
+
+export async function listarComissoes(): Promise<Comissao[]> {
+  const { data, error } = await supabase
+    .from('comissao_publica')
+    .select('*')
+    .order('sigla', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Comissao[];
+}
+
+export async function listarFrentes(): Promise<Frente[]> {
+  const { data, error } = await supabase
+    .from('frente_publica')
+    .select('*')
+    .order('nome', { ascending: true })
+    .limit(2000);
+  if (error) throw error;
+  return (data ?? []) as Frente[];
+}
+
+export async function obterComissao(id: string): Promise<Comissao | null> {
+  const { data, error } = await supabase
+    .from('comissao_publica')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as Comissao) ?? null;
+}
+
+export async function obterFrente(id: string): Promise<Frente | null> {
+  const { data, error } = await supabase
+    .from('frente_publica')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as Frente) ?? null;
 }
 
 export async function listarPartidos(): Promise<Partido[]> {

@@ -104,6 +104,11 @@ isso é ⛔Pro, não código novo.
 - 🔴 — **Prometeus / IA** — botões "Perguntar à IA" são placeholder; integrar o
   agente (chat + resumos com fonte).
 - 🟡 — **Shell de navegação** — bottom nav funcional, header, deep links.
+- 🟢 — **Header custom do protótipo (AqHeader)** — hoje as telas internas usam o
+  header nativo do `@react-navigation` (título "Perfil"/"Partido"/"Explorar"), e
+  o `@react-navigation` sobrepõe parte do estilo (o título saiu Inter SemiBold em
+  vez do ExtraBold pedido). Trocar pelo header do protótipo: **logo à esquerda +
+  avatar à direita**, alinhando o peso e o visual de vez.
 - 🟢 — **`tema.ts` → `@aquarius/ui`** — hoje os tokens são cópia local; ligar o
   monorepo no Metro e importar do pacote.
 - 🟡 — **Abas não-monetárias com dado real** — dependem de reingerir as áreas

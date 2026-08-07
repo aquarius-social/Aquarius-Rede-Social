@@ -17,8 +17,13 @@ Design). Já portados: `aq-foundation`, `aq-screens-2` (perfil), `aq-screens-4`
   drill-down + fonte), 9 abas, situação (licenciado/suplente), card de transição.
 - **13 · Partido** — bancada real (membros, Câmara/Senado, filtro UF) + emendas
   agregadas por função. Placeholder rotulado em Lideranças/Proposições.
-- **(parcial) 05/16 · Explorar/Busca** — hoje é uma **lista crua** de parlamentares
-  com busca por nome. Falta refinar (filtros).
+- **05/16 · Explorar (hub) + Listagem** — hub de entidades com contagem real
+  (Parlamentares, Partidos, Comissões, Frentes) + Listagem filtrável reutilizável.
+- **14 · Comissão** — perfil **enxuto**: identidade real (nome/sigla/fonte/frescor)
+  + seções pendentes rotuladas (composição/mesa/agenda/votações "em breve", pois
+  dependem de reingestão ⛔Pro/⛔fonte). Listagem real das 89 comissões.
+- **15 · Frente** — perfil enxuto igual: identidade real + composição/atividade
+  rotuladas "em breve". Listagem real das 1443 frentes.
 
 ## Inventário do que falta
 

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, ScrollView, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, Link } from 'expo-router';
-import { listarParlamentares, listarPartidos, type Parlamentar, type Partido } from '../../lib/dados';
+import {
+  listarParlamentares, listarPartidos, listarComissoes, listarFrentes,
+  type Parlamentar, type Partido, type Comissao, type Frente,
+} from '../../lib/dados';
 import { cor, raio, fonte } from '../../lib/tema';
 import { Avatar, Monogram, PartyChip, SituacaoBadge, Icon } from '../../components/base';
 import { PARTIDO_COR } from '../../lib/mock';
@@ -12,6 +15,8 @@ export default function Listagem() {
   const { tipo } = useLocalSearchParams<{ tipo: string }>();
   if (tipo === 'partidos') return <ListaPartidos />;
   if (tipo === 'parlamentares') return <ListaParlamentares />;
+  if (tipo === 'comissoes') return <ListaComissoes />;
+  if (tipo === 'frentes') return <ListaFrentes />;
   return (
     <View style={st.centro}>
       <Text style={st.emBreveTit}>Em breve</Text>
@@ -104,6 +109,79 @@ function ListaParlamentares() {
   );
 }
 
+/* ── COMISSÕES ── */
+function ListaComissoes() {
+  const [todos, setTodos] = useState<Comissao[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [busca, setBusca] = useState('');
+  useEffect(() => { listarComissoes().then(setTodos).finally(() => setCarregando(false)); }, []);
+  const lista = todos.filter((c) => !busca || norm((c.sigla ?? '') + ' ' + c.nome).includes(norm(busca)));
+
+  return (
+    <View style={st.tela}>
+      <TextInput style={st.busca} placeholder="Buscar comissão…" placeholderTextColor={cor.mutedSoft} value={busca} onChangeText={setBusca} autoCorrect={false} />
+      {carregando ? (
+        <ActivityIndicator color={cor.blue} style={{ marginTop: 32 }} />
+      ) : (
+        <FlatList
+          data={lista}
+          keyExtractor={(c) => c.id}
+          contentContainerStyle={{ paddingVertical: 8, paddingBottom: 24 }}
+          ListHeaderComponent={<Text style={st.contador}>{lista.length} comiss{lista.length !== 1 ? 'ões' : 'ão'}</Text>}
+          ListEmptyComponent={<Text style={st.vazio}>Nenhuma comissão.</Text>}
+          renderItem={({ item }) => (
+            <Link href={{ pathname: '/comissao/[id]', params: { id: item.id } }} asChild>
+              <Pressable style={st.linha}>
+                <Monogram sigla={item.sigla ?? item.nome.slice(0, 2)} size={44} color={cor.navy} />
+                <View style={{ flex: 1 }}>
+                  {item.sigla ? <Text style={st.nome}>{item.sigla}</Text> : null}
+                  <Text style={item.sigla ? st.sub : st.nome} numberOfLines={2}>{item.nome}</Text>
+                </View>
+                <Icon name="chevR" size={16} color={cor.mutedSoft} />
+              </Pressable>
+            </Link>
+          )}
+        />
+      )}
+    </View>
+  );
+}
+
+/* ── FRENTES ── */
+function ListaFrentes() {
+  const [todos, setTodos] = useState<Frente[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [busca, setBusca] = useState('');
+  useEffect(() => { listarFrentes().then(setTodos).finally(() => setCarregando(false)); }, []);
+  const lista = todos.filter((f) => !busca || norm(f.nome).includes(norm(busca)));
+
+  return (
+    <View style={st.tela}>
+      <TextInput style={st.busca} placeholder="Buscar frente…" placeholderTextColor={cor.mutedSoft} value={busca} onChangeText={setBusca} autoCorrect={false} />
+      {carregando ? (
+        <ActivityIndicator color={cor.blue} style={{ marginTop: 32 }} />
+      ) : (
+        <FlatList
+          data={lista}
+          keyExtractor={(f) => f.id}
+          contentContainerStyle={{ paddingVertical: 8, paddingBottom: 24 }}
+          ListHeaderComponent={<Text style={st.contador}>{lista.length} frente{lista.length !== 1 ? 's' : ''}</Text>}
+          ListEmptyComponent={<Text style={st.vazio}>Nenhuma frente.</Text>}
+          renderItem={({ item }) => (
+            <Link href={{ pathname: '/frente/[id]', params: { id: item.id } }} asChild>
+              <Pressable style={st.linha}>
+                <View style={st.frenteIcon}><Icon name="star" size={20} color={cor.white} /></View>
+                <Text style={[st.nome, { flex: 1 }]} numberOfLines={2}>{item.nome}</Text>
+                <Icon name="chevR" size={16} color={cor.mutedSoft} />
+              </Pressable>
+            </Link>
+          )}
+        />
+      )}
+    </View>
+  );
+}
+
 /* ── PARTIDOS ── */
 function ListaPartidos() {
   const [todos, setTodos] = useState<Partido[]>([]);
@@ -153,4 +231,5 @@ const st = StyleSheet.create({
   nome: { fontSize: 15, fontFamily: fonte.b, color: cor.navy },
   sub: { fontSize: 12.5, color: cor.muted, marginTop: 3 },
   vazio: { color: cor.muted, marginTop: 32, textAlign: 'center' },
+  frenteIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: cor.skySoft, alignItems: 'center', justifyContent: 'center' },
 });

@@ -52,8 +52,10 @@ export default function Explorar() {
             sub={c ? `${c.parlamentares} no exercício` : '…'} tipo="parlamentares" />
           <EntCard icon="flag" cor={cor.blue} titulo="Partidos"
             sub={c ? `${c.partidos} com bancada` : '…'} tipo="partidos" />
-          <EntCard icon="building" cor={cor.sky} titulo="Comissões" sub="em breve" tipo="comissoes" />
-          <EntCard icon="star" cor={cor.skySoft} titulo="Frentes" sub="em breve" tipo="frentes" />
+          <EntCard icon="building" cor={cor.sky} titulo="Comissões"
+            sub={c ? `${c.comissoes} colegiados` : '…'} tipo="comissoes" />
+          <EntCard icon="star" cor={cor.skySoft} titulo="Frentes"
+            sub={c ? `${c.frentes} frentes` : '…'} tipo="frentes" />
           <EntCard icon="doc" cor={cor.muted} titulo="Proposições" sub="em breve · área legislativa" tipo="proposicoes" wide />
         </View>
 

@@ -61,6 +61,8 @@ export default function RootLayout() {
         <Stack.Screen name="listagem/[tipo]" options={{ title: 'Explorar' }} />
         <Stack.Screen name="parlamentar/[id]" options={{ title: 'Perfil' }} />
         <Stack.Screen name="partido/[sigla]" options={{ title: 'Partido' }} />
+        <Stack.Screen name="comissao/[id]" options={{ title: 'Comissão' }} />
+        <Stack.Screen name="frente/[id]" options={{ title: 'Frente' }} />
       </Stack>
     </>
   );
