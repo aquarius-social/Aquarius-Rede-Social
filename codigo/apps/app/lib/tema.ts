@@ -34,6 +34,20 @@ export const raio = {
   input: 10,
 } as const;
 
+/**
+ * Tipografia — Inter (protótipo: DESIGN-TOKENS.md). No React Native cada peso é
+ * uma FAMÍLIA distinta (fontWeight sozinho não muda a fonte em fontes custom),
+ * então mapeamos peso → família carregada por @expo-google-fonts/inter.
+ *   r  400  ·  m  500  ·  sb 600  ·  b  700  ·  xb 800
+ */
+export const fonte = {
+  r: 'Inter_400Regular',
+  m: 'Inter_500Medium',
+  sb: 'Inter_600SemiBold',
+  b: 'Inter_700Bold',
+  xb: 'Inter_800ExtraBold',
+} as const;
+
 /** Gradiente determinístico do avatar (faixa navy/sky). Cópia de tokens.ts. */
 export function gradienteAvatar(nome: string): [string, string] {
   let h = 0;

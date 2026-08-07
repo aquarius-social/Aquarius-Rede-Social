@@ -6,7 +6,7 @@ import {
   type Partido, type Parlamentar, type ResumoEmendasPartido,
 } from '../../lib/dados';
 import { reais, kbr, frescor } from '../../lib/formato';
-import { cor, raio } from '../../lib/tema';
+import { cor, raio, fonte } from '../../lib/tema';
 import {
   Cover, Monogram, Avatar, PartyChip, Tag, SituacaoBadge, Stat, Card, SectionHeader, Divider,
   AlignmentBar, AIPill, AICard, BottomNav, Icon,
@@ -97,7 +97,7 @@ export default function PartidoScreen() {
               const sel = t.id === tab;
               return (
                 <Pressable key={t.id} onPress={() => setTab(t.id)} style={st.tab}>
-                  <Text style={[st.tabTxt, { color: sel ? cor.navy : cor.muted, fontWeight: sel ? '700' : '600' }]}>{t.label}</Text>
+                  <Text style={[st.tabTxt, { color: sel ? cor.navy : cor.muted, fontFamily: sel ? fonte.b : fonte.sb }]}>{t.label}</Text>
                   {sel ? <View style={st.tabUnderline} /> : null}
                 </Pressable>
               );
@@ -133,7 +133,7 @@ function TabMembros({ membros, camara, senado, ufs }: { membros: Parlamentar[]; 
           const sel = u === uf;
           return (
             <Pressable key={u ?? 'todas'} onPress={() => setUf(u)} style={[st.filtro, { backgroundColor: sel ? cor.navy : cor.white, borderColor: sel ? cor.navy : cor.border }]}>
-              <Text style={{ color: sel ? cor.white : cor.navy, fontWeight: '600', fontSize: 11.5 }}>{u ?? 'Todas UFs'}</Text>
+              <Text style={{ color: sel ? cor.white : cor.navy, fontFamily: fonte.sb, fontSize: 11.5 }}>{u ?? 'Todas UFs'}</Text>
             </Pressable>
           );
         })}
@@ -145,7 +145,7 @@ function TabMembros({ membros, camara, senado, ufs }: { membros: Parlamentar[]; 
               <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 11 }}>
                 <Avatar nome={m.nome} size={40} />
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ fontSize: 13.5, fontWeight: '700', color: cor.navy }}>{m.nome}</Text>
+                  <Text style={{ fontSize: 13.5, fontFamily: fonte.b, color: cor.navy }}>{m.nome}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                     <PartyChip sigla={m.partido_sigla_atual} uf={m.uf_atual} />
                     <Text style={{ fontSize: 10.5, color: cor.mutedSoft }}>{m.casa_atual === 'senado' ? 'Senado' : 'Câmara'}</Text>
@@ -178,7 +178,7 @@ function TabLiderancas({ sigla }: { sigla: string }) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 }}>
               <Avatar nome={l.nome} size={40} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13.5, fontWeight: '700', color: cor.navy }}>{l.nome}</Text>
+                <Text style={{ fontSize: 13.5, fontFamily: fonte.b, color: cor.navy }}>{l.nome}</Text>
                 <Text style={{ fontSize: 11, color: cor.muted, marginTop: 3 }}>{l.mandato}º mandato</Text>
               </View>
               <Tag tone={l.cargo.startsWith('Líder') ? 'navy' : 'sky'}>{l.cargo}</Tag>
@@ -266,28 +266,28 @@ const st = StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: cor.surface },
   erro: { color: cor.neg, textAlign: 'center', paddingHorizontal: 24 },
   monoRing: { borderRadius: 9999, borderWidth: 3, borderColor: cor.white },
-  nome: { marginTop: 12, fontWeight: '800', fontSize: 24, color: cor.navy, letterSpacing: -0.4 },
-  nomeSub: { color: cor.muted, fontWeight: '600', fontSize: 18 },
-  sub: { fontSize: 12.5, color: cor.muted, fontWeight: '500', marginTop: 2 },
+  nome: { marginTop: 12, fontFamily: fonte.xb, fontSize: 24, color: cor.navy, letterSpacing: -0.4 },
+  nomeSub: { color: cor.muted, fontFamily: fonte.sb, fontSize: 18 },
+  sub: { fontSize: 12.5, color: cor.muted, fontFamily: fonte.m, marginTop: 2 },
   stats: { marginTop: 14, flexDirection: 'row', gap: 6, backgroundColor: cor.light, borderRadius: raio.card, paddingVertical: 12, paddingHorizontal: 14 },
   statDiv: { width: 1, backgroundColor: cor.border },
   cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, paddingVertical: 12, borderRadius: 9999 },
-  ctaTxt: { color: cor.white, fontWeight: '700', fontSize: 13 },
+  ctaTxt: { color: cor.white, fontFamily: fonte.b, fontSize: 13 },
   tabsWrap: { backgroundColor: cor.surface, borderBottomWidth: 1, borderBottomColor: cor.border },
   tab: { paddingHorizontal: 14, paddingVertical: 10, position: 'relative' },
   tabTxt: { fontSize: 13 },
   tabUnderline: { position: 'absolute', left: 14, right: 14, bottom: 0, height: 2, backgroundColor: cor.navy, borderRadius: 9999 },
   fonte: { fontSize: 11, color: cor.mutedSoft, marginTop: 12, fontStyle: 'italic' },
-  kpiVal: { fontWeight: '800', fontSize: 18, color: cor.navy },
-  kpiVal2: { fontWeight: '800', fontSize: 16, color: cor.navy },
-  kpiLbl: { marginTop: 4, fontWeight: '700', fontSize: 9.5, color: cor.muted, letterSpacing: 0.8, textTransform: 'uppercase' },
+  kpiVal: { fontFamily: fonte.xb, fontSize: 18, color: cor.navy },
+  kpiVal2: { fontFamily: fonte.xb, fontSize: 16, color: cor.navy },
+  kpiLbl: { marginTop: 4, fontFamily: fonte.b, fontSize: 9.5, color: cor.muted, letterSpacing: 0.8, textTransform: 'uppercase' },
   filtro: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 9999, borderWidth: 1, marginRight: 6 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between' },
-  barLabel: { flex: 1, fontSize: 12, color: cor.navy, fontWeight: '600', marginBottom: 4 },
-  barVal: { fontSize: 12, color: cor.navy, fontWeight: '700' },
+  barLabel: { flex: 1, fontSize: 12, color: cor.navy, fontFamily: fonte.sb, marginBottom: 4 },
+  barVal: { fontSize: 12, color: cor.navy, fontFamily: fonte.b },
   trilho: { height: 8, borderRadius: 4, backgroundColor: cor.light, overflow: 'hidden' },
   preenche: { height: 8, borderRadius: 4 },
-  plNum: { fontWeight: '800', fontSize: 11.5, color: cor.navy, letterSpacing: 0.4, marginBottom: 4 },
+  plNum: { fontFamily: fonte.xb, fontSize: 11.5, color: cor.navy, letterSpacing: 0.4, marginBottom: 4 },
   plEmenta: { fontSize: 12.5, color: cor.ink, lineHeight: 17 },
   vazio: { fontSize: 13, color: cor.muted, lineHeight: 19 },
 });

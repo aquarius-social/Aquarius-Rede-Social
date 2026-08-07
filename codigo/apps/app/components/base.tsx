@@ -6,7 +6,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, type ViewStyle, type TextStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Polygon, Line, Rect, G, Text as SvgText, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
-import { cor, raio, gradienteAvatar, iniciais, shade } from '../lib/tema';
+import { cor, raio, fonte, gradienteAvatar, iniciais, shade } from '../lib/tema';
 import { PARTIDO_COR } from '../lib/mock';
 
 /* ── Ícones (subconjunto usado no perfil), 24×24, stroke 2 ─────────────── */
@@ -44,6 +44,33 @@ export function Icon({ name, size = 22, color = cor.navy, stroke = 2 }: {
   }
 }
 
+/* ── Logo — porte FIEL de AqLogo (aq-foundation.jsx) ───────────────────────
+ * Símbolo: cúpula Câmara + cúpula invertida Senado + 2 torres + "Onda Sky".
+ * Wordmark: AQUARIUS em Inter ExtraBold, letterSpacing 0.04em, navy.        */
+export function Logo({ height = 22, dark = false, mark = true, wordmark = true }: {
+  height?: number; dark?: boolean; mark?: boolean; wordmark?: boolean;
+}) {
+  const tinta = dark ? cor.white : cor.navy;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height }}>
+      {mark && (
+        <Svg width={height * 1.15} height={height} viewBox="0 0 28 24">
+          <Path d="M3 14 Q3 9 8 9 Q8 14 8 14 Z" fill={tinta} />
+          <Path d="M16 9 Q21 9 21 14 L16 14 Z" fill={tinta} />
+          <Rect x="11" y="2.5" width="2" height="11.5" rx="0.5" fill={tinta} />
+          <Rect x="14.5" y="2.5" width="2" height="11.5" rx="0.5" fill={tinta} />
+          <Path d="M2 19 Q7 16 12 19 T22 19 T26 19" stroke={cor.sky} strokeWidth="2" fill="none" strokeLinecap="round" />
+        </Svg>
+      )}
+      {wordmark && (
+        <Text style={{ fontFamily: fonte.xb, color: tinta, fontSize: height * 0.78, letterSpacing: height * 0.78 * 0.04, lineHeight: height }}>
+          AQUARIUS
+        </Text>
+      )}
+    </View>
+  );
+}
+
 /* ── Avatar — gradiente determinístico navy/sky + iniciais ─────────────── */
 export function Avatar({ nome, size = 40, ring = false }: { nome: string; size?: number; ring?: boolean }) {
   const [a, b] = gradienteAvatar(nome);
@@ -58,7 +85,7 @@ export function Avatar({ nome, size = 40, ring = false }: { nome: string; size?:
         ...(ring ? { borderWidth: 3.5, borderColor: cor.sky } : null),
       }}
     >
-      <Text style={{ color: cor.white, fontWeight: '700', fontSize: size * 0.36, letterSpacing: 0.4 }}>
+      <Text style={{ color: cor.white, fontFamily: fonte.b, fontSize: size * 0.36, letterSpacing: 0.4 }}>
         {iniciais(nome)}
       </Text>
     </LinearGradient>
@@ -75,7 +102,7 @@ export function Monogram({ sigla, size = 72, color = cor.navy }: { sigla: string
       end={{ x: 1, y: 1 }}
       style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center' }}
     >
-      <Text style={{ color: cor.white, fontWeight: '800', fontSize: size * 0.34, letterSpacing: -0.3 }}>{txt}</Text>
+      <Text style={{ color: cor.white, fontFamily: fonte.xb, fontSize: size * 0.34, letterSpacing: -0.3 }}>{txt}</Text>
     </LinearGradient>
   );
 }
@@ -270,8 +297,8 @@ export function Donut({ data, w = 130, valueLabel, sub }: {
             transform={`rotate(-90 ${cx} ${cy})`} />
         );
       })}
-      <SvgText x={cx} y={cy + 3} textAnchor="middle" fontWeight="800" fontSize="18" fill={cor.navy}>{valueLabel}</SvgText>
-      {sub ? <SvgText x={cx} y={cy + 16} textAnchor="middle" fontWeight="600" fontSize="9" fill={cor.muted}>{sub}</SvgText> : null}
+      <SvgText x={cx} y={cy + 3} textAnchor="middle" fontFamily="Inter_800ExtraBold" fontSize="18" fill={cor.navy}>{valueLabel}</SvgText>
+      {sub ? <SvgText x={cx} y={cy + 16} textAnchor="middle" fontFamily="Inter_600SemiBold" fontSize="9" fill={cor.muted}>{sub}</SvgText> : null}
     </Svg>
   );
 }
@@ -299,7 +326,7 @@ export function LineChart({ data, labels, w = 320, h = 120, accent = cor.sky, mi
       <Path d={dArea} fill="url(#lineFill)" />
       <Path d={d} fill="none" stroke={accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((pt, i) => (i % 2 === 0 ? <Circle key={i} cx={pt[0]} cy={pt[1]} r={2.5} fill={accent} /> : null))}
-      {labels?.map((l, i) => <SvgText key={'l' + i} x={pts[i][0]} y={h - 4} textAnchor="middle" fontSize="9" fill={cor.muted} fontWeight="600">{l}</SvgText>)}
+      {labels?.map((l, i) => <SvgText key={'l' + i} x={pts[i][0]} y={h - 4} textAnchor="middle" fontSize="9" fill={cor.muted} fontFamily="Inter_600SemiBold">{l}</SvgText>)}
     </Svg>
   );
 }
@@ -322,7 +349,7 @@ export function BarChart({ data, labels, w = 320, h = 120, accent = cor.navy, ma
         return (
           <G key={i}>
             <Rect x={x} y={pad.t + iH - bh} width={bw} height={bh} rx={3} fill={accent} />
-            {labels?.[i] ? <SvgText x={x + bw / 2} y={h - 4} textAnchor="middle" fontSize="9.5" fill={cor.muted} fontWeight="600">{labels[i]}</SvgText> : null}
+            {labels?.[i] ? <SvgText x={x + bw / 2} y={h - 4} textAnchor="middle" fontSize="9.5" fill={cor.muted} fontFamily="Inter_600SemiBold">{labels[i]}</SvgText> : null}
           </G>
         );
       })}
@@ -332,36 +359,36 @@ export function BarChart({ data, labels, w = 320, h = 120, accent = cor.navy, ma
 
 const s = StyleSheet.create({
   partyChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.border },
-  partyChipTxt: { fontSize: 10.5, fontWeight: '600', color: cor.navy, letterSpacing: 0.2 },
-  partyChipUf: { fontSize: 10.5, fontWeight: '500', color: cor.muted },
+  partyChipTxt: { fontSize: 10.5, fontFamily: fonte.sb, color: cor.navy, letterSpacing: 0.2 },
+  partyChipUf: { fontSize: 10.5, fontFamily: fonte.m, color: cor.muted },
   tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9999, alignSelf: 'flex-start' },
-  tagTxt: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
-  statValue: { fontWeight: '800', fontSize: 20, color: cor.navy, letterSpacing: -0.2 },
-  statLabel: { marginTop: 4, fontWeight: '700', fontSize: 9.5, color: cor.muted, letterSpacing: 1, textTransform: 'uppercase' },
-  statSub: { marginTop: 3, fontSize: 10.5, fontWeight: '600' },
+  tagTxt: { fontSize: 10.5, fontFamily: fonte.sb, letterSpacing: 0.5, textTransform: 'uppercase' },
+  statValue: { fontFamily: fonte.xb, fontSize: 20, color: cor.navy, letterSpacing: -0.2 },
+  statLabel: { marginTop: 4, fontFamily: fonte.b, fontSize: 9.5, color: cor.muted, letterSpacing: 1, textTransform: 'uppercase' },
+  statSub: { marginTop: 3, fontSize: 10.5, fontFamily: fonte.sb },
   card: { backgroundColor: cor.white, borderRadius: raio.card, borderWidth: 1, borderColor: cor.border },
   secHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 10, paddingLeft: 2 },
-  secHeadTitle: { fontWeight: '700', fontSize: 11, color: cor.muted, letterSpacing: 1.4, textTransform: 'uppercase' },
+  secHeadTitle: { fontFamily: fonte.b, fontSize: 11, color: cor.muted, letterSpacing: 1.4, textTransform: 'uppercase' },
   secHeadSub: { marginTop: 3, fontSize: 12, color: cor.muted },
   aiPill: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 9999, borderWidth: 1, borderColor: cor.borderStrong, backgroundColor: cor.light },
-  aiPillTxt: { fontWeight: '600', fontSize: 12.5, color: cor.navy },
+  aiPillTxt: { fontFamily: fonte.sb, fontSize: 12.5, color: cor.navy },
   aiCard: { borderRadius: raio.card, padding: 14, borderWidth: 1, borderColor: cor.border },
   aiCardBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
-  aiCardTitle: { fontWeight: '700', fontSize: 11, color: cor.navy, letterSpacing: 1.4, textTransform: 'uppercase' },
+  aiCardTitle: { fontFamily: fonte.b, fontSize: 11, color: cor.navy, letterSpacing: 1.4, textTransform: 'uppercase' },
   aiCardBody: { fontSize: 13.5, lineHeight: 21, color: cor.ink },
   aiCardBtnPrim: { flex: 1, flexDirection: 'row', gap: 6, paddingVertical: 8, borderRadius: 9999, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
-  aiCardBtnPrimTxt: { color: cor.white, fontWeight: '600', fontSize: 12 },
+  aiCardBtnPrimTxt: { color: cor.white, fontFamily: fonte.sb, fontSize: 12 },
   aiCardBtnGhost: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 9999, borderWidth: 1, borderColor: cor.borderStrong },
-  aiCardBtnGhostTxt: { color: cor.navy, fontWeight: '600', fontSize: 12 },
+  aiCardBtnGhostTxt: { color: cor.navy, fontFamily: fonte.sb, fontSize: 12 },
   aiBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: raio.card, backgroundColor: cor.navy },
   aiBannerIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-  aiBannerHint: { flex: 1, color: cor.white, fontSize: 13, fontWeight: '500', lineHeight: 17 },
+  aiBannerHint: { flex: 1, color: cor.white, fontSize: 13, fontFamily: fonte.m, lineHeight: 17 },
   aiBannerCta: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 9999, backgroundColor: cor.sky },
-  aiBannerCtaTxt: { color: cor.white, fontWeight: '600', fontSize: 11.5, letterSpacing: 0.4 },
+  aiBannerCtaTxt: { color: cor.white, fontFamily: fonte.sb, fontSize: 11.5, letterSpacing: 0.4 },
   cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 9999 },
-  ctaTxt: { fontWeight: '700', fontSize: 12.5 },
+  ctaTxt: { fontFamily: fonte.b, fontSize: 12.5 },
   nav5: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: cor.white, borderTopWidth: 1, borderTopColor: cor.border, paddingTop: 8, paddingBottom: 20, paddingHorizontal: 4 },
   navCell: { flex: 1, alignItems: 'center', gap: 3 },
-  navCellTxt: { fontSize: 10.5, fontWeight: '600' },
+  navCellTxt: { fontSize: 10.5, fontFamily: fonte.sb },
   navCenter: { width: 52, height: 52, borderRadius: 26, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center', marginTop: -18 },
 });

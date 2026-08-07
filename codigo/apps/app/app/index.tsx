@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { contagens, type Contagens } from '../lib/dados';
-import { cor, raio } from '../lib/tema';
-import { Avatar, Icon, BottomNav } from '../components/base';
+import { cor, raio, fonte } from '../lib/tema';
+import { Avatar, Icon, BottomNav, Logo } from '../components/base';
 
 type IconeEnt = 'users' | 'flag' | 'building' | 'star' | 'doc';
 
@@ -39,7 +39,7 @@ export default function Explorar() {
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
       {/* Header */}
       <View style={st.header}>
-        <Text style={st.marca}>AQUARIUS</Text>
+        <Logo height={22} />
         <Avatar nome="José Carvalho" size={32} />
       </View>
 
@@ -74,9 +74,8 @@ const st = StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
     borderBottomWidth: 1, borderBottomColor: cor.border, backgroundColor: cor.surface,
   },
-  marca: { fontSize: 18, fontWeight: '800', color: cor.navy, letterSpacing: 1 },
-  eyebrow: { marginTop: 16, fontSize: 11.5, fontWeight: '700', color: cor.mutedSoft, letterSpacing: 1.4 },
-  h1: { fontSize: 30, fontWeight: '800', color: cor.navy, letterSpacing: -0.6, marginTop: 4, marginBottom: 18 },
+  eyebrow: { marginTop: 16, fontSize: 11.5, fontFamily: fonte.b, color: cor.mutedSoft, letterSpacing: 1.4 },
+  h1: { fontSize: 30, fontFamily: fonte.xb, color: cor.navy, letterSpacing: -0.6, marginTop: 4, marginBottom: 18 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   cell: { width: '47%', flexGrow: 1 },
   entCard: {
@@ -84,7 +83,7 @@ const st = StyleSheet.create({
     padding: 16, minHeight: 116, justifyContent: 'flex-start',
   },
   entIcon: { width: 40, height: 40, borderRadius: raio.cardPequeno, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  entTitulo: { fontSize: 16, fontWeight: '800', color: cor.navy },
+  entTitulo: { fontSize: 16, fontFamily: fonte.xb, color: cor.navy },
   entSub: { fontSize: 12.5, color: cor.muted, marginTop: 3 },
   nota: { marginTop: 20, fontSize: 11.5, color: cor.mutedSoft, lineHeight: 17, fontStyle: 'italic' },
 });
