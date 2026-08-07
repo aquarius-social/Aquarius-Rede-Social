@@ -12,7 +12,8 @@ import { PARTIDO_COR } from '../lib/mock';
 /* ── Ícones (subconjunto usado no perfil), 24×24, stroke 2 ─────────────── */
 type IconName =
   | 'spark' | 'plus' | 'check' | 'doc' | 'chevR' | 'building' | 'star'
-  | 'info' | 'back' | 'x' | 'compass' | 'search';
+  | 'info' | 'back' | 'x' | 'compass' | 'search'
+  | 'home' | 'heart' | 'cal' | 'users' | 'flag';
 
 export function Icon({ name, size = 22, color = cor.navy, stroke = 2 }: {
   name: IconName; size?: number; color?: string; stroke?: number;
@@ -34,6 +35,11 @@ export function Icon({ name, size = 22, color = cor.navy, stroke = 2 }: {
     case 'x': return svg(<Path d="M6 6l12 12M18 6L6 18" {...p} />);
     case 'compass': return svg(<><Circle cx="12" cy="12" r="9" {...p} /><Polygon points="16,8 13,13 8,16 11,11" fill={color} /></>);
     case 'search': return svg(<><Circle cx="11" cy="11" r="7" {...p} /><Path d="m20 20-4.3-4.3" {...p} /></>);
+    case 'home': return svg(<Path d="M3 11l9-8 9 8M5 10v10h14V10M9 21v-6h6v6" {...p} />);
+    case 'heart': return svg(<Path d="M12 21s-7-4.6-9.4-8.3C.9 10 2.4 5.5 6.2 5.5c2 0 3.2 1.3 3.8 2.3.6-1 1.8-2.3 3.8-2.3 3.8 0 5.3 4.5 3.6 7.2C19 16.4 12 21 12 21Z" {...p} />);
+    case 'cal': return svg(<><Rect x="3" y="5" width="18" height="16" rx="2" {...p} /><Path d="M8 3v4M16 3v4M3 11h18" {...p} /></>);
+    case 'users': return svg(<><Circle cx="9" cy="8" r="3.5" {...p} /><Path d="M3 21v-1a6 6 0 0 1 12 0v1M17 11a3 3 0 1 0 0-6M22 21v-1a6 6 0 0 0-5-5.9" {...p} /></>);
+    case 'flag': return svg(<Path d="M4 21V4M4 4h13l-2 4 2 4H4" {...p} />);
     default: return null;
   }
 }
@@ -219,26 +225,26 @@ export function FollowButton() {
   );
 }
 
-/* ── Bottom nav (shell) — 3 abas, visual ───────────────────────────────── */
-export function BottomNav({ active = 'explorar' }: { active?: 'explorar' | 'buscar' | 'prometeus' }) {
-  const tabs = [
-    { id: 'explorar', icon: 'compass', label: 'Explorar' },
-    { id: 'buscar', icon: 'search', label: 'Buscar' },
-    { id: 'prometeus', icon: 'spark', label: 'Prometeus' },
-  ] as const;
-  return (
-    <View style={s.nav}>
-      <View style={s.navInner}>
-        {tabs.map((t) => {
-          const sel = t.id === active;
-          return (
-            <View key={t.id} style={[s.navBtn, { backgroundColor: sel ? cor.navy : 'transparent' }]}>
-              <Icon name={t.icon} size={17} color={sel ? cor.white : cor.muted} />
-              {sel ? <Text style={s.navLabel}>{t.label}</Text> : null}
-            </View>
-          );
-        })}
+/* ── Bottom nav (shell) — 5 abas do protótipo, com IA central ──────────── */
+type NavId = 'feed' | 'explorar' | 'interesses' | 'calendario';
+export function BottomNav({ active = 'explorar' }: { active?: NavId }) {
+  const cel = (id: NavId, icon: IconName, label: string) => {
+    const sel = id === active;
+    const cl = sel ? cor.navy : cor.mutedSoft;
+    return (
+      <View key={id} style={s.navCell}>
+        <Icon name={icon} size={20} color={cl} />
+        <Text style={[s.navCellTxt, { color: cl }]}>{label}</Text>
       </View>
+    );
+  };
+  return (
+    <View style={s.nav5}>
+      {cel('feed', 'home', 'Feed')}
+      {cel('explorar', 'compass', 'Explorar')}
+      <View style={s.navCenter}><Icon name="spark" size={22} color={cor.white} /></View>
+      {cel('interesses', 'heart', 'Interesses')}
+      {cel('calendario', 'cal', 'Calendário')}
     </View>
   );
 }
@@ -354,8 +360,8 @@ const s = StyleSheet.create({
   aiBannerCtaTxt: { color: cor.white, fontWeight: '600', fontSize: 11.5, letterSpacing: 0.4 },
   cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 9999 },
   ctaTxt: { fontWeight: '700', fontSize: 12.5 },
-  nav: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: 20, paddingTop: 8, paddingHorizontal: 14 },
-  navInner: { backgroundColor: cor.white, borderRadius: 9999, paddingVertical: 8, paddingHorizontal: 6, flexDirection: 'row', justifyContent: 'space-between', borderWidth: 1, borderColor: cor.border },
-  navBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 9999 },
-  navLabel: { color: cor.white, fontWeight: '600', fontSize: 12 },
+  nav5: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: cor.white, borderTopWidth: 1, borderTopColor: cor.border, paddingTop: 8, paddingBottom: 20, paddingHorizontal: 4 },
+  navCell: { flex: 1, alignItems: 'center', gap: 3 },
+  navCellTxt: { fontSize: 10.5, fontWeight: '600' },
+  navCenter: { width: 52, height: 52, borderRadius: 26, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center', marginTop: -18 },
 });

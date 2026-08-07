@@ -14,7 +14,8 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: cor.surface },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Parlamentares' }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="listagem/[tipo]" options={{ title: 'Explorar' }} />
         <Stack.Screen name="parlamentar/[id]" options={{ title: 'Perfil' }} />
         <Stack.Screen name="partido/[sigla]" options={{ title: 'Partido' }} />
       </Stack>

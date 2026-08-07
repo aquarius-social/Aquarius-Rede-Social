@@ -104,6 +104,29 @@ export interface ResumoEmendas {
   frescor: string | null;
 }
 
+export interface Contagens {
+  parlamentares: number;
+  partidos: number;
+}
+
+/** Contagens para o hub Explorar (só o que a camada ouro expõe ao anon). */
+export async function contagens(): Promise<Contagens> {
+  const [p, pa] = await Promise.all([
+    supabase.from('parlamentar_publico').select('*', { count: 'exact', head: true }),
+    supabase.from('partido_publico').select('*', { count: 'exact', head: true }),
+  ]);
+  return { parlamentares: p.count ?? 0, partidos: pa.count ?? 0 };
+}
+
+export async function listarPartidos(): Promise<Partido[]> {
+  const { data, error } = await supabase
+    .from('partido_publico')
+    .select('*')
+    .order('sigla_atual', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Partido[];
+}
+
 export async function listarParlamentares(busca?: string): Promise<Parlamentar[]> {
   let q = supabase
     .from('parlamentar_publico')
