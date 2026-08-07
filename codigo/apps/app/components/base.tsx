@@ -15,7 +15,7 @@ export type IconName =
   | 'spark' | 'plus' | 'check' | 'doc' | 'chevR' | 'building' | 'star'
   | 'info' | 'back' | 'x' | 'compass' | 'search'
   | 'home' | 'heart' | 'cal' | 'users' | 'flag'
-  | 'gear' | 'logout' | 'trash' | 'download' | 'bell';
+  | 'gear' | 'logout' | 'trash' | 'download' | 'bell' | 'send';
 
 export function Icon({ name, size = 22, color = cor.navy, stroke = 2 }: {
   name: IconName; size?: number; color?: string; stroke?: number;
@@ -47,6 +47,7 @@ export function Icon({ name, size = 22, color = cor.navy, stroke = 2 }: {
     case 'trash': return svg(<Path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" {...p} />);
     case 'download': return svg(<Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" {...p} />);
     case 'bell': return svg(<Path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" {...p} />);
+    case 'send': return svg(<Path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" {...p} />);
     default: return null;
   }
 }
@@ -260,7 +261,7 @@ export function FollowButton() {
 }
 
 /* ── Bottom nav (shell) — 5 abas do protótipo, com IA central ──────────── */
-type NavId = 'feed' | 'explorar' | 'interesses' | 'calendario';
+type NavId = 'feed' | 'explorar' | 'prometeus' | 'interesses' | 'calendario';
 export function BottomNav({ active = 'explorar' }: { active?: NavId }) {
   const router = useRouter();
   // Destino por aba; null = ainda não construída (inerte por ora).
@@ -279,7 +280,9 @@ export function BottomNav({ active = 'explorar' }: { active?: NavId }) {
     <View style={s.nav5}>
       {cel('feed', 'home', 'Feed', null)}
       {cel('explorar', 'compass', 'Explorar', '/')}
-      <View style={s.navCenter}><Icon name="spark" size={22} color={cor.white} /></View>
+      <Pressable style={s.navCenter} onPress={() => router.push('/prometeus')}>
+        <Icon name="spark" size={22} color={cor.white} />
+      </Pressable>
       {cel('interesses', 'heart', 'Interesses', '/interesses')}
       {cel('calendario', 'cal', 'Calendário', null)}
     </View>
