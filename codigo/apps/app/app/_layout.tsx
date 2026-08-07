@@ -90,6 +90,7 @@ function Gate() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="feed" options={{ headerShown: false }} />
       <Stack.Screen name="interesses" options={{ headerShown: false }} />
       <Stack.Screen name="prometeus/index" options={{ headerShown: false }} />
       <Stack.Screen name="prometeus/chat" options={{ title: 'Prometeus' }} />

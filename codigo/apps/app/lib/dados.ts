@@ -8,6 +8,7 @@
  * PAGO — nunca cruzamos estágios.
  */
 import { supabase } from './supabase';
+import { reais, reaisCompacto } from './formato';
 
 
 export interface Parlamentar {
@@ -336,4 +337,72 @@ export async function resumoEmendasPartido(membroIds: string[]): Promise<ResumoE
     .map(([funcao, total]) => ({ funcao, total }))
     .sort((a, b) => b.total - a.total);
   return { totalPago: pago, totalEmpenhado: empenhado, quantidade: linhas.length, areas, frescor };
+}
+
+/* ── Feed v1: destaques de dinheiro REAIS (sem IA) ─────────────────────────
+ * Posts factuais em terceira pessoa a partir das maiores emendas empenhadas.
+ * Não misturamos estágios (empenhado ≠ pago). Autoria resolvida na fonte.
+ */
+export interface FeedPost {
+  id: string;
+  fonte: string;
+  autorId: string | null;
+  autorNome: string;
+  autorSigla: string | null;
+  autorUf: string | null;
+  headline: string;
+  body: string;
+  valorEmpenhado: number;
+  valorPago: number;
+  area: string;
+  local: string | null;
+  ano: number;
+  codigo: string | null;
+  syncedAt: string | null;
+}
+
+export async function destaquesFeed(limite = 24): Promise<FeedPost[]> {
+  const { data, error } = await supabase
+    .from('emenda_publica')
+    .select('id, codigo_emenda, ano, funcao, localidade_gasto, valor_empenhado, valor_pago, autor_profile_id, synced_at')
+    .not('autor_profile_id', 'is', null)
+    .order('valor_empenhado', { ascending: false })
+    .limit(limite);
+  if (error) throw error;
+  const linhas = (data ?? []) as any[];
+
+  const ids = [...new Set(linhas.map((l) => l.autor_profile_id).filter(Boolean))] as string[];
+  const autores = new Map<string, any>();
+  if (ids.length) {
+    const { data: as } = await supabase
+      .from('parlamentar_publico')
+      .select('id, nome, partido_sigla_atual, uf_atual')
+      .in('id', ids);
+    for (const a of (as ?? []) as any[]) autores.set(a.id, a);
+  }
+
+  return linhas.map((l) => {
+    const a = autores.get(l.autor_profile_id);
+    const nome = a?.nome ?? 'Autoria em resolução';
+    const sigla = a?.partido_sigla_atual ?? null;
+    const uf = a?.uf_atual ?? null;
+    const area = l.funcao || 'Área não informada';
+    // Localidades genéricas do Portal (MÚLTIPLO/NACIONAL/EXTERIOR) não viram
+    // "em X" — só municípios/UF específicos entram na frase.
+    const localBruto = (l.localidade_gasto || '').trim();
+    const generica = /^(m[uú]ltiplo|nacional|exterior|n[aã]o informad|diversos)/i.test(localBruto);
+    const local = localBruto && !generica ? localBruto : null;
+    const emp = Number(l.valor_empenhado) || 0;
+    const pago = Number(l.valor_pago) || 0;
+    const onde = local ? ` em ${local}` : '';
+    const headline = `Emenda de ${reaisCompacto(emp)} para ${area}${onde}`;
+    const body = `O Portal da Transparência registra a emenda${l.codigo_emenda ? ' nº ' + l.codigo_emenda : ''} de ${nome}` +
+      `${sigla ? ` (${sigla}${uf ? '-' + uf : ''})` : ''}, com ${reais(emp)} empenhados para ${area}${onde} em ${l.ano}.`;
+    return {
+      id: l.id, fonte: 'Portal da Transparência',
+      autorId: l.autor_profile_id ?? null, autorNome: nome, autorSigla: sigla, autorUf: uf,
+      headline, body, valorEmpenhado: emp, valorPago: pago,
+      area, local, ano: l.ano, codigo: l.codigo_emenda ?? null, syncedAt: l.synced_at ?? null,
+    };
+  });
 }

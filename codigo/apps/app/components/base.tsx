@@ -278,7 +278,7 @@ export function BottomNav({ active = 'explorar' }: { active?: NavId }) {
   };
   return (
     <View style={s.nav5}>
-      {cel('feed', 'home', 'Feed', null)}
+      {cel('feed', 'home', 'Feed', '/feed')}
       {cel('explorar', 'compass', 'Explorar', '/')}
       <Pressable style={s.navCenter} onPress={() => router.push('/prometeus')}>
         <Icon name="spark" size={22} color={cor.white} />
