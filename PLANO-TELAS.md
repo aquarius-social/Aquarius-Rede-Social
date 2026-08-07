@@ -33,6 +33,11 @@ Design). Já portados: `aq-foundation`, `aq-screens-2` (perfil), `aq-screens-4`
   (temas/partidos), grupos LGPD/App, **Sair**. Ações não-essenciais: "em breve".
 - **19 · Editar perfil** — completude + Nome/CEP/idade/gênero + dados opt-in
   (escolaridade/renda/ocupação), salvos no perfil.
+- **08 · Interesses** — gerencia temas/partidos (add/remove, persistido no perfil);
+  parlamentares/proposições com estado honesto (follow chega com o Feed).
+- **06/07 · Prometeus (telas)** — lista (sugestões + histórico vazio) + chat
+  (bolhas, digitando, input, chips). Resposta é PLACEHOLDER honesto: **o agente
+  (IA) ainda não está ligado** — é o próximo passo.
 
 ## Inventário do que falta
 
