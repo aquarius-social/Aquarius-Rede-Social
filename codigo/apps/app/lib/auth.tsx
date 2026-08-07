@@ -9,12 +9,17 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
-export interface PrefsOnboarding {
-  temas: string[];
-  partidos: string[];
+/** Preferências do usuário, guardadas em user_metadata.prefs. Tudo opcional. */
+export interface Prefs {
+  temas?: string[];
+  partidos?: string[];
   cep?: string;
   idade?: string;
   genero?: string;
+  escolaridade?: string;
+  renda?: string;
+  ocupacao?: string;
+  nome?: string;
 }
 
 interface AuthCtx {
@@ -22,12 +27,16 @@ interface AuthCtx {
   carregando: boolean; // enquanto resolve a sessão inicial
   /** true quando o usuário já concluiu o onboarding (guardado no metadata). */
   onboarded: boolean;
+  /** Preferências atuais (temas, partidos, dados opt-in). */
+  prefs: Prefs;
   /** Envia o código de 6 dígitos para o e-mail. */
   enviarCodigo: (email: string) => Promise<void>;
   /** Verifica o código; em sucesso, a sessão passa a existir. */
   verificarCodigo: (email: string, codigo: string) => Promise<void>;
   /** Marca o onboarding como concluído e salva as preferências no perfil. */
-  concluirOnboarding: (prefs: PrefsOnboarding) => Promise<void>;
+  concluirOnboarding: (prefs: Prefs) => Promise<void>;
+  /** Mescla um patch nas preferências (Editar perfil). */
+  atualizarPrefs: (patch: Prefs) => Promise<void>;
   sair: () => Promise<void>;
 }
 
@@ -67,10 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
-  const concluirOnboarding = async (prefs: PrefsOnboarding) => {
+  const prefs: Prefs = (session?.user?.user_metadata?.prefs as Prefs) ?? {};
+
+  const concluirOnboarding = async (novas: Prefs) => {
     // Guarda no metadata do usuário (server-side, cross-device) — não em flag
     // local, para o gate funcionar em qualquer entrada (link mágico ou código).
-    const { error } = await supabase.auth.updateUser({ data: { onboarded: true, prefs } });
+    const { error } = await supabase.auth.updateUser({ data: { onboarded: true, prefs: novas } });
+    if (error) throw error;
+  };
+
+  const atualizarPrefs = async (patch: Prefs) => {
+    const { error } = await supabase.auth.updateUser({ data: { prefs: { ...prefs, ...patch } } });
     if (error) throw error;
   };
 
@@ -79,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const onboarded = Boolean(session?.user?.user_metadata?.onboarded);
 
   return (
-    <Ctx.Provider value={{ session, carregando, onboarded, enviarCodigo, verificarCodigo, concluirOnboarding, sair }}>
+    <Ctx.Provider value={{ session, carregando, onboarded, prefs, enviarCodigo, verificarCodigo, concluirOnboarding, atualizarPrefs, sair }}>
       {children}
     </Ctx.Provider>
   );

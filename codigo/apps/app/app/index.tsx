@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { contagens, type Contagens } from '../lib/dados';
+import { useAuth } from '../lib/auth';
 import { cor, raio, fonte } from '../lib/tema';
 import { Avatar, Icon, BottomNav, Logo } from '../components/base';
 
@@ -32,15 +33,21 @@ function EntCard({ icon, cor: c, titulo, sub, tipo, wide }: {
 }
 
 export default function Explorar() {
+  const router = useRouter();
+  const { session, prefs } = useAuth();
   const [c, setC] = useState<Contagens | null>(null);
   useEffect(() => { contagens().then(setC).catch(() => {}); }, []);
+
+  const nome = prefs.nome || session?.user?.email?.split('@')[0] || 'Você';
 
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
       {/* Header */}
       <View style={st.header}>
         <Logo height={22} />
-        <Avatar nome="José Carvalho" size={32} />
+        <Pressable onPress={() => router.push('/configuracoes')} hitSlop={8}>
+          <Avatar nome={nome} size={32} />
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
