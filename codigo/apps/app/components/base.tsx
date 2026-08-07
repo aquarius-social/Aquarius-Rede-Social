@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, type ViewStyle, type TextStyle } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Polygon, Line, Rect, G, Text as SvgText, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { cor, raio, fonte, gradienteAvatar, iniciais, shade } from '../lib/tema';
@@ -261,23 +262,26 @@ export function FollowButton() {
 /* ── Bottom nav (shell) — 5 abas do protótipo, com IA central ──────────── */
 type NavId = 'feed' | 'explorar' | 'interesses' | 'calendario';
 export function BottomNav({ active = 'explorar' }: { active?: NavId }) {
-  const cel = (id: NavId, icon: IconName, label: string) => {
+  const router = useRouter();
+  // Destino por aba; null = ainda não construída (inerte por ora).
+  const cel = (id: NavId, icon: IconName, label: string, destino: Href | null) => {
     const sel = id === active;
     const cl = sel ? cor.navy : cor.mutedSoft;
     return (
-      <View key={id} style={s.navCell}>
+      <Pressable key={id} style={s.navCell} disabled={!destino || sel}
+        onPress={() => { if (destino) router.push(destino); }}>
         <Icon name={icon} size={20} color={cl} />
         <Text style={[s.navCellTxt, { color: cl }]}>{label}</Text>
-      </View>
+      </Pressable>
     );
   };
   return (
     <View style={s.nav5}>
-      {cel('feed', 'home', 'Feed')}
-      {cel('explorar', 'compass', 'Explorar')}
+      {cel('feed', 'home', 'Feed', null)}
+      {cel('explorar', 'compass', 'Explorar', '/')}
       <View style={s.navCenter}><Icon name="spark" size={22} color={cor.white} /></View>
-      {cel('interesses', 'heart', 'Interesses')}
-      {cel('calendario', 'cal', 'Calendário')}
+      {cel('interesses', 'heart', 'Interesses', '/interesses')}
+      {cel('calendario', 'cal', 'Calendário', null)}
     </View>
   );
 }

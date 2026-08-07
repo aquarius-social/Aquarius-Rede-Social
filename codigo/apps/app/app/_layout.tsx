@@ -90,6 +90,7 @@ function Gate() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="interesses" options={{ headerShown: false }} />
       <Stack.Screen name="configuracoes" options={{ title: 'Configurações' }} />
       <Stack.Screen name="editar-perfil" options={{ title: 'Editar perfil' }} />
       <Stack.Screen name="listagem/[tipo]" options={{ title: 'Explorar' }} />
