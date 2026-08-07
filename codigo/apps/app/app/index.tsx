@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
-import { Link } from 'expo-router';
+import { View, Text, ScrollView, Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { useRouter } from 'expo-router';
 import { contagens, type Contagens } from '../lib/dados';
 import { cor, raio } from '../lib/tema';
 import { Avatar, Icon, BottomNav } from '../components/base';
 
 type IconeEnt = 'users' | 'flag' | 'building' | 'star' | 'doc';
 
-function EntCard({ icon, cor: c, titulo, sub, href, wide }: {
-  icon: IconeEnt; cor: string; titulo: string; sub: string; href?: string; wide?: boolean;
+function EntCard({ icon, cor: c, titulo, sub, tipo, wide }: {
+  icon: IconeEnt; cor: string; titulo: string; sub: string; tipo?: string; wide?: boolean;
 }) {
+  const router = useRouter();
+  const cellStyle = StyleSheet.flatten([st.cell, wide && { width: '100%' as const }]) as ViewStyle;
   const conteudo = (
-    <View style={[st.entCard, wide && { width: '100%' }]}>
+    <View style={st.entCard}>
       <View style={[st.entIcon, { backgroundColor: c }]}>
         <Icon name={icon} size={20} color={cor.white} />
       </View>
@@ -19,11 +21,13 @@ function EntCard({ icon, cor: c, titulo, sub, href, wide }: {
       <Text style={st.entSub}>{sub}</Text>
     </View>
   );
-  if (!href) return <View style={[st.cell, wide && { width: '100%' }]}>{conteudo}</View>;
+  if (!tipo) return <View style={cellStyle}>{conteudo}</View>;
+  // Navegação via router.push (não Link+asChild): no web, o Pressable virando <a>
+  // pelo Link dispara "indexed property [0]" no react-dom. onPress evita o <a>.
   return (
-    <Link href={href} asChild>
-      <Pressable style={[st.cell, wide && { width: '100%' }]}>{conteudo}</Pressable>
-    </Link>
+    <Pressable style={cellStyle} onPress={() => router.push({ pathname: '/listagem/[tipo]', params: { tipo } })}>
+      {conteudo}
+    </Pressable>
   );
 }
 
@@ -45,12 +49,12 @@ export default function Explorar() {
 
         <View style={st.grid}>
           <EntCard icon="users" cor={cor.navy} titulo="Parlamentares"
-            sub={c ? `${c.parlamentares} no exercício` : '…'} href="/listagem/parlamentares" />
+            sub={c ? `${c.parlamentares} no exercício` : '…'} tipo="parlamentares" />
           <EntCard icon="flag" cor={cor.blue} titulo="Partidos"
-            sub={c ? `${c.partidos} com bancada` : '…'} href="/listagem/partidos" />
-          <EntCard icon="building" cor={cor.sky} titulo="Comissões" sub="em breve" href="/listagem/comissoes" />
-          <EntCard icon="star" cor={cor.skySoft} titulo="Frentes" sub="em breve" href="/listagem/frentes" />
-          <EntCard icon="doc" cor={cor.muted} titulo="Proposições" sub="em breve · área legislativa" href="/listagem/proposicoes" wide />
+            sub={c ? `${c.partidos} com bancada` : '…'} tipo="partidos" />
+          <EntCard icon="building" cor={cor.sky} titulo="Comissões" sub="em breve" tipo="comissoes" />
+          <EntCard icon="star" cor={cor.skySoft} titulo="Frentes" sub="em breve" tipo="frentes" />
+          <EntCard icon="doc" cor={cor.muted} titulo="Proposições" sub="em breve · área legislativa" tipo="proposicoes" wide />
         </View>
 
         <Text style={st.nota}>
