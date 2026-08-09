@@ -6,6 +6,36 @@ do `CLAUDE.md`.
 
 ## Onde estamos
 
+**App (Expo) — telas do protótipo fechadas + admin iniciado (2026-08-07).**
+- **App de leitura completo e navegável ponta a ponta**, todo com dado real onde
+  existe: Perfil parlamentar (dinheiro real), Partido, Comissão, Frente, Explorar
+  (hub) + Listagem filtrável, **Feed v1** (destaques de emendas reais, sem IA),
+  **Calendário** (agenda real via `evento_publico`), **Interesses** (gerencia
+  temas/partidos no perfil). BottomNav 100% navegável. Fonte Inter + logo do
+  protótipo.
+- **Casca de app (Fase 2):** Splash, **Login por e-mail OTP** (Supabase Auth) com
+  gate de rota por sessão + onboarding por estado (`user_metadata.onboarded`),
+  Onboarding (temas/partidos/opt-in LGPD), Configurações (+ logout), Editar perfil.
+  *Config pendente do usuário:* template de e-mail do Supabase com `{{ .Token }}`.
+- **Prometeus (telas):** lista + chat com **placeholder honesto** — o agente de IA
+  ainda **não** está ligado (é etapa própria, decisões em aberto: arquitetura de
+  acesso a dados, onde roda, chave Anthropic).
+- **Admin (Next.js) — FUNDAÇÃO no ar** em `codigo/apps/admin`: shell (sidebar 16
+  itens/5 seções + topbar) + tema ADM_DARK/ADM_LIGHT com toggle + **Visão geral**
+  com KPIs reais (623 parlamentares, 22 partidos, 19.476 emendas, 89 comissões,
+  eventos) + estado das áreas de dados + métricas de uso marcadas honestamente
+  como "não medido ainda". Roda em `localhost:3001` (`npm run dev`). Componentes
+  ricos do protótipo (Sparkline/AreaChart/Donut/KpiCard) já **portados** em
+  `components/charts.tsx` (ainda não ligados na Visão geral).
+- **PRÓXIMO PASSO DO ADMIN (em chat dedicado):** deixar a Visão geral fiel ao
+  protótipo usando os componentes de `charts.tsx` (dado real + selo "demo" onde não
+  há métrica); depois **auth/role de admin (RLS)**, **Pipelines**, e a **Revisão
+  editorial** (freio de segurança do agente). Plano tela a tela em `MELHORIAS.md`
+  seção G. O protótipo do admin está em `handoff/prototype/aq-admin-*.jsx` (no zip)
+  — mesma fonte do Claude Design.
+- **PRÓXIMO PASSO DO APP (neste chat):** header custom (AqHeader), sistema de
+  "seguir", e **modo escuro das telas do app**. Backlog em `MELHORIAS.md` seção F.
+
 **Onda 0 — Fundação de identidade: concluída.**
 
 **Deploy real + base de dinheiro público: concluído (2026-08-04).**
