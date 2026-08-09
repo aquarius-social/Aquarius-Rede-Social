@@ -38,6 +38,15 @@ Design). Já portados: `aq-foundation`, `aq-screens-2` (perfil), `aq-screens-4`
 - **06/07 · Prometeus (telas)** — lista (sugestões + histórico vazio) + chat
   (bolhas, digitando, input, chips). Resposta é PLACEHOLDER honesto: **o agente
   (IA) ainda não está ligado** — é o próximo passo.
+- **04 · Feed v1** — destaques de dinheiro REAIS (maiores emendas: autor, valor,
+  área, fonte, frescor), aba Seguindo com estado honesto, botão "Perguntar ao
+  Prometeus" que abre o chat com contexto. Posts editoriais da IA entram depois.
+- **09 · Calendário** — agenda REAL das duas casas (evento_publico), timeline por
+  dia + filtro Câmara/Senado + link à fonte.
+
+**BottomNav 100% navegável** (Feed · Explorar · Prometeus · Interesses · Calendário).
+**Faltam só:** o agente Prometeus (IA) e as telas ⛔Pro (Proposição + abas
+legislativas), além de polimentos (header custom, notificações).
 
 ## Inventário do que falta
 
