@@ -406,3 +406,38 @@ export async function destaquesFeed(limite = 24): Promise<FeedPost[]> {
     };
   });
 }
+
+/* ── Agenda / Calendário (área de eventos, view evento_publico) ────────────── */
+export interface Evento {
+  id: string;
+  casa: string;               // 'camara' | 'senado'
+  tipo: string | null;
+  titulo: string | null;
+  inicio: string | null;      // data_hora_inicio (ISO, hora de Brasília)
+  fim: string | null;
+  situacao: string | null;    // Agendada / Realizada / Cancelada
+  orgaoSigla: string | null;
+  orgaoNome: string | null;
+  local: string | null;
+  url: string | null;
+  source: string;
+  sourceUrl: string | null;
+  syncedAt: string | null;
+}
+
+export async function listarEventos(casa?: 'camara' | 'senado', limite = 80): Promise<Evento[]> {
+  let q = supabase
+    .from('evento_publico')
+    .select('id, casa, tipo, titulo, data_hora_inicio, data_hora_fim, situacao, orgao_sigla, orgao_nome, local, url, source, source_url, synced_at')
+    .order('data_hora_inicio', { ascending: false })
+    .limit(limite);
+  if (casa) q = q.eq('casa', casa);
+  const { data, error } = await q;
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((e) => ({
+    id: e.id, casa: e.casa, tipo: e.tipo ?? null, titulo: e.titulo ?? null,
+    inicio: e.data_hora_inicio ?? null, fim: e.data_hora_fim ?? null, situacao: e.situacao ?? null,
+    orgaoSigla: e.orgao_sigla ?? null, orgaoNome: e.orgao_nome ?? null, local: e.local ?? null,
+    url: e.url ?? null, source: e.source, sourceUrl: e.source_url ?? null, syncedAt: e.synced_at ?? null,
+  }));
+}

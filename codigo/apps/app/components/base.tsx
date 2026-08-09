@@ -284,7 +284,7 @@ export function BottomNav({ active = 'explorar' }: { active?: NavId }) {
         <Icon name="spark" size={22} color={cor.white} />
       </Pressable>
       {cel('interesses', 'heart', 'Interesses', '/interesses')}
-      {cel('calendario', 'cal', 'Calendário', null)}
+      {cel('calendario', 'cal', 'Calendário', '/calendario')}
     </View>
   );
 }
