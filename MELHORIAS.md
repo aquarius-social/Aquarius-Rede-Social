@@ -157,10 +157,16 @@ App novo em `codigo/apps/admin` (App Router). Referência: PNGs `01-visao-geral`
 (ferramenta operacional).
 
 **Fundação:**
-- 🔴 — **Scaffolding** Next.js (App Router) + tema admin (ADM_DARK/ADM_LIGHT) + shell
-  (sidebar, topbar, navegação) portado do `aq-admin-foundation.jsx`.
+- 🟢 — ✅ **Scaffolding** Next.js 14 (App Router) em `codigo/apps/admin` + tema
+  ADM_DARK/ADM_LIGHT com toggle (dark default) + **shell** (sidebar 16 itens em 5
+  seções + topbar). Verificado: builda e roda (porta 3001).
+- 🟢 — ✅ **Visão geral (01)** — KPIs REAIS (parlamentares/partidos/emendas/eventos/
+  comissões/frentes via views ouro) + estado das áreas de dados + métricas de uso
+  marcadas honestamente como "não medido ainda".
+- 🟢 — **Bumpar Next** 14.2.15 → patch mais novo (CVE de segurança) antes de deploy.
 - 🔴 — **Auth + role de admin** (Supabase Auth + claim/tabela de role + middleware de
-  proteção de rota + RLS). Sem isso, nada de admin.
+  proteção de rota + RLS). Hoje o admin lê via anon (só contagens públicas); ações
+  privilegiadas e telas sensíveis exigem isso. **Sem isso, não vai pra produção.**
 
 **Telas (do protótipo admin):**
 - 🔴 — **Visão geral (01)** — saúde da ingestão, contadores, últimas sincronizações.
