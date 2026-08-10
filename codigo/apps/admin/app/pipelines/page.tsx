@@ -2,30 +2,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAdmTheme } from '../../lib/theme';
 import { contagens, despesasTotal, type Contagens } from '../../lib/dados';
+import { PIPES, type Pipe, type EstadoPipe as Estado } from '../../lib/pipelines';
 import { Card, PageHeader, SectionLabel, Badge } from '../../components/ui';
 import { StatusDot, Button, admFmtK } from '../../components/charts';
 import { Icon, type IconName } from '../../components/Icon';
-
-type Estado = 'ok' | 'parcial' | 'fora';
-interface Pipe {
-  id: string; nome: string; fonte: string; freq: string; estado: Estado;
-  reg: (c: Contagens, desp: number) => number | null; obs?: string;
-}
-
-const PIPES: Pipe[] = [
-  { id: 'despesas', nome: 'Despesas (Cota)', fonte: 'Câmara · Senado · CSV', freq: 'Semanal', estado: 'parcial', reg: (_c, d) => d, obs: 'CEAP da Câmara completa; CEAPS do Senado sem 2026 (truncado por espaço no Free).' },
-  { id: 'emendas', nome: 'Emendas', fonte: 'Portal da Transparência', freq: 'Semanal', estado: 'ok', reg: (c) => c.emendas },
-  { id: 'agenda', nome: 'Agenda / eventos', fonte: 'API Câmara · Senado', freq: 'Diário', estado: 'ok', reg: (c) => c.eventos },
-  { id: 'orgaos', nome: 'Comissões & Frentes', fonte: 'API Câmara', freq: 'Diário', estado: 'ok', reg: (c) => c.comissoes + c.frentes },
-  { id: 'perfis', nome: 'Parlamentares & partidos', fonte: 'API Câmara · Senado', freq: 'Diário', estado: 'ok', reg: (c) => c.parlamentares + c.partidos },
-  { id: 'proposicoes', nome: 'Proposições', fonte: 'API Câmara · Senado', freq: '—', estado: 'fora', reg: () => null, obs: 'Coletor pronto, truncado da base atual (⛔ precisa Supabase Pro).' },
-  { id: 'votacoes', nome: 'Votações nominais', fonte: 'API Câmara · Senado', freq: '—', estado: 'fora', reg: () => null, obs: 'Coletor pronto, truncado (⛔Pro). É o "como cada um votou".' },
-  { id: 'presenca', nome: 'Presença', fonte: '(sem coletor ainda)', freq: '—', estado: 'fora', reg: () => null, obs: 'Ainda não há coletor de presença (Câmara + Senado).' },
-  { id: 'discursos', nome: 'Discursos', fonte: 'API Câmara · Senado', freq: '—', estado: 'fora', reg: () => null, obs: 'Coletor pronto, truncado (⛔Pro).' },
-  { id: 'posts', nome: 'Geração de posts · feed', fonte: 'IA · Prometeus', freq: '—', estado: 'fora', reg: () => null, obs: 'Depende do agente Prometeus, que ainda não foi ligado.' },
-  { id: 'stories', nome: 'Stories diárias · IA', fonte: 'IA · Prometeus', freq: '—', estado: 'fora', reg: () => null, obs: 'Depende do agente Prometeus.' },
-  { id: 'sumariza', nome: 'Sumarização IA · PLs', fonte: 'IA · Prometeus', freq: '—', estado: 'fora', reg: () => null, obs: 'Depende do agente Prometeus.' },
-];
 
 const ROTULO: Record<Estado, { tone: 'pos' | 'warn' | 'neg'; l: string }> = {
   ok: { tone: 'pos', l: 'OK' }, parcial: { tone: 'warn', l: 'WARN' }, fora: { tone: 'neg', l: 'FORA' },

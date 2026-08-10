@@ -1,0 +1,39 @@
+/**
+ * DADOS DE DEMONSTRAÇÃO (placeholders) — centralizados de propósito.
+ *
+ * Cada tela do admin lê os valores que ainda não temos daqui. Quando a fonte
+ * real existir (agente Prometeus, analytics de produto, camada social, tabelas
+ * de admin), basta trocar o corpo destas funções por uma query real — as TELAS
+ * não mudam. Ver os `// TODO` de cada bloco. Marcadas na UI com o selo "amostra".
+ */
+import type { IconName } from '../components/Icon';
+
+export interface KpiDemo { label: string; value: string; sub: string; delta?: number; trend?: number[]; icon: IconName }
+
+// TODO(analytics + agente): DAU/uso vêm do analytics de produto; consultas do agente Prometeus.
+export const KPIS_VISAO: KpiDemo[] = [
+  { label: 'Usuários ativos · DAU', value: '18,4K', sub: '62,2K 7d · 148,3K 30d', delta: 8.7, trend: [120, 128, 134, 141, 149, 156, 162, 166], icon: 'users' },
+  { label: 'Consultas Prometeus · 24h', value: '4,8K', sub: '49,3K no mês', delta: 11.3, trend: [3.1, 3.4, 3.7, 3.9, 4.2, 4.5, 4.8], icon: 'spark' },
+  { label: 'Posts publicados · hoje', value: '284', sub: 'atos oficiais convertidos em posts', delta: 6.2, trend: [210, 228, 240, 255, 268, 276, 284], icon: 'list' },
+  { label: 'Engajamento do feed', value: '7.8%', sub: '38,1K comentários · 24h', delta: 0.6, trend: [6.9, 7.0, 7.2, 7.4, 7.5, 7.7, 7.8], icon: 'spark' },
+];
+
+// TODO(analytics): atividade horária real (sessões + perguntas ao agente).
+export const ATIVIDADE_APP = {
+  total: '21,2K',
+  serie: [560, 540, 520, 510, 515, 560, 640, 780, 980, 1100, 1180, 1240, 1300, 1240, 1180, 1200, 1280, 1360, 1400, 1380, 1200, 980, 760, 600],
+  labels: ['00:00', '', '', '03:00', '', '', '06:00', '', '', '09:00', '', '', '12:00', '', '', '15:00', '', '', '18:00', '', '', '21:00', '', '23:00'],
+};
+
+// TODO(monitoring): uptime/erros reais do sistema.
+export const SAUDE_STATS = { uptime: '99.94', erros: '0.18' };
+
+// TODO(agente): temas realmente perguntados ao Prometeus nos últimos 30 dias.
+export const TOP_TEMAS: { label: string; valor: string; pct: number }[] = [
+  { label: 'Votações de parlamentar específico', valor: '1,8K', pct: 23.8 },
+  { label: 'Resumo / análise de PL', valor: '1,4K', pct: 18.3 },
+  { label: 'Emendas por município ou estado', valor: '988', pct: 12.7 },
+  { label: 'Comparação entre partidos', valor: '742', pct: 9.6 },
+  { label: 'Despesas (cota parlamentar)', valor: '681', pct: 8.8 },
+  { label: 'Relatórios B2B customizados', valor: '459', pct: 5.9 },
+];

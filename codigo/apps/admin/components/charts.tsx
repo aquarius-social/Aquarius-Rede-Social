@@ -1,7 +1,7 @@
 'use client';
 import type { ReactNode } from 'react';
 import { useAdmTheme } from '../lib/theme';
-import { Card, SectionLabel } from './ui';
+import { Card, SectionLabel, Selo } from './ui';
 import { Icon, type IconName } from './Icon';
 
 const MONO = 'var(--font-mono), ui-monospace, monospace';
@@ -101,8 +101,8 @@ export function Donut({ data, w = 140 }: { data: { value: number; color: string 
 }
 
 /* KPI card — porte de AdmKpiCard (ícone + delta + sparkline) */
-export function KpiCard({ label, value, sub, delta, trend, accent, icon }: {
-  label: string; value: string; sub?: string; delta?: number; trend?: number[]; accent?: string; icon?: IconName;
+export function KpiCard({ label, value, sub, delta, trend, accent, icon, selo }: {
+  label: string; value: string; sub?: string; delta?: number; trend?: number[]; accent?: string; icon?: IconName; selo?: 'amostra' | 'real';
 }) {
   const { theme } = useAdmTheme();
   const c = accent || theme.sky;
@@ -122,7 +122,10 @@ export function KpiCard({ label, value, sub, delta, trend, accent, icon }: {
       <div style={{ marginTop: 14, fontWeight: 800, fontSize: 24, color: theme.fg, letterSpacing: '-0.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <SectionLabel>{label}</SectionLabel>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <SectionLabel>{label}</SectionLabel>
+            {selo ? <Selo tipo={selo} /> : null}
+          </div>
           {sub ? <div style={{ marginTop: 3, fontSize: 11, color: theme.fgMuted, fontWeight: 500 }}>{sub}</div> : null}
         </div>
         {trend ? <Sparkline data={trend} w={70} h={22} accent={c} /> : null}

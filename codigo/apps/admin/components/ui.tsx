@@ -43,6 +43,18 @@ export function KpiCard({ label, value, sub, accent }: { label: string; value: s
   );
 }
 
+/** Selo sutil de proveniência do dado: `real` (do banco) ou `amostra` (placeholder). */
+export function Selo({ tipo }: { tipo: 'amostra' | 'real' }) {
+  const { theme } = useAdmTheme();
+  const cor = tipo === 'real' ? theme.pos : theme.fgSubtle;
+  return (
+    <span title={tipo === 'real' ? 'Dado real do banco' : 'Placeholder — entra dado real quando a fonte existir'}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', color: cor, textTransform: 'uppercase' }}>
+      <span style={{ width: 5, height: 5, borderRadius: 9999, background: cor }} />{tipo}
+    </span>
+  );
+}
+
 export function Badge({ tone = 'muted', children }: { tone?: 'muted' | 'pos' | 'warn' | 'neg' | 'accent'; children: ReactNode }) {
   const { theme } = useAdmTheme();
   const map = {
