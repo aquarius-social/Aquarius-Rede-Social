@@ -28,6 +28,24 @@ export const ATIVIDADE_APP = {
 // TODO(monitoring): uptime/erros reais do sistema.
 export const SAUDE_STATS = { uptime: '99.94', erros: '0.18' };
 
+// TODO(agente + analytics): stories geradas pelo Prometeus + aberturas/conclusão reais.
+export const STORIES_KPIS: KpiDemo[] = [
+  { label: 'Edições · hoje', value: '6', sub: '4 publicadas · 2 em produção', icon: 'star' },
+  { label: 'Aberturas · 24h', value: '92,4K', sub: 'trilha no topo do feed', delta: 12.1, trend: [70, 74, 78, 82, 86, 90, 92], icon: 'eye' },
+  { label: 'Taxa de conclusão', value: '71%', sub: 'usuários que veem até o fim', delta: 2.4, icon: 'trend' },
+  { label: 'Tempo médio', value: '3m 48s', sub: 'por trilha completa', delta: 1.1, icon: 'cal' },
+];
+export const STORIES_PRODUCAO: { icon: IconName; titulo: string; tipo: string; sub: string; estado: 'revisar' | 'gerando' }[] = [
+  { icon: 'star', titulo: 'PSB · bancada na semana', tipo: 'Partido', sub: '1 card · gerado pelo Tentáculo D', estado: 'revisar' },
+  { icon: 'spark', titulo: 'O dia no Congresso · 24 Mai', tipo: 'Panorama', sub: '3 cards · gerado pelo Tentáculo D', estado: 'gerando' },
+];
+export const STORIES_PUBLICADAS: { titulo: string; tipo: string; aberturas: string; conclusao: number; conf: number; quando: string }[] = [
+  { titulo: 'O dia no Congresso · 23 Mai', tipo: 'Panorama', aberturas: '38,4K', conclusao: 74, conf: 91, quando: 'há 1h' },
+  { titulo: 'Tabata Amaral · atividade de hoje', tipo: 'Perfil', aberturas: '12,2K', conclusao: 68, conf: 86, quando: 'há 58min' },
+  { titulo: '#FUNDEB em alta', tipo: 'Tema', aberturas: '9,6K', conclusao: 71, conf: 83, quando: 'há 55min' },
+  { titulo: 'CCJC · decisões de hoje', tipo: 'Órgão', aberturas: '5,2K', conclusao: 66, conf: 80, quando: 'há 52min' },
+];
+
 // TODO(agente): temas realmente perguntados ao Prometeus nos últimos 30 dias.
 export const TOP_TEMAS: { label: string; valor: string; pct: number }[] = [
   { label: 'Votações de parlamentar específico', valor: '1,8K', pct: 23.8 },
