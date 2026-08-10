@@ -107,7 +107,7 @@ export default function FeedPosts() {
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color: theme.fg, lineHeight: 1.45, marginBottom: 12 }}>{atual.headline}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 9, background: theme.hover }}>
-              <Icon name="list" size={13} color={theme.fgMuted} />
+              <Icon name="doc" size={13} color={theme.fgMuted} />
               <span style={{ fontSize: 11.5, color: theme.fgMuted }}>Origem: {atual.origem}</span>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function FeedPosts() {
 
           <div style={{ display: 'flex', gap: 8 }}>
             <Button variant="primary" icon="check">Aprovar e publicar</Button>
-            <Button variant="secondary" icon="list">Editar</Button>
+            <Button variant="secondary" icon="doc">Editar</Button>
             <button style={{ width: 36, height: 36, borderRadius: 8, border: `1px solid ${theme.borderStrong}`, background: 'transparent', color: theme.neg, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="trash" size={15} color={theme.neg} />
             </button>

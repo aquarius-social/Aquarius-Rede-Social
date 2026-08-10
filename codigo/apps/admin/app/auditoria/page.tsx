@@ -45,7 +45,7 @@ export default function Auditoria() {
           <div style={{ display: 'flex', gap: 4, flex: 1 }}>
             {TABS.map(([id, l]) => (
               <button key={id} onClick={() => setTab(id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', background: tab === id ? theme.hover : 'transparent', color: tab === id ? theme.fg : theme.fgMuted, fontSize: 12.5, fontWeight: tab === id ? 700 : 500 }}>
-                {l}{id === 'todos' ? <span style={{ fontSize: 11, color: theme.fgSubtle }}>{EVENTOS.length}</span> : null}
+                {l}{id === 'todos' ? <span style={{ fontSize: 10.5, fontWeight: 700, color: theme.fgMuted, background: theme.hover, padding: '1px 7px', borderRadius: 9999 }}>{EVENTOS.length}</span> : null}
               </button>
             ))}
           </div>

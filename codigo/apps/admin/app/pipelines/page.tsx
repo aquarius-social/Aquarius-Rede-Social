@@ -74,26 +74,28 @@ export default function Pipelines() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '9px 14px', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.fgSubtle, borderBottom: `1px solid ${theme.border}` }}>
-            <span>Pipeline</span><span>Frequência</span><span style={{ textAlign: 'right' }}>Registros</span><span style={{ textAlign: 'right' }}>Estado</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.9fr 0.9fr 1fr 0.9fr 30px', padding: '9px 14px', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.fgSubtle, borderBottom: `1px solid ${theme.border}` }}>
+            <span>Pipeline</span><span>Frequência</span><span style={{ textAlign: 'right' }}>Registros</span><span style={{ textAlign: 'right' }}>Tempo · Δ</span><span style={{ textAlign: 'right' }}>Último</span><span />
           </div>
 
           {lista.map((p) => {
             const on = p.id === atual.id;
             const reg = regDe(p);
             return (
-              <button key={p.id} onClick={() => setSel(p.id)} style={{ width: '100%', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', alignItems: 'center', padding: '11px 14px', border: 'none', borderLeft: `2px solid ${on ? theme.sky : 'transparent'}`, borderBottom: `1px solid ${theme.border}`, background: on ? theme.hover : 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+              <div key={p.id} onClick={() => setSel(p.id)} role="button" style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.9fr 0.9fr 1fr 0.9fr 30px', alignItems: 'center', padding: '11px 14px', borderLeft: `2px solid ${on ? theme.sky : 'transparent'}`, borderBottom: `1px solid ${theme.border}`, background: on ? theme.hover : 'transparent', cursor: 'pointer' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                   <StatusDot status={p.estado} />
                   <span style={{ minWidth: 0 }}>
                     <span style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: theme.fg }}>{p.nome}</span>
-                    <span style={{ display: 'block', marginTop: 2, fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: theme.fgSubtle }}>{p.fonte}</span>
+                    <span style={{ display: 'block', marginTop: 2, fontFamily: 'var(--font-mono), monospace', fontSize: 10, color: theme.fgSubtle, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.fonte}</span>
                   </span>
                 </span>
                 <span style={{ fontSize: 12, color: theme.fgMuted }}>{p.freq}</span>
                 <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono), monospace', fontSize: 12.5, fontWeight: 600, color: reg == null ? theme.fgSubtle : theme.fg }}>{reg == null ? '—' : admFmtK(reg)}</span>
-                <span style={{ textAlign: 'right' }}><Badge tone={ROTULO[p.estado].tone}>{ROTULO[p.estado].l}</Badge></span>
-              </button>
+                <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono), monospace', fontSize: 11.5, color: theme.fgSubtle }}>—</span>
+                <span style={{ textAlign: 'right', fontSize: 11, color: theme.fgSubtle }}>—</span>
+                <button onClick={(e) => e.stopPropagation()} aria-label="Mais ações" style={{ justifySelf: 'end', border: 'none', background: 'transparent', color: theme.fgSubtle, cursor: 'pointer', padding: 4 }}><Icon name="dots" size={15} color={theme.fgSubtle} /></button>
+              </div>
             );
           })}
         </Card>
@@ -110,10 +112,10 @@ export default function Pipelines() {
           <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 11, color: theme.fgSubtle, marginBottom: 14 }}>{atual.fonte}</div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-            <Kv theme={theme} k="Registros na base" v={c ? (regDe(atual) == null ? '—' : admFmtK(regDe(atual)!)) : '…'} />
-            <Kv theme={theme} k="Frequência" v={atual.freq} />
             <Kv theme={theme} k="Último run" v="—" />
             <Kv theme={theme} k="Tempo de execução" v="—" />
+            <Kv theme={theme} k="Registros processados" v={c ? (regDe(atual) == null ? '—' : admFmtK(regDe(atual)!)) : '…'} />
+            <Kv theme={theme} k="Falhas · 30d" v="—" />
           </div>
 
           {atual.obs ? (
@@ -137,9 +139,10 @@ export default function Pipelines() {
             Telemetria por execução (tempo, falhas, histórico) ainda não é coletada — entra com o agendador de ingestão.
           </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <Button variant="primary" icon="sync">Sync manual</Button>
             <Button variant="secondary" icon="pause">Pausar</Button>
+            <button aria-label="Mais ações" style={{ marginLeft: 'auto', width: 36, height: 36, borderRadius: 8, border: `1px solid ${theme.borderStrong}`, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="dots" size={16} color={theme.fgMuted} /></button>
           </div>
         </Card>
       </div>

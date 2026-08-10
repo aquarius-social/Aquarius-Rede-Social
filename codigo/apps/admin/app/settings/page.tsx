@@ -10,16 +10,16 @@ const TIME = [
   { av: 'CM', nome: 'Carla Mendes', email: 'carla@base.aq', papel: 'Auditor', tone: 'warn' as const },
 ];
 
-// Status honesto: conectado = de fato em uso; planejado = ainda não integrado.
+// Ordem/nomes do protótipo; STATUS honesto: conectado = de fato em uso; planejado = ainda não integrado.
 const INTEGRACOES: { nome: string; status: 'conectado' | 'planejado' }[] = [
   { nome: 'API Câmara dos Deputados', status: 'conectado' },
   { nome: 'API Senado Federal', status: 'conectado' },
-  { nome: 'Portal da Transparência (emendas)', status: 'conectado' },
-  { nome: 'Supabase · Backend', status: 'conectado' },
+  { nome: 'Siga Brasil', status: 'conectado' },
   { nome: 'WhatsApp Business · Meta', status: 'planejado' },
-  { nome: 'OpenAI', status: 'planejado' },
-  { nome: 'Anthropic · Prometeus', status: 'planejado' },
+  { nome: 'OpenAI · Tentáculo B/C', status: 'planejado' },
+  { nome: 'Anthropic · Tentáculo A', status: 'planejado' },
   { nome: 'Stripe · Pagamentos', status: 'planejado' },
+  { nome: 'Supabase · Backend', status: 'conectado' },
 ];
 
 export default function Settings() {
@@ -53,7 +53,7 @@ export default function Settings() {
 
         {/* Integrações */}
         <Card padding={0}>
-          <div style={{ padding: '14px 18px', borderBottom: `1px solid ${theme.border}` }}><SectionLabel>Integrações</SectionLabel></div>
+          <div style={{ padding: '14px 18px', borderBottom: `1px solid ${theme.border}` }}><SectionLabel>Integrações ativas</SectionLabel></div>
           {INTEGRACOES.map((it, i) => {
             const on = it.status === 'conectado';
             return (

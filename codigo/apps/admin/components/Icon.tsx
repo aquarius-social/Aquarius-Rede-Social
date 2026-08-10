@@ -4,7 +4,7 @@ export type IconName =
   | 'grid' | 'pipe' | 'list' | 'star' | 'eye' | 'shield' | 'spark' | 'users'
   | 'trend' | 'globe' | 'flag' | 'lock' | 'gear' | 'cal' | 'download' | 'chevR'
   | 'menu' | 'sun' | 'moon' | 'search' | 'bell' | 'check' | 'x'
-  | 'alert' | 'sync' | 'pause' | 'dots' | 'trash' | 'send' | 'plus';
+  | 'alert' | 'sync' | 'pause' | 'dots' | 'trash' | 'send' | 'plus' | 'doc';
 
 const P: Record<IconName, string> = {
   grid: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
@@ -37,6 +37,7 @@ const P: Record<IconName, string> = {
   trash: 'M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2',
   send: 'M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z',
   plus: 'M12 5v14M5 12h14',
+  doc: 'M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M8 13h8M8 17h5',
 };
 
 export function Icon({ name, size = 18, color = 'currentColor', stroke = 2, style }: {

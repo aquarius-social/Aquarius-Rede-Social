@@ -43,7 +43,7 @@ export default function Equipe() {
         title="Equipe & Permissões"
         subtitle="Quem pode publicar, moderar e — crítico para a LGPD — exportar dados. Cada ação fica registrada na Auditoria."
         actions={<>
-          <Button variant="secondary" icon="list">Log de acessos</Button>
+          <Button variant="secondary" icon="doc">Log de acessos</Button>
           <Button variant="primary" icon="plus">Convidar membro</Button>
         </>}
       />
@@ -103,7 +103,9 @@ export default function Equipe() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <Badge tone={m.tone}>{m.papel}</Badge>
-                <div style={{ marginTop: 4, fontSize: 10.5, color: m.twofa ? theme.pos : theme.warn }}>{m.twofa ? '2FA' : 'sem 2FA'} · {m.quando}</div>
+                <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5, fontSize: 10.5, color: m.twofa ? theme.pos : theme.warn }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 9999, background: m.twofa ? theme.pos : theme.warn }} />{m.twofa ? '2FA' : 'sem 2FA'} · {m.quando}
+                </div>
               </div>
             </div>
           ))}

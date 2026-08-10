@@ -32,8 +32,8 @@ const FILA = [
 ];
 
 const CORRECOES = [
-  { icon: 'check' as const, tone: 'pos' as const, titulo: 'PL 2159/2021 · licenciamento ambiental', tipo: 'Votação', status: 'Corrigido', statusTone: 'pos' as const, origem: 'Número de votos divergente da fonte oficial após atualização da Câmara.', acao: '"aprovado por 274 votos" → "aprovado por 277 votos". Nota de correção anexada ao post.', autor: 'Editora', quando: 'há 2h' },
-  { icon: 'trash' as const, tone: 'neg' as const, titulo: 'Discurso atribuído incorretamente', tipo: 'Discurso', status: 'Retratado', statusTone: 'neg' as const, origem: 'Atribuição trocada entre dois parlamentares na geração automática.', acao: 'Post removido do feed e substituído por nota de retratação. Usuários que interagiram foram notificados.', autor: 'Editor-chefe', quando: 'ontem' },
+  { icon: 'check' as const, tone: 'pos' as const, titulo: 'PL 2159/2021 · licenciamento ambiental', tipo: 'Votação', status: 'Corrigido', statusTone: 'pos' as const, origem: 'Número de votos divergente da fonte oficial após atualização da Câmara.', acao: '"aprovado por 274 votos" → "aprovado por 277 votos". Nota de correção anexada ao post.', autor: 'Ana · Editora', quando: 'há 2h' },
+  { icon: 'trash' as const, tone: 'neg' as const, titulo: 'Discurso atribuído incorretamente', tipo: 'Discurso', status: 'Retratado', statusTone: 'neg' as const, origem: 'Atribuição trocada entre dois parlamentares na geração automática.', acao: 'Post removido do feed e substituído por nota de retratação. Usuários que interagiram foram notificados.', autor: 'Bruno · Editor-chefe', quando: 'ontem' },
 ];
 
 export default function Revisao() {
@@ -112,7 +112,7 @@ export default function Revisao() {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Icon name="list" size={14} color={theme.pos} />
+                <Icon name="doc" size={14} color={theme.pos} />
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: theme.pos }}>FONTE OFICIAL</span>
               </div>
               <div style={{ fontFamily: 'var(--font-mono), monospace', fontSize: 12, color: theme.fgMuted, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{atual.fonte}</div>
@@ -121,7 +121,7 @@ export default function Revisao() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <Button variant="primary" icon="check">Aprovar e publicar</Button>
-            <Button variant="secondary" icon="list">Editar texto</Button>
+            <Button variant="secondary" icon="doc">Editar texto</Button>
             <Button variant="secondary" icon="alert">Escalar ao chefe</Button>
             <div style={{ flex: 1 }} />
             <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 8, border: `1px solid ${theme.borderStrong}`, background: 'transparent', color: theme.neg, cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>

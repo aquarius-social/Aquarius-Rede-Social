@@ -29,10 +29,10 @@ export default function Usuarios() {
     <>
       <PageHeader
         title="Usuários"
-        subtitle="Comportamento, interesses e audiências de dados da comunidade"
+        subtitle="165.722 membros · comportamento, interesses e audiências de dados"
         actions={<>
           <Button variant="secondary" icon="download">Exportar agregado</Button>
-          <Button variant="primary" icon="spark">Criar segmento</Button>
+          <Button variant="primary" icon="plus">Criar segmento</Button>
         </>}
       />
 
