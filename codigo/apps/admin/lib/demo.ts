@@ -46,6 +46,33 @@ export const STORIES_PUBLICADAS: { titulo: string; tipo: string; aberturas: stri
   { titulo: 'CCJC · decisões de hoje', tipo: 'Órgão', aberturas: '5,2K', conclusao: 66, conf: 80, quando: 'há 52min' },
 ];
 
+// TODO(agente): telemetria real do Prometeus (custo, tokens, latência, temas).
+export const PROMETEUS_KPIS: KpiDemo[] = [
+  { label: 'Perguntas · 30d', value: '142.8K', sub: '4,8K hoje · pico às 14h', delta: 11.3, trend: [100, 108, 116, 124, 130, 136, 143], icon: 'spark' },
+  { label: 'Custo · 30d', value: 'R$ 2.312', sub: 'OpenAI: R$ 1.984 · Anthropic: R$ 328', delta: 4.8, trend: [60, 72, 65, 80, 70, 88, 76], icon: 'trend' },
+  { label: 'Tokens · entrada', value: '48,2M', sub: 'média 3,4K por pergunta', delta: 12.1, icon: 'upload' },
+  { label: 'Tokens · saída', value: '9,7M', sub: 'média 680 por resposta', delta: 8.4, icon: 'download' },
+];
+export const PROMETEUS_CUSTO = {
+  media: 'R$ 76,18',
+  serie: [50, 72, 74, 58, 68, 78, 72, 80, 78, 70, 62, 58, 55, 52, 70, 50, 48, 48, 74, 82, 88, 94, 70, 68, 78, 82],
+  labels: ['24d', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '4d', '', '', '', '', ''],
+};
+export const PROMETEUS_LATENCIA: { label: string; v: string; pct: number; tone: 'pos' | 'warn' | 'neg' }[] = [
+  { label: 'p50', v: '1,2s', pct: 24, tone: 'pos' },
+  { label: 'p75', v: '2,1s', pct: 42, tone: 'pos' },
+  { label: 'p95', v: '4,8s', pct: 78, tone: 'warn' },
+  { label: 'p99', v: '9,4s', pct: 96, tone: 'neg' },
+];
+export const PROMETEUS_DISTRIBUICAO: { tema: string; n: string; pct: number }[] = [
+  { tema: 'Votações de parlamentar específico', n: '1.842', pct: 23.8 },
+  { tema: 'Resumo / análise de PL', n: '1.421', pct: 18.3 },
+  { tema: 'Emendas por município ou estado', n: '988', pct: 12.7 },
+  { tema: 'Comparação entre partidos', n: '742', pct: 9.6 },
+  { tema: 'Despesas (cota parlamentar)', n: '681', pct: 8.8 },
+  { tema: 'Relatórios B2B customizados', n: '459', pct: 5.9 },
+];
+
 // TODO(agente): temas realmente perguntados ao Prometeus nos últimos 30 dias.
 export const TOP_TEMAS: { label: string; valor: string; pct: number }[] = [
   { label: 'Votações de parlamentar específico', valor: '1,8K', pct: 23.8 },
