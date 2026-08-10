@@ -73,6 +73,57 @@ export const PROMETEUS_DISTRIBUICAO: { tema: string; n: string; pct: number }[] 
   { tema: 'Relatórios B2B customizados', n: '459', pct: 5.9 },
 ];
 
+// TODO(analytics): engajamento real (DAU/WAU/MAU, coortes, perfis/buscas).
+export const ENGAJAMENTO_KPIS: KpiDemo[] = [
+  { label: 'DAU', value: '18,4K', sub: 'ativos hoje', delta: 8.7, trend: [12, 13, 14, 15, 16, 17, 18], icon: 'users' },
+  { label: 'WAU', value: '62,2K', sub: 'ativos 7 dias', delta: 12.4, trend: [48, 51, 54, 56, 58, 60, 62], icon: 'users' },
+  { label: 'MAU', value: '148,3K', sub: 'ativos 30 dias', delta: 18.6, trend: [110, 118, 126, 133, 140, 145, 148], icon: 'users' },
+  { label: 'Sessão média', value: '6m 42s', sub: 'iOS: 7m 12s · Android: 6m 04s', delta: 3.2, icon: 'trend' },
+];
+export const RETENCAO_COORTE: { semana: string; cohort: string; d1: number; d7: number; d30: number | null }[] = [
+  { semana: 'Abr 06', cohort: '6.840', d1: 71, d7: 42, d30: 24 },
+  { semana: 'Abr 13', cohort: '7.212', d1: 69, d7: 40, d30: 23 },
+  { semana: 'Abr 20', cohort: '7.888', d1: 72, d7: 43, d30: 25 },
+  { semana: 'Abr 27', cohort: '8.120', d1: 68, d7: 41, d30: 23 },
+  { semana: 'Mai 04', cohort: '9.210', d1: 70, d7: 42, d30: 22 },
+  { semana: 'Mai 11', cohort: '9.842', d1: 67, d7: 39, d30: 22 },
+  { semana: 'Mai 18', cohort: '10.412', d1: 68, d7: 41, d30: null },
+];
+export const PERFIS_CONSULTADOS: { av: string; nome: string; sub: string; valor: string; delta: string }[] = [
+  { av: 'TA', nome: 'Tabata Amaral', sub: 'PSB-SP', valor: '84,2K', delta: '+12.3%' },
+  { av: 'HM', nome: 'Hugo Motta', sub: 'REPUBLICANOS-PB', valor: '71,4K', delta: '+8.4%' },
+  { av: 'NF', nome: 'Nikolas Ferreira', sub: 'PL-MG', valor: '63,1K', delta: '+15.2%' },
+  { av: 'EH', nome: 'Erika Hilton', sub: 'PSOL-SP', valor: '58,7K', delta: '+6.1%' },
+];
+export const BUSCAS_FREQUENTES: { termo: string; valor: string; delta: string }[] = [
+  { termo: 'reforma tributária', valor: '14,2K', delta: '+8.4%' },
+  { termo: 'pé-de-meia', valor: '11,4K', delta: '+22.1%' },
+  { termo: 'tabata amaral', valor: '8,1K', delta: '+5.6%' },
+  { termo: 'emendas 2026', valor: '6,9K', delta: '+11.0%' },
+];
+
+// TODO(DaaS/escala): audiências agregadas reais (k-anon, consentimento em escala).
+export const AUDIENCIAS_KPIS: KpiDemo[] = [
+  { label: 'Perfis 100% completos', value: '38%', sub: '63,0K membros · induzido no app', delta: 5.2, trend: [30, 32, 34, 35, 36, 37, 38], icon: 'users' },
+  { label: 'Consentimento DaaS', value: '71%', sub: 'base elegível para análises', delta: 2.3, icon: 'check' },
+  { label: 'Relatórios · 30d', value: '412', sub: 'prontos + sob demanda', delta: 22.4, icon: 'doc' },
+  { label: 'Receita DaaS · mês', value: 'R$ 60.8K', sub: 'audiências agregadas', delta: 14.2, icon: 'trend' },
+];
+export const AUDIENCIAS_BARRAS: { regiao: string; engajado: number; base: number; index: number }[] = [
+  { regiao: 'Norte', engajado: 7.1, base: 8, index: 89 },
+  { regiao: 'Nordeste', engajado: 27.2, base: 27, index: 101 },
+  { regiao: 'Centro-Oeste', engajado: 7.8, base: 9, index: 87 },
+  { regiao: 'Sudeste', engajado: 44.5, base: 42, index: 106 },
+  { regiao: 'Sul', engajado: 13.4, base: 14, index: 95 },
+];
+export const AUDIENCIAS_PRONTAS: { icon: IconName; titulo: string; badge?: string }[] = [
+  { icon: 'globe', titulo: 'Engajamento por região × tema', badge: 'Destaque' },
+  { icon: 'flag', titulo: 'Afinidade partidária por faixa etária', badge: 'Popular' },
+  { icon: 'trend', titulo: 'Tendência de interesse · reforma tributária' },
+  { icon: 'users', titulo: 'Perfil socioeconômico dos seguidores' },
+  { icon: 'spark', titulo: 'Temas em alta por município' },
+];
+
 // TODO(agente): temas realmente perguntados ao Prometeus nos últimos 30 dias.
 export const TOP_TEMAS: { label: string; valor: string; pct: number }[] = [
   { label: 'Votações de parlamentar específico', valor: '1,8K', pct: 23.8 },
