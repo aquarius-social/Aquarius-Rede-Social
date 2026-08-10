@@ -3,7 +3,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAdmTheme } from '../lib/theme';
+import { useAuth } from '../lib/auth';
 import { Icon, type IconName } from './Icon';
+
+const PAPEL_LABEL: Record<string, string> = {
+  superadmin: 'Superadmin', editor_chefe: 'Editor-chefe', editor: 'Editor', moderador: 'Moderador',
+  analista_daas: 'Analista DaaS', auditor: 'Auditor', operador: 'Operador', visualizador: 'Visualizador',
+};
 
 type NavItem =
   | { kind: 'section'; label: string }
@@ -52,8 +58,11 @@ function AdmMark() {
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { theme, mode, toggle } = useAdmTheme();
+  const { session, papel, sair } = useAuth();
   const path = usePathname();
   const [colapsado, setColapsado] = useState(false);
+  const email = session?.user?.email ?? '';
+  const iniciais = email.slice(0, 2).toUpperCase() || 'AQ';
   const w = colapsado ? 68 : 236;
   const pagina = LABELS[path] ?? 'Visão geral';
 
@@ -121,10 +130,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <Icon name="bell" size={16} color={theme.fg} />
               <span style={{ position: 'absolute', top: 7, right: 8, width: 7, height: 7, borderRadius: 9999, background: theme.neg, border: `1.5px solid ${theme.surface}` }} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px 4px 4px', borderRadius: 9999, border: `1px solid ${theme.border}` }}>
-              <span style={{ width: 26, height: 26, borderRadius: 9999, background: 'linear-gradient(135deg,#0D2B5E,#2E7DD1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10, fontWeight: 800 }}>AQ</span>
-              <span style={{ fontSize: 12.5, fontWeight: 600 }}>Admin</span>
-              <Icon name="chevR" size={13} color={theme.fgMuted} style={{ transform: 'rotate(90deg)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px 4px 4px', borderRadius: 9999, border: `1px solid ${theme.border}` }}>
+              <span style={{ width: 26, height: 26, borderRadius: 9999, background: 'linear-gradient(135deg,#0D2B5E,#2E7DD1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10, fontWeight: 800 }}>{iniciais}</span>
+              <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email || 'Admin'}</span>
+                {papel ? <span style={{ fontSize: 9.5, color: theme.fgSubtle }}>{PAPEL_LABEL[papel] ?? papel}</span> : null}
+              </span>
+              <button onClick={sair} aria-label="Sair" title="Sair" style={{ marginLeft: 4, width: 28, height: 28, borderRadius: 9999, border: 'none', background: 'transparent', color: theme.fgMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="logout" size={15} color={theme.fgMuted} /></button>
             </div>
           </div>
         </header>

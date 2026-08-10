@@ -9,6 +9,13 @@ if (!url || !anon) {
   );
 }
 
-// Admin lê as views ouro (contagens/estado). Ações privilegiadas virão via
-// server actions com service_role — nunca a chave secreta no cliente.
-export const supabase = createClient(url, anon, { auth: { persistSession: false } });
+// Admin lê as views ouro (contagens/estado) e autentica o operador (magic link).
+// Ações privilegiadas virão via server actions com service_role — nunca a chave
+// secreta no cliente. Sessão persistida (localStorage) + link mágico no web.
+export const supabase = createClient(url, anon, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: typeof window !== 'undefined',
+  },
+});
