@@ -30,6 +30,14 @@ export async function contagens(): Promise<Contagens> {
   };
 }
 
+/** Emendas por ano (contagens reais, baratas) — série p/ sparkline/área. */
+export async function emendasPorAno(anos = [2023, 2024, 2025, 2026]): Promise<{ ano: number; total: number }[]> {
+  const res = await Promise.all(
+    anos.map((a) => supabase.from('emenda_publica').select('*', { count: 'exact', head: true }).eq('ano', a)),
+  );
+  return anos.map((a, i) => ({ ano: a, total: res[i].count ?? 0 }));
+}
+
 /** Frescor: data de sincronização mais recente vista nas emendas. */
 export async function ultimoSync(): Promise<string | null> {
   const { data } = await supabase
