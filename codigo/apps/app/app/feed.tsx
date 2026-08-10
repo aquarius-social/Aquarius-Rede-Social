@@ -8,6 +8,7 @@ import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
 import { Avatar, Icon, PartyChip, Tag, BottomNav } from '../components/base';
 import { AqHeader } from '../components/header';
+import { useFollows } from '../lib/follows';
 
 type Aba = 'voce' | 'seguindo';
 
@@ -31,7 +32,7 @@ export default function Feed() {
       </View>
 
       {aba === 'seguindo' ? (
-        <Seguindo router={router} />
+        <Seguindo posts={posts} router={router} />
       ) : posts === null ? (
         <ActivityIndicator color={cor.blue} style={{ marginTop: 40 }} />
       ) : (
@@ -66,20 +67,54 @@ function TabBtn({ label, on, onPress }: { label: string; on: boolean; onPress: (
   );
 }
 
-function Seguindo({ router }: { router: ReturnType<typeof useRouter> }) {
+function Seguindo({ posts, router }: { posts: FeedPost[] | null; router: ReturnType<typeof useRouter> }) {
   const { cor, st } = useTemaEstilos(criarSt);
+  const { porTipo } = useFollows();
+  const segParlamentares = new Set(porTipo('parlamentar').map((f) => f.ref_id));
+  const segPartidos = new Set(porTipo('partido').map((f) => f.ref_id));
+  const temFollows = segParlamentares.size + segPartidos.size > 0;
+
+  // Filtra os destaques de dinheiro por quem o usuário segue (autor ou partido).
+  // Dado real — sem inventar; o feed editorial (Prometeus) entra por cima depois.
+  const filtrados = (posts ?? []).filter(
+    (p) => (p.autorId && segParlamentares.has(p.autorId)) || (p.autorSigla && segPartidos.has(p.autorSigla)),
+  );
+
+  if (posts === null) return <ActivityIndicator color={cor.blue} style={{ marginTop: 40 }} />;
+
+  if (!temFollows) {
+    return (
+      <View style={st.empty}>
+        <View style={st.emptyIcon}><Icon name="heart" size={20} color={cor.sky} /></View>
+        <Text style={st.emptyTit}>Seu feed de quem você segue</Text>
+        <Text style={st.emptyTxt}>
+          Siga parlamentares e partidos (no perfil deles ou em Interesses) e este feed mostra só os
+          destaques de quem importa para você.
+        </Text>
+        <Pressable onPress={() => router.push('/interesses')} style={st.emptyCta}>
+          <Text style={st.emptyCtaTxt}>Ir para Interesses</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (!filtrados.length) {
+    return (
+      <View style={st.empty}>
+        <View style={st.emptyIcon}><Icon name="heart" size={20} color={cor.sky} /></View>
+        <Text style={st.emptyTit}>Nada novo por aqui ainda</Text>
+        <Text style={st.emptyTxt}>
+          Nenhum destaque recente de quem você segue. Assim que houver, aparece aqui — e os posts do
+          Prometeus entram quando o agente for ligado.
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={st.empty}>
-      <View style={st.emptyIcon}><Icon name="heart" size={20} color={cor.sky} /></View>
-      <Text style={st.emptyTit}>Seu feed de quem você segue</Text>
-      <Text style={st.emptyTxt}>
-        Escolha temas e partidos em Interesses — quando o sistema de "seguir" e o Prometeus chegarem,
-        este feed mostra só o que é seu.
-      </Text>
-      <Pressable onPress={() => router.push('/interesses')} style={st.emptyCta}>
-        <Text style={st.emptyCtaTxt}>Ir para Interesses</Text>
-      </Pressable>
-    </View>
+    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 110 }}>
+      {filtrados.map((p) => <PostCard key={p.id} post={p} router={router} />)}
+    </ScrollView>
   );
 }
 

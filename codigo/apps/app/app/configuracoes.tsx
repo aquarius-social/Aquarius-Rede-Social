@@ -5,6 +5,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { useAuth } from '../lib/auth';
 import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos, useTemaCtrl, type PrefTema } from '../lib/theme';
+import { useFollows } from '../lib/follows';
 import { Avatar, Icon, Card, SectionHeader, Divider, Tag, type IconName } from '../components/base';
 
 export default function Configuracoes() {
@@ -12,6 +13,9 @@ export default function Configuracoes() {
   const { pref, definir } = useTemaCtrl();
   const router = useRouter();
   const { session, prefs, sair } = useAuth();
+  const { porTipo } = useFollows();
+  const meusTemas = porTipo('tema').map((f) => f.ref_id);
+  const meusPartidos = porTipo('partido').map((f) => f.ref_id);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const email = session?.user?.email ?? '—';
@@ -63,9 +67,9 @@ export default function Configuracoes() {
               parlamentares, partidos, comissões ou PLs refina as recomendações com o tempo.
             </Text>
           </View>
-          <ChipBloco titulo="Temas que você acompanha" itens={prefs.temas ?? []} vazio="Nenhum tema ainda" hashtag onEdit={() => emBreve('Editar temas')} />
+          <ChipBloco titulo="Temas que você acompanha" itens={meusTemas} vazio="Nenhum tema ainda" hashtag onEdit={() => router.push('/interesses')} />
           <Divider />
-          <ChipBloco titulo="Partidos seguidos" itens={prefs.partidos ?? []} vazio="Nenhum partido ainda" onEdit={() => emBreve('Editar partidos')} />
+          <ChipBloco titulo="Partidos seguidos" itens={meusPartidos} vazio="Nenhum partido ainda" onEdit={() => router.push('/interesses')} />
         </Card>
 
         <View style={{ height: 18 }} />
