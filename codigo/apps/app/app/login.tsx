@@ -80,7 +80,7 @@ export default function Login() {
           <Logo height={28} />
           <Text style={st.h1}>Tudo sobre o Congresso Nacional na palma da sua mão.</Text>
           <Text style={st.p}>
-            Dados completos do Congresso combinados com o <Text style={st.forte}>Prometeus IA</Text> para
+            Dados completos do Congresso Nacional combinados com o <Text style={st.forte}>Prometeus IA</Text> para
             consultas analíticas instantâneas.
           </Text>
 

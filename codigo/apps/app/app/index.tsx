@@ -8,6 +8,8 @@ import { Avatar, Icon, BottomNav, Logo } from '../components/base';
 
 type IconeEnt = 'users' | 'flag' | 'building' | 'star' | 'doc';
 
+const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+
 function EntCard({ icon, cor: c, titulo, sub, tipo, wide }: {
   icon: IconeEnt; cor: string; titulo: string; sub: string; tipo?: string; wide?: boolean;
 }) {
@@ -40,6 +42,10 @@ export default function Explorar() {
 
   const nome = prefs.nome || session?.user?.email?.split('@')[0] || 'Você';
 
+  // Data corrente no eyebrow (masthead), como no protótipo "57ª LEGISLATURA · 23 MAI 2026".
+  const hoje = new Date();
+  const dataHoje = `${hoje.getDate()} ${MESES[hoje.getMonth()]} ${hoje.getFullYear()}`;
+
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
       {/* Header */}
@@ -51,12 +57,12 @@ export default function Explorar() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
-        <Text style={st.eyebrow}>57ª LEGISLATURA</Text>
+        <Text style={st.eyebrow}>57ª LEGISLATURA · {dataHoje}</Text>
         <Text style={st.h1}>Explore o Congresso.</Text>
 
         <View style={st.grid}>
           <EntCard icon="users" cor={cor.navy} titulo="Parlamentares"
-            sub={c ? `${c.parlamentares} no exercício` : '…'} tipo="parlamentares" />
+            sub={c ? `${c.parlamentares} ativos` : '…'} tipo="parlamentares" />
           <EntCard icon="flag" cor={cor.blue} titulo="Partidos"
             sub={c ? `${c.partidos} com bancada` : '…'} tipo="partidos" />
           <EntCard icon="building" cor={cor.sky} titulo="Comissões"

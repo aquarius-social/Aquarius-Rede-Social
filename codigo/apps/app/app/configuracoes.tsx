@@ -34,7 +34,6 @@ export default function Configuracoes() {
             </View>
           </View>
           <Pressable onPress={() => emBreve('Premium')} style={st.premium}>
-            <Icon name="star" size={14} color={cor.white} />
             <Text style={st.premiumTxt}>Assinar Premium · R$ 9,99/mês</Text>
           </Pressable>
         </Card>
@@ -57,11 +56,11 @@ export default function Configuracoes() {
           <View style={st.feedInfo}>
             <View style={st.feedIcon}><Icon name="spark" size={16} color={cor.white} /></View>
             <Text style={st.feedInfoTxt}>
-              Seu feed é montado a partir das preferências abaixo e da sua região. Seguir parlamentares,
-              partidos e pautas refina as recomendações com o tempo.
+              Seu feed é montado a partir das preferências abaixo e da sua região. Curtir posts e seguir
+              parlamentares, partidos, comissões ou PLs refina as recomendações com o tempo.
             </Text>
           </View>
-          <ChipBloco titulo="Temas que você acompanha" itens={prefs.temas ?? []} vazio="Nenhum tema ainda" onEdit={() => emBreve('Editar temas')} />
+          <ChipBloco titulo="Temas que você acompanha" itens={prefs.temas ?? []} vazio="Nenhum tema ainda" hashtag onEdit={() => emBreve('Editar temas')} />
           <Divider />
           <ChipBloco titulo="Partidos seguidos" itens={prefs.partidos ?? []} vazio="Nenhum partido ainda" onEdit={() => emBreve('Editar partidos')} />
         </Card>
@@ -116,7 +115,7 @@ function Anel({ pct }: { pct: number }) {
   );
 }
 
-function ChipBloco({ titulo, itens, vazio, onEdit }: { titulo: string; itens: string[]; vazio: string; onEdit: () => void }) {
+function ChipBloco({ titulo, itens, vazio, onEdit, hashtag }: { titulo: string; itens: string[]; vazio: string; onEdit: () => void; hashtag?: boolean }) {
   return (
     <View style={{ padding: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 9 }}>
@@ -125,7 +124,7 @@ function ChipBloco({ titulo, itens, vazio, onEdit }: { titulo: string; itens: st
       </View>
       {itens.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-          {itens.map((t) => <View key={t} style={st.chip}><Text style={st.chipTxt}>#{t}</Text></View>)}
+          {itens.map((t) => <View key={t} style={st.chip}><Text style={st.chipTxt}>{hashtag ? `# ${t}` : t}</Text></View>)}
         </View>
       ) : <Text style={st.vazio}>{vazio}</Text>}
     </View>

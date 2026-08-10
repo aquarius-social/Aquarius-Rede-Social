@@ -71,8 +71,8 @@ function ListaParlamentares() {
 
   return (
     <View style={st.tela}>
-      <TextInput style={st.busca} placeholder="Buscar por nome…" placeholderTextColor={cor.mutedSoft} value={busca} onChangeText={setBusca} autoCorrect={false} />
-      <ChipRow sel={casa} onSel={setCasa} opcoes={[{ v: null, l: 'Todas as casas' }, { v: 'camara', l: 'Câmara' }, { v: 'senado', l: 'Senado' }]} />
+      <TextInput style={st.busca} placeholder="Buscar parlamentar, partido, UF..." placeholderTextColor={cor.mutedSoft} value={busca} onChangeText={setBusca} autoCorrect={false} />
+      <ChipRow sel={casa} onSel={setCasa} opcoes={[{ v: null, l: 'Todas' }, { v: 'camara', l: 'Câmara' }, { v: 'senado', l: 'Senado' }]} />
       <ChipRow sel={situacao} onSel={setSituacao} opcoes={[
         { v: null, l: 'Todas as situações' }, { v: 'em_exercicio', l: 'Em exercício' },
         { v: 'licenciado', l: 'Licenciado' }, { v: 'suplente_em_exercicio', l: 'Suplente' }]} />
@@ -86,7 +86,7 @@ function ListaParlamentares() {
           data={lista}
           keyExtractor={(p) => p.id}
           contentContainerStyle={{ paddingVertical: 8, paddingBottom: 24 }}
-          ListHeaderComponent={<Text style={st.contador}>{lista.length} parlamentar{lista.length !== 1 ? 'es' : ''}</Text>}
+          ListHeaderComponent={<Text style={st.contador}>{lista.length} resultado{lista.length !== 1 ? 's' : ''}</Text>}
           ListEmptyComponent={<Text style={st.vazio}>Nenhum parlamentar com esses filtros.</Text>}
           renderItem={({ item }) => (
             <Link href={{ pathname: '/parlamentar/[id]', params: { id: item.id } }} asChild>

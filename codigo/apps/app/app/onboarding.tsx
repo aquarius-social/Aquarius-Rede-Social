@@ -58,8 +58,8 @@ export default function Onboarding() {
         <View style={{ marginBottom: 30 }}><Logo height={30} dark /></View>
         <Text style={st.introH1}>Vamos montar o seu Congresso.</Text>
         <Text style={st.introP}>
-          Responda a 3 perguntas rápidas. Com elas, o Aquarius prioriza os temas, os parlamentares
-          e as decisões que importam para você.
+          Responda a 3 perguntas rápidas. Com elas, o Aquarius monta um feed só seu — com os temas,
+          os parlamentares e as decisões que importam para a sua vida.
         </Text>
         <Pressable onPress={avancar} style={st.introCta}>
           <Text style={st.introCtaTxt}>Começar</Text>

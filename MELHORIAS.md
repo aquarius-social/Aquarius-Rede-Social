@@ -150,6 +150,46 @@ chat, com placeholder honesto), **Feed v1** (destaques de dinheiro reais), **Cal
 - 🟢 — **Acessibilidade** (labels, contraste, área de toque).
 - 🟢 — **`tema.ts` → `@aquarius/ui`** — hoje tokens são cópia local; ligar o monorepo.
 
+### F.1 Fidelidade ao protótipo — auditoria das 15 telas (ago/26)
+
+Auditoria PNG-vs-código das telas do app. **Já corrigido** (texto/rótulo seguro):
+Login (subtítulo "Congresso Nacional"), Onboarding (copy "monta um feed só seu…"),
+Explorar (eyebrow com data corrente + "594 ativos"), Prometeus chat ("Resumir vida
+parlamentar" / "Gerar relatório PDF"), Configurações (Premium sem ícone, texto do feed,
+temas "# " com espaço e partidos sem "#"), Partido ("Nº22" sem espaço), Listagem
+(placeholder "Buscar parlamentar, partido, UF…", chip "Todas", contador "N resultados").
+
+**Deferido (depende de feature/dado — não "fingir" para casar com o protótipo):**
+- 🔴 ⛔IA/social — **Feed**: rail de stories/destaques, barra de engajamento social
+  (↑voto/↓voto/💬/salvar/compartilhar), badge "3" no sino, menu "…" no card. Já em F
+  (camada social + stories). O banner de disclaimer e o rodapé "Você está em dia" são
+  marcadores temporários aceitáveis (a auditoria concordou).
+- 🟡 — **Feed**: as abas "Para Você/Seguindo" não existem no protótipo; remover quando o
+  rail de stories entrar (decisão de produto — o protótipo põe o rail no lugar das abas).
+- 🔴 — **Interesses**: o protótipo é um **overview com contadores de "novidades desde a
+  última visita"** e badges por item (parlamentares → partidos e frentes → temas, nessa
+  ordem), não um editor de chips. Reordenar/renomear seções + badges de novidades depende
+  da tabela `follows` + tracking de "visto". Hoje é editor add/remove (placeholder honesto).
+- 🔴 — **Calendário**: strip semanal de dias (SEG 23…DOM 29) com pontos de evento; filtros
+  por **tipo** (Todos/Favoritos/Comissões/Plenário/Audiências) no lugar de por casa; estrela
+  de favorito no card; dia por extenso + contagem "N eventos". Favoritos dependem de `follows`;
+  o strip semanal é rework de layout (fazer junto com "seguir").
+- 🟡 — **Explorar**: "colegiados"→"permanentes" e "frentes"→"ativas" **não** aplicado —
+  as contagens (`comissao_publica`/`frente_publica`) não filtram por tipo/status; para casar
+  com o protótipo honestamente é preciso `WHERE tipo='permanente'` / status ativa.
+- 🟡 — **Perfil/Partido/Comissão/Frente**: subtítulo com período de mandato + eleição/reeleição,
+  descrição/ementa da entidade, chips de casa/tipo (CÂMARA/PERMANENTE), espectro ideológico do
+  partido, data de fundação, badge "LÍDER" — tudo dependente de reingestão da camada de identidade.
+- 🟢 — **Comissão/Frente**: falta o CTA "Perguntar ao Prometeus sobre {sigla}" (só depende da
+  sigla). Entra junto do wire dos AIPill (já em F).
+- 🟢 — **Perfil**: abre na aba Despesas (tem dado real) e **não** na Feed (placeholder vazio) —
+  divergência intencional de UX; trocar para Feed quando a aba tiver conteúdo.
+- 🟢 — **Listagem**: título dinâmico por tipo, subtítulo de composição, controle "Ordenar A–Z",
+  "Mais filtros ⌄" (colapsar situação/UF/partido), linha secundária cargo·casa, lista unificada
+  (hairlines) e BottomNav. Rework de layout — cuidar por ser parte tocada em paralelo.
+- 🟢 — **Editar perfil**: badge (cog) sobre o avatar, ícone map-pin no hint de Região, cidade—UF
+  resolvida do CEP. (Resolver CEP→município depende de tabela de CEP.)
+
 ## G. Admin (Next.js) — a construir do zero
 
 App novo em `codigo/apps/admin` (App Router). Referência: PNGs `01-visao-geral`…

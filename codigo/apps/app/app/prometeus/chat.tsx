@@ -72,8 +72,8 @@ export default function PrometeusChat() {
           </Pressable>
         </View>
         <View style={st.chips}>
-          <Chip label="Resumir atuação" onPress={() => enviar('Faça um resumo da atuação parlamentar.')} />
-          <Chip label="Gerar relatório" onPress={() => enviar('Gere um relatório com os principais números.')} />
+          <Chip label="Resumir vida parlamentar" onPress={() => enviar('Faça um resumo da vida parlamentar.')} />
+          <Chip label="Gerar relatório PDF" onPress={() => enviar('Gere um relatório em PDF com os principais números.')} />
         </View>
       </View>
     </KeyboardAvoidingView>

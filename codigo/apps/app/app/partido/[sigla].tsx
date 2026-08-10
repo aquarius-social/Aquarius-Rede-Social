@@ -67,7 +67,7 @@ export default function PartidoScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
               <View style={st.monoRing}><Monogram sigla={pt.sigla_atual} size={72} color={corPt} /></View>
               <View style={{ flex: 1, paddingBottom: 6 }}>
-                {pt.numero_urna ? <Tag tone="navy">{`Nº ${pt.numero_urna}`}</Tag> : null}
+                {pt.numero_urna ? <Tag tone="navy">{`Nº${pt.numero_urna}`}</Tag> : null}
               </View>
             </View>
             <Text style={st.nome}>
