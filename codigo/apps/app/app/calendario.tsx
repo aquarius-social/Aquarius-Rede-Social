@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import { listarEventos, type Evento } from '../lib/dados';
 import { useAuth } from '../lib/auth';
 import { frescor } from '../lib/formato';
-import { cor, raio, fonte } from '../lib/tema';
+import { raio, fonte, type Tema } from '../lib/tema';
+import { useTemaEstilos } from '../lib/theme';
 import { Logo, Avatar, Icon, Card, Tag, BottomNav } from '../components/base';
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -25,6 +26,7 @@ function partesData(iso: string | null): { chave: string; dia: string; hora: str
 }
 
 export default function Calendario() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
   const { session, prefs } = useAuth();
   const [eventos, setEventos] = useState<Evento[] | null>(null);
@@ -96,6 +98,7 @@ export default function Calendario() {
 }
 
 function EventoCard({ ev }: { ev: Evento }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   const { hora } = partesData(ev.inicio);
   const corCasa = ev.casa === 'senado' ? cor.sky : cor.navy;
   const cancelada = /cancel/i.test(ev.situacao ?? '');
@@ -124,6 +127,7 @@ function EventoCard({ ev }: { ev: Evento }) {
 }
 
 function VazioAgenda() {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <View style={st.empty}>
       <View style={st.emptyIcon}><Icon name="cal" size={20} color={cor.sky} /></View>
@@ -136,27 +140,27 @@ function VazioAgenda() {
   );
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: cor.border, backgroundColor: cor.surface },
-  h1: { fontSize: 26, fontFamily: fonte.xb, color: cor.navy, letterSpacing: -0.5, marginTop: 4 },
+  h1: { fontSize: 26, fontFamily: fonte.xb, color: cor.texto, letterSpacing: -0.5, marginTop: 4 },
   sub: { marginTop: 2, fontFamily: fonte.r, fontSize: 12.5, color: cor.muted },
   chips: { flexDirection: 'row', gap: 6, marginTop: 12 },
-  chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.border },
-  chipTxt: { fontFamily: fonte.sb, fontSize: 12, color: cor.navy },
+  chip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 9999, backgroundColor: cor.cartao, borderWidth: 1, borderColor: cor.border },
+  chipTxt: { fontFamily: fonte.sb, fontSize: 12, color: cor.texto },
   diaTit: { fontFamily: fonte.b, fontSize: 11.5, color: cor.muted, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 10 },
   timeline: { paddingLeft: 4 },
   evRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
   hora: { width: 40, textAlign: 'right', fontFamily: fonte.b, fontSize: 11, color: cor.muted, paddingTop: 12 },
-  ponto: { width: 12, height: 12, borderRadius: 9999, borderWidth: 2.5, backgroundColor: cor.white, marginTop: 12 },
+  ponto: { width: 12, height: 12, borderRadius: 9999, borderWidth: 2.5, backgroundColor: cor.cartao, marginTop: 12 },
   tipoTag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999 },
   tipoTxt: { fontFamily: fonte.b, fontSize: 9, color: cor.white, letterSpacing: 0.4, textTransform: 'uppercase' },
   situacao: { fontFamily: fonte.sb, fontSize: 10.5, color: cor.muted },
-  evTit: { fontFamily: fonte.b, fontSize: 13.5, color: cor.navy, lineHeight: 18 },
+  evTit: { fontFamily: fonte.b, fontSize: 13.5, color: cor.texto, lineHeight: 18 },
   evOrgao: { marginTop: 3, fontFamily: fonte.m, fontSize: 11.5, color: cor.ink },
   evLocal: { marginTop: 2, fontFamily: fonte.r, fontSize: 11, color: cor.muted },
   link: { fontFamily: fonte.b, fontSize: 11.5, color: cor.sky },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 80 },
   emptyIcon: { width: 48, height: 48, borderRadius: 9999, backgroundColor: cor.light, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  emptyTit: { fontFamily: fonte.b, fontSize: 15, color: cor.navy },
+  emptyTit: { fontFamily: fonte.b, fontSize: 15, color: cor.texto },
   emptyTxt: { marginTop: 6, fontFamily: fonte.r, fontSize: 13, color: cor.muted, textAlign: 'center', lineHeight: 19 },
 });

@@ -3,7 +3,8 @@ import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from 'react-nat
 import { useLocalSearchParams } from 'expo-router';
 import { obterFrente, type Frente } from '../../lib/dados';
 import { frescor } from '../../lib/formato';
-import { cor, raio, fonte } from '../../lib/tema';
+import { raio, fonte, type Tema } from '../../lib/tema';
+import { useTemaEstilos } from '../../lib/theme';
 import { Cover, Tag, Card, SectionHeader, Divider, Icon } from '../../components/base';
 
 // Composição e atividade da frente dependem de dados ainda NÃO ingeridos.
@@ -13,6 +14,7 @@ const PENDENTES = [
 ] as const;
 
 export default function FrenteScreen() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [f, setF] = useState<Frente | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -34,7 +36,7 @@ export default function FrenteScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        <View style={{ backgroundColor: cor.white }}>
+        <View style={{ backgroundColor: cor.cartao }}>
           <Cover height={88} base={cor.sky} />
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, marginTop: -30 }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
@@ -71,15 +73,15 @@ export default function FrenteScreen() {
   );
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: cor.surface, padding: 24 },
   erro: { color: cor.muted, textAlign: 'center' },
   iconRing: { borderRadius: 9999, borderWidth: 3, borderColor: cor.white, backgroundColor: cor.white },
   icon: { width: 66, height: 66, borderRadius: 33, backgroundColor: cor.skySoft, alignItems: 'center', justifyContent: 'center' },
-  nome: { marginTop: 12, fontSize: 19, fontFamily: fonte.xb, color: cor.navy, letterSpacing: -0.3, lineHeight: 25 },
+  nome: { marginTop: 12, fontSize: 19, fontFamily: fonte.xb, color: cor.texto, letterSpacing: -0.3, lineHeight: 25 },
   fonte: { marginTop: 8, fontSize: 11.5, color: cor.mutedSoft },
   pendLinha: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   pendIcon: { width: 34, height: 34, borderRadius: raio.cardPequeno, backgroundColor: cor.light, alignItems: 'center', justifyContent: 'center' },
-  pendLabel: { fontSize: 14, fontFamily: fonte.b, color: cor.navy },
+  pendLabel: { fontSize: 14, fontFamily: fonte.b, color: cor.texto },
   pendNota: { fontSize: 12, color: cor.muted, marginTop: 2 },
 });

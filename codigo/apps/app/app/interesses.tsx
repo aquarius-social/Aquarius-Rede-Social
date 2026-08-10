@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../lib/auth';
-import { cor, raio, fonte } from '../lib/tema';
+import { raio, fonte, type Tema } from '../lib/tema';
+import { useTemaEstilos } from '../lib/theme';
 import { Icon, Card, SectionHeader, Divider, Monogram, BottomNav } from '../components/base';
 import { PARTIDO_COR } from '../lib/mock';
 import { TEMAS, PARTIDOS } from '../lib/catalogos';
 
 export default function Interesses() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
   const { prefs, atualizarPrefs } = useAuth();
   const [temas, setTemas] = useState<string[]>(prefs.temas ?? []);
@@ -105,27 +107,28 @@ export default function Interesses() {
 }
 
 function EmptyMini({ texto }: { texto: string }) {
+  const { st } = useTemaEstilos(criarSt);
   return <Text style={st.vazio}>{texto}</Text>;
 }
 
-const st = StyleSheet.create({
-  h1: { fontSize: 26, fontFamily: fonte.xb, color: cor.navy, letterSpacing: -0.5, marginTop: 4 },
+const criarSt = (cor: Tema) => StyleSheet.create({
+  h1: { fontSize: 26, fontFamily: fonte.xb, color: cor.texto, letterSpacing: -0.5, marginTop: 4 },
   sub: { marginTop: 2, fontSize: 12.5, fontFamily: fonte.r, color: cor.muted },
   acao: { fontFamily: fonte.b, fontSize: 12, color: cor.sky },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 9999, backgroundColor: cor.light },
-  chipTxt: { fontFamily: fonte.sb, fontSize: 12.5, color: cor.navy },
-  picker: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12, padding: 12, borderRadius: raio.card, borderWidth: 1, borderColor: cor.border, backgroundColor: cor.white },
-  pickerChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1, borderStyle: 'dashed', borderColor: cor.borderStrong },
+  chipTxt: { fontFamily: fonte.sb, fontSize: 12.5, color: cor.texto },
+  picker: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12, padding: 12, borderRadius: raio.card, borderWidth: 1, borderColor: cor.border, backgroundColor: cor.cartao },
+  pickerChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 9999, backgroundColor: cor.cartao, borderWidth: 1, borderStyle: 'dashed', borderColor: cor.borderStrong },
   pickerChipTxt: { fontFamily: fonte.b, fontSize: 12, color: cor.sky },
   linha: { flexDirection: 'row', alignItems: 'center' },
   linhaMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, paddingLeft: 12 },
-  linhaNome: { flex: 1, fontFamily: fonte.b, fontSize: 14, color: cor.navy },
+  linhaNome: { flex: 1, fontFamily: fonte.b, fontSize: 14, color: cor.texto },
   remover: { paddingHorizontal: 14, paddingVertical: 12 },
   vazio: { marginTop: 4, fontFamily: fonte.r, fontSize: 12.5, color: cor.mutedSoft },
   vazioMini: { fontFamily: fonte.r, fontSize: 12, color: cor.mutedSoft },
   empty: { alignItems: 'center', paddingVertical: 22, paddingHorizontal: 16 },
   emptyIcon: { width: 44, height: 44, borderRadius: 9999, backgroundColor: cor.light, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  emptyTit: { fontFamily: fonte.b, fontSize: 14, color: cor.navy },
+  emptyTit: { fontFamily: fonte.b, fontSize: 14, color: cor.texto },
   emptyTxt: { marginTop: 5, fontFamily: fonte.r, fontSize: 12.5, color: cor.muted, textAlign: 'center', lineHeight: 18 },
 });

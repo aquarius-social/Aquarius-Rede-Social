@@ -4,7 +4,8 @@ import {
   KeyboardAvoidingView, Platform, StyleSheet,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { cor, raio, fonte } from '../../lib/tema';
+import { raio, fonte, type Tema } from '../../lib/tema';
+import { useTemaEstilos } from '../../lib/theme';
 import { Icon } from '../../components/base';
 
 type Papel = 'user' | 'assistant';
@@ -21,6 +22,7 @@ const PLACEHOLDER =
   'Quando conectar, respondo com dados reais do Congresso (despesas, emendas, votações), **sempre com a fonte oficial**.';
 
 export default function PrometeusChat() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const { prompt } = useLocalSearchParams<{ prompt?: string }>();
   const [msgs, setMsgs] = useState<Msg[]>([INTRO]);
   const [input, setInput] = useState('');
@@ -81,6 +83,7 @@ export default function PrometeusChat() {
 }
 
 function Bolha({ msg }: { msg: Msg }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   if (msg.papel === 'user') {
     return <View style={st.userWrap}><Text style={st.userTxt}>{msg.texto}</Text></View>;
   }
@@ -94,6 +97,7 @@ function Bolha({ msg }: { msg: Msg }) {
 
 /** Renderiza **negrito** simples. */
 function Rico({ texto }: { texto: string }) {
+  const { st } = useTemaEstilos(criarSt);
   const partes = texto.split(/(\*\*[^*]+\*\*)/g);
   return (
     <Text style={st.aiTxt}>
@@ -107,6 +111,7 @@ function Rico({ texto }: { texto: string }) {
 }
 
 function Digitando() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(Animated.sequence([
@@ -126,23 +131,24 @@ function Digitando() {
 }
 
 function Chip({ label, onPress }: { label: string; onPress: () => void }) {
+  const { st } = useTemaEstilos(criarSt);
   return <Pressable onPress={onPress} style={st.chip}><Text style={st.chipTxt}>{label}</Text></Pressable>;
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   userWrap: { alignSelf: 'flex-end', maxWidth: '85%', paddingHorizontal: 14, paddingVertical: 10, backgroundColor: cor.navy, borderRadius: 18, borderBottomRightRadius: 4 },
   userTxt: { color: cor.white, fontFamily: fonte.r, fontSize: 14, lineHeight: 20 },
   aiRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', maxWidth: '92%' },
   aiAvatar: { width: 28, height: 28, borderRadius: 9999, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
-  aiBolha: { flex: 1, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.border, borderRadius: 18, borderTopLeftRadius: 4 },
+  aiBolha: { flex: 1, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: cor.cartao, borderWidth: 1, borderColor: cor.border, borderRadius: 18, borderTopLeftRadius: 4 },
   aiTxt: { fontFamily: fonte.r, fontSize: 14, color: cor.ink, lineHeight: 21 },
-  negrito: { fontFamily: fonte.b, color: cor.navy },
+  negrito: { fontFamily: fonte.b, color: cor.texto },
   dot: { width: 6, height: 6, borderRadius: 9999, backgroundColor: cor.muted },
   barra: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 14, backgroundColor: cor.surface, borderTopWidth: 1, borderTopColor: cor.border },
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: cor.white, borderRadius: 24, borderWidth: 1.5, borderColor: cor.borderStrong, paddingLeft: 14, paddingRight: 6, paddingVertical: 6 },
-  input: { flex: 1, fontFamily: fonte.r, fontSize: 14, color: cor.navy, paddingVertical: 6, maxHeight: 120 },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: cor.cartao, borderRadius: 24, borderWidth: 1.5, borderColor: cor.borderStrong, paddingLeft: 14, paddingRight: 6, paddingVertical: 6 },
+  input: { flex: 1, fontFamily: fonte.r, fontSize: 14, color: cor.texto, paddingVertical: 6, maxHeight: 120 },
   send: { width: 36, height: 36, borderRadius: 9999, alignItems: 'center', justifyContent: 'center' },
   chips: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginTop: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.border },
-  chipTxt: { fontFamily: fonte.sb, fontSize: 11.5, color: cor.navy },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 9999, backgroundColor: cor.cartao, borderWidth: 1, borderColor: cor.border },
+  chipTxt: { fontFamily: fonte.sb, fontSize: 11.5, color: cor.texto },
 });

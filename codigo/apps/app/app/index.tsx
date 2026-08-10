@@ -3,7 +3,8 @@ import { View, Text, ScrollView, Pressable, StyleSheet, type ViewStyle } from 'r
 import { useRouter } from 'expo-router';
 import { contagens, type Contagens } from '../lib/dados';
 import { useAuth } from '../lib/auth';
-import { cor, raio, fonte } from '../lib/tema';
+import { raio, fonte, type Tema } from '../lib/tema';
+import { useTemaEstilos } from '../lib/theme';
 import { Avatar, Icon, BottomNav, Logo } from '../components/base';
 
 type IconeEnt = 'users' | 'flag' | 'building' | 'star' | 'doc';
@@ -13,6 +14,7 @@ const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'O
 function EntCard({ icon, cor: c, titulo, sub, tipo, wide }: {
   icon: IconeEnt; cor: string; titulo: string; sub: string; tipo?: string; wide?: boolean;
 }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
   const cellStyle = StyleSheet.flatten([st.cell, wide && { width: '100%' as const }]) as ViewStyle;
   const conteudo = (
@@ -35,6 +37,7 @@ function EntCard({ icon, cor: c, titulo, sub, tipo, wide }: {
 }
 
 export default function Explorar() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
   const { session, prefs } = useAuth();
   const [c, setC] = useState<Contagens | null>(null);
@@ -83,22 +86,22 @@ export default function Explorar() {
   );
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
     borderBottomWidth: 1, borderBottomColor: cor.border, backgroundColor: cor.surface,
   },
   eyebrow: { marginTop: 16, fontSize: 11.5, fontFamily: fonte.b, color: cor.mutedSoft, letterSpacing: 1.4 },
-  h1: { fontSize: 30, fontFamily: fonte.xb, color: cor.navy, letterSpacing: -0.6, marginTop: 4, marginBottom: 18 },
+  h1: { fontSize: 30, fontFamily: fonte.xb, color: cor.texto, letterSpacing: -0.6, marginTop: 4, marginBottom: 18 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   cell: { width: '47%', flexGrow: 1 },
   entCard: {
-    backgroundColor: cor.white, borderRadius: raio.cardGrande, borderWidth: 1, borderColor: cor.border,
+    backgroundColor: cor.cartao, borderRadius: raio.cardGrande, borderWidth: 1, borderColor: cor.border,
     padding: 16, minHeight: 116, justifyContent: 'flex-start',
   },
   entIcon: { width: 40, height: 40, borderRadius: raio.cardPequeno, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  entTitulo: { fontSize: 16, fontFamily: fonte.xb, color: cor.navy },
+  entTitulo: { fontSize: 16, fontFamily: fonte.xb, color: cor.texto },
   entSub: { fontSize: 12.5, color: cor.muted, marginTop: 3 },
   nota: { marginTop: 20, fontSize: 11.5, color: cor.mutedSoft, lineHeight: 17, fontStyle: 'italic' },
 });

@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../lib/auth';
-import { cor, raio, fonte } from '../lib/tema';
+import { raio, fonte, type Tema } from '../lib/tema';
+import { useTemaEstilos } from '../lib/theme';
 import { Avatar, Icon, Card } from '../components/base';
 
 export default function EditarPerfil() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
   const { prefs, atualizarPrefs } = useAuth();
   const [nome, setNome] = useState(prefs.nome ?? '');
@@ -104,6 +106,7 @@ export default function EditarPerfil() {
 }
 
 function Campo({ label, children, ultimo }: { label: string; children: React.ReactNode; ultimo?: boolean }) {
+  const { st } = useTemaEstilos(criarSt);
   return (
     <View style={{ marginBottom: ultimo ? 0 : 18 }}>
       <Text style={st.campoLabel}>{label}</Text>
@@ -113,6 +116,7 @@ function Campo({ label, children, ultimo }: { label: string; children: React.Rea
 }
 
 function Seg({ value, set, options }: { value: string; set: (v: string) => void; options: string[] }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
       {options.map((o) => {
@@ -128,20 +132,20 @@ function Seg({ value, set, options }: { value: string; set: (v: string) => void;
   );
 }
 
-const st = StyleSheet.create({
-  compl: { marginBottom: 18, padding: 13, borderRadius: raio.card, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.border },
-  complTit: { fontFamily: fonte.b, fontSize: 13, color: cor.navy },
+const criarSt = (cor: Tema) => StyleSheet.create({
+  compl: { marginBottom: 18, padding: 13, borderRadius: raio.card, backgroundColor: cor.cartao, borderWidth: 1, borderColor: cor.border },
+  complTit: { fontFamily: fonte.b, fontSize: 13, color: cor.texto },
   complSub: { fontFamily: fonte.sb, fontSize: 11.5, color: cor.muted },
   barraBase: { backgroundColor: cor.light, borderRadius: 9999, height: 8, overflow: 'hidden' },
   barraFill: { height: '100%', borderRadius: 9999, backgroundColor: cor.sky },
   alterarFoto: { fontFamily: fonte.b, fontSize: 12.5, color: cor.sky },
-  campoLabel: { fontFamily: fonte.b, fontSize: 12, color: cor.navy, marginBottom: 9 },
-  input: { paddingHorizontal: 14, paddingVertical: 12, borderRadius: raio.input, borderWidth: 1.5, borderColor: cor.border, backgroundColor: cor.surface, fontFamily: fonte.sb, fontSize: 14, color: cor.navy },
+  campoLabel: { fontFamily: fonte.b, fontSize: 12, color: cor.texto, marginBottom: 9 },
+  input: { paddingHorizontal: 14, paddingVertical: 12, borderRadius: raio.input, borderWidth: 1.5, borderColor: cor.border, backgroundColor: cor.surface, fontFamily: fonte.sb, fontSize: 14, color: cor.texto },
   hint: { fontFamily: fonte.m, fontSize: 11.5, color: cor.muted },
-  seg: { paddingHorizontal: 15, paddingVertical: 9, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1.5, borderColor: cor.border },
-  segTxt: { fontFamily: fonte.sb, fontSize: 13, color: cor.navy },
+  seg: { paddingHorizontal: 15, paddingVertical: 9, borderRadius: 9999, backgroundColor: cor.cartao, borderWidth: 1.5, borderColor: cor.border },
+  segTxt: { fontFamily: fonte.sb, fontSize: 13, color: cor.texto },
   opcHead: { marginTop: 18, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
-  opcTit: { fontFamily: fonte.xb, fontSize: 12.5, color: cor.navy },
+  opcTit: { fontFamily: fonte.xb, fontSize: 12.5, color: cor.texto },
   opcTag: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 9999, backgroundColor: cor.light },
   opcTagTxt: { fontFamily: fonte.b, fontSize: 10, color: cor.sky },
   lgpd: { marginTop: 10, paddingHorizontal: 4, fontFamily: fonte.r, fontSize: 11, color: cor.muted, lineHeight: 16 },

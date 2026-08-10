@@ -3,10 +3,13 @@ import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
 import { useAuth } from '../lib/auth';
-import { cor, raio, fonte } from '../lib/tema';
+import { raio, fonte, type Tema } from '../lib/tema';
+import { useTemaEstilos, useTemaCtrl, type PrefTema } from '../lib/theme';
 import { Avatar, Icon, Card, SectionHeader, Divider, Tag, type IconName } from '../components/base';
 
 export default function Configuracoes() {
+  const { cor, st } = useTemaEstilos(criarSt);
+  const { pref, definir } = useTemaCtrl();
   const router = useRouter();
   const { session, prefs, sair } = useAuth();
   const [aviso, setAviso] = useState<string | null>(null);
@@ -79,6 +82,23 @@ export default function Configuracoes() {
           { icon: 'trash', label: 'Deletar conta', tone: 'neg', onPress: () => emBreve('Deletar conta') },
         ]} />
 
+        <View style={{ height: 18 }} />
+        <SectionHeader title="Aparência" sub="Tema do app · segue o sistema por padrão" />
+        <Card padding={12}>
+          <View style={st.temaRow}>
+            {(['auto', 'light', 'dark'] as const).map((v) => {
+              const on = pref === v;
+              const rotulo: Record<PrefTema, string> = { auto: 'Automático', light: 'Claro', dark: 'Escuro' };
+              return (
+                <Pressable key={v} onPress={() => definir(v)}
+                  style={[st.temaOpt, on && { backgroundColor: cor.navy, borderColor: cor.navy }]}>
+                  <Text style={[st.temaOptTxt, { color: on ? cor.white : cor.texto }]}>{rotulo[v]}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+
         <View style={{ height: 14 }} />
         <SectionHeader title="App" />
         <Grupo linhas={[
@@ -102,6 +122,7 @@ export default function Configuracoes() {
 }
 
 function Anel({ pct }: { pct: number }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   const R = 22, C = 2 * Math.PI * R, off = C * (1 - pct / 100);
   return (
     <View style={{ width: 54, height: 54 }}>
@@ -116,6 +137,7 @@ function Anel({ pct }: { pct: number }) {
 }
 
 function ChipBloco({ titulo, itens, vazio, onEdit, hashtag }: { titulo: string; itens: string[]; vazio: string; onEdit: () => void; hashtag?: boolean }) {
+  const { st } = useTemaEstilos(criarSt);
   return (
     <View style={{ padding: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 9 }}>
@@ -132,12 +154,13 @@ function ChipBloco({ titulo, itens, vazio, onEdit, hashtag }: { titulo: string; 
 }
 
 function Grupo({ linhas }: { linhas: { icon: IconName; label: string; tone?: 'neg'; onPress: () => void }[] }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <Card padding={0}>
       {linhas.map((l, i) => (
         <View key={l.label}>
           <Pressable onPress={l.onPress} style={st.linha}>
-            <View style={st.linhaIcon}><Icon name={l.icon} size={15} color={l.tone === 'neg' ? cor.neg : cor.navy} /></View>
+            <View style={st.linhaIcon}><Icon name={l.icon} size={15} color={l.tone === 'neg' ? cor.neg : cor.texto} /></View>
             <Text style={[st.linhaLabel, l.tone === 'neg' && { color: cor.neg }]}>{l.label}</Text>
             <Icon name="chevR" size={15} color={cor.mutedSoft} />
           </Pressable>
@@ -148,26 +171,29 @@ function Grupo({ linhas }: { linhas: { icon: IconName; label: string; tone?: 'ne
   );
 }
 
-const st = StyleSheet.create({
-  nome: { fontFamily: fonte.b, fontSize: 15, color: cor.navy },
+const criarSt = (cor: Tema) => StyleSheet.create({
+  nome: { fontFamily: fonte.b, fontSize: 15, color: cor.texto },
   email: { marginTop: 3, fontFamily: fonte.r, fontSize: 12, color: cor.muted },
   premium: { marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 9999, backgroundColor: cor.navy },
   premiumTxt: { color: cor.white, fontFamily: fonte.b, fontSize: 13 },
   completeCard: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 13, borderRadius: raio.cardGrande, borderWidth: 1, borderColor: cor.border, backgroundColor: cor.light },
-  completeTit: { fontFamily: fonte.b, fontSize: 14, color: cor.navy },
+  completeTit: { fontFamily: fonte.b, fontSize: 14, color: cor.texto },
   completeSub: { marginTop: 3, fontFamily: fonte.r, fontSize: 12, color: cor.muted, lineHeight: 17 },
-  anelTxt: { position: 'absolute', width: 54, height: 54, textAlign: 'center', lineHeight: 54, fontFamily: fonte.xb, fontSize: 14, color: cor.navy },
+  anelTxt: { position: 'absolute', width: 54, height: 54, textAlign: 'center', lineHeight: 54, fontFamily: fonte.xb, fontSize: 14, color: cor.texto },
   feedInfo: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', padding: 13, borderBottomWidth: 1, borderBottomColor: cor.border },
   feedIcon: { width: 30, height: 30, borderRadius: 9999, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
   feedInfoTxt: { flex: 1, fontFamily: fonte.r, fontSize: 12, color: cor.ink, lineHeight: 18 },
-  blocoTit: { flex: 1, fontFamily: fonte.b, fontSize: 12, color: cor.navy },
+  blocoTit: { flex: 1, fontFamily: fonte.b, fontSize: 12, color: cor.texto },
   editar: { fontFamily: fonte.b, fontSize: 11.5, color: cor.sky },
   chip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 9999, backgroundColor: cor.light },
-  chipTxt: { fontFamily: fonte.sb, fontSize: 11.5, color: cor.navy },
+  chipTxt: { fontFamily: fonte.sb, fontSize: 11.5, color: cor.texto },
   vazio: { fontFamily: fonte.r, fontSize: 12, color: cor.mutedSoft },
   linha: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
   linhaIcon: { width: 30, height: 30, borderRadius: 8, backgroundColor: cor.light, alignItems: 'center', justifyContent: 'center' },
-  linhaLabel: { flex: 1, fontFamily: fonte.m, fontSize: 13.5, color: cor.navy },
+  linhaLabel: { flex: 1, fontFamily: fonte.m, fontSize: 13.5, color: cor.texto },
+  temaRow: { flexDirection: 'row', gap: 8 },
+  temaOpt: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 9999, borderWidth: 1.5, borderColor: cor.border, backgroundColor: cor.light },
+  temaOptTxt: { fontFamily: fonte.sb, fontSize: 12.5 },
   sair: { marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, borderRadius: 9999, borderWidth: 1, borderColor: cor.border },
   sairTxt: { fontFamily: fonte.sb, fontSize: 13, color: cor.neg },
   versao: { marginTop: 14, textAlign: 'center', fontFamily: fonte.m, fontSize: 10.5, color: cor.muted },

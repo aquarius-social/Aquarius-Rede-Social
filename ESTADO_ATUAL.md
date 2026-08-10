@@ -20,6 +20,16 @@ do `CLAUDE.md`.
 - **Prometeus (telas):** lista + chat com **placeholder honesto** — o agente de IA
   ainda **não** está ligado (é etapa própria, decisões em aberto: arquitetura de
   acesso a dados, onde roda, chave Anthropic).
+- **Modo escuro do app (2026-08-10): concluído.** Sistema de tema (claro/escuro)
+  em `lib/theme.tsx` (`TemaProvider` + `useTema`/`useTemaEstilos`), paletas
+  claro/escuro em `lib/tema.ts` (dois tokens semânticos novos, `texto` e `cartao`,
+  resolvem a sobrecarga de `navy`/`white`). Todas as 15 telas + `base.tsx`
+  migradas; toggle **Automático/Claro/Escuro** em Configurações (persiste em
+  AsyncStorage, segue o sistema por padrão). Paleta escura derivada dos PNGs
+  `app-dark`; verificado em runtime (Expo web) que a paleta troca corretamente.
+- **Fidelidade ao protótipo (2026-08-10):** auditoria das 15 telas do app;
+  correções seguras de texto/rótulo aplicadas; gaps que dependem de feature/dado
+  documentados em `MELHORIAS.md` F.1 (não "fingidos").
 - **Admin (Next.js) — FUNDAÇÃO no ar** em `codigo/apps/admin`: shell (sidebar 16
   itens/5 seções + topbar) + tema ADM_DARK/ADM_LIGHT com toggle + **Visão geral**
   com KPIs reais (623 parlamentares, 22 partidos, 19.476 emendas, 89 comissões,
@@ -33,8 +43,9 @@ do `CLAUDE.md`.
   editorial** (freio de segurança do agente). Plano tela a tela em `MELHORIAS.md`
   seção G. O protótipo do admin está em `handoff/prototype/aq-admin-*.jsx` (no zip)
   — mesma fonte do Claude Design.
-- **PRÓXIMO PASSO DO APP (neste chat):** header custom (AqHeader), sistema de
-  "seguir", e **modo escuro das telas do app**. Backlog em `MELHORIAS.md` seção F.
+- **PRÓXIMO PASSO DO APP:** header custom (AqHeader) e sistema de "seguir"
+  (habilita Feed "Seguindo", stories, badges de novidades e Notificações).
+  Backlog completo em `MELHORIAS.md` seção F (+ F.1 fidelidade). Modo escuro: ✅.
 
 **Onda 0 — Fundação de identidade: concluída.**
 

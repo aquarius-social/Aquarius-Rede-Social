@@ -6,7 +6,8 @@ import {
   type Partido, type Parlamentar, type ResumoEmendasPartido,
 } from '../../lib/dados';
 import { reais, kbr, frescor } from '../../lib/formato';
-import { cor, raio, fonte } from '../../lib/tema';
+import { raio, fonte, type Tema } from '../../lib/tema';
+import { useTemaEstilos } from '../../lib/theme';
 import {
   Cover, Monogram, Avatar, PartyChip, Tag, SituacaoBadge, Stat, Card, SectionHeader, Divider,
   AlignmentBar, AIPill, AICard, BottomNav, Icon,
@@ -24,6 +25,7 @@ type TabId = (typeof TABS)[number]['id'];
 const PALETA = ['#0D2B5E', '#1A4FA0', '#2E7DD1', '#5FA0E0', '#7AB1E6', '#A0C9EF', '#C7DDF4'];
 
 export default function PartidoScreen() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const { sigla } = useLocalSearchParams<{ sigla: string }>();
   const [pt, setPt] = useState<Partido | null>(null);
   const [membros, setMembros] = useState<Parlamentar[]>([]);
@@ -61,7 +63,7 @@ export default function PartidoScreen() {
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
         {/* Header */}
-        <View style={{ backgroundColor: cor.white }}>
+        <View style={{ backgroundColor: cor.cartao }}>
           <Cover height={88} base={corPt} />
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, marginTop: -30 }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
@@ -97,7 +99,7 @@ export default function PartidoScreen() {
               const sel = t.id === tab;
               return (
                 <Pressable key={t.id} onPress={() => setTab(t.id)} style={st.tab}>
-                  <Text style={[st.tabTxt, { color: sel ? cor.navy : cor.muted, fontFamily: sel ? fonte.b : fonte.sb }]}>{t.label}</Text>
+                  <Text style={[st.tabTxt, { color: sel ? cor.texto : cor.muted, fontFamily: sel ? fonte.b : fonte.sb }]}>{t.label}</Text>
                   {sel ? <View style={st.tabUnderline} /> : null}
                 </Pressable>
               );
@@ -115,10 +117,11 @@ export default function PartidoScreen() {
   );
 }
 
-function Fonte({ texto }: { texto: string }) { return <Text style={st.fonte}>{texto}</Text>; }
+function Fonte({ texto }: { texto: string }) { const { st } = useTemaEstilos(criarSt); return <Text style={st.fonte}>{texto}</Text>; }
 
 /* ── MEMBROS (REAL) ── */
 function TabMembros({ membros, camara, senado, ufs }: { membros: Parlamentar[]; camara: number; senado: number; ufs: string[] }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   const [uf, setUf] = useState<string | null>(null);
   const lista = uf ? membros.filter((m) => m.uf_atual === uf) : membros;
   return (
@@ -132,8 +135,8 @@ function TabMembros({ membros, camara, senado, ufs }: { membros: Parlamentar[]; 
         {[null, ...ufs].map((u) => {
           const sel = u === uf;
           return (
-            <Pressable key={u ?? 'todas'} onPress={() => setUf(u)} style={[st.filtro, { backgroundColor: sel ? cor.navy : cor.white, borderColor: sel ? cor.navy : cor.border }]}>
-              <Text style={{ color: sel ? cor.white : cor.navy, fontFamily: fonte.sb, fontSize: 11.5 }}>{u ?? 'Todas UFs'}</Text>
+            <Pressable key={u ?? 'todas'} onPress={() => setUf(u)} style={[st.filtro, { backgroundColor: sel ? cor.navy : cor.cartao, borderColor: sel ? cor.navy : cor.border }]}>
+              <Text style={{ color: sel ? cor.white : cor.texto, fontFamily: fonte.sb, fontSize: 11.5 }}>{u ?? 'Todas UFs'}</Text>
             </Pressable>
           );
         })}
@@ -145,7 +148,7 @@ function TabMembros({ membros, camara, senado, ufs }: { membros: Parlamentar[]; 
               <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 11 }}>
                 <Avatar nome={m.nome} size={40} />
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ fontSize: 13.5, fontFamily: fonte.b, color: cor.navy }}>{m.nome}</Text>
+                  <Text style={{ fontSize: 13.5, fontFamily: fonte.b, color: cor.texto }}>{m.nome}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                     <PartyChip sigla={m.partido_sigla_atual} uf={m.uf_atual} />
                     <Text style={{ fontSize: 10.5, color: cor.mutedSoft }}>{m.casa_atual === 'senado' ? 'Senado' : 'Câmara'}</Text>
@@ -167,6 +170,7 @@ function TabMembros({ membros, camara, senado, ufs }: { membros: Parlamentar[]; 
 
 /* ── LIDERANÇAS (placeholder) ── */
 function TabLiderancas({ sigla }: { sigla: string }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <View style={{ padding: 14 }}>
       <AICard title="Estrutura de comando" body={`O ${sigla} tem presidência, líderes na Câmara e no Senado, vice-líderes e secretaria-geral, com coesão de voto medida nas votações nominais.`} />
@@ -178,7 +182,7 @@ function TabLiderancas({ sigla }: { sigla: string }) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 }}>
               <Avatar nome={l.nome} size={40} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13.5, fontFamily: fonte.b, color: cor.navy }}>{l.nome}</Text>
+                <Text style={{ fontSize: 13.5, fontFamily: fonte.b, color: cor.texto }}>{l.nome}</Text>
                 <Text style={{ fontSize: 11, color: cor.muted, marginTop: 3 }}>{l.mandato}º mandato</Text>
               </View>
               <Tag tone={l.cargo.startsWith('Líder') ? 'navy' : 'sky'}>{l.cargo}</Tag>
@@ -204,6 +208,7 @@ function TabLiderancas({ sigla }: { sigla: string }) {
 
 /* ── PROPOSIÇÕES (placeholder) ── */
 function TabProposicoes() {
+  const { st } = useTemaEstilos(criarSt);
   return (
     <View style={{ padding: 14 }}>
       <AIPill label="Resumir proposições do partido com IA" />
@@ -226,6 +231,7 @@ function TabProposicoes() {
 
 /* ── EMENDAS (REAL) ── */
 function TabEmendas({ emd }: { emd: ResumoEmendasPartido | null }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   if (!emd) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
   const max = emd.areas[0]?.total ?? 0;
   return (
@@ -262,11 +268,11 @@ function TabEmendas({ emd }: { emd: ResumoEmendasPartido | null }) {
   );
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: cor.surface },
   erro: { color: cor.neg, textAlign: 'center', paddingHorizontal: 24 },
-  monoRing: { borderRadius: 9999, borderWidth: 3, borderColor: cor.white },
-  nome: { marginTop: 12, fontFamily: fonte.xb, fontSize: 24, color: cor.navy, letterSpacing: -0.4 },
+  monoRing: { borderRadius: 9999, borderWidth: 3, borderColor: cor.cartao },
+  nome: { marginTop: 12, fontFamily: fonte.xb, fontSize: 24, color: cor.texto, letterSpacing: -0.4 },
   nomeSub: { color: cor.muted, fontFamily: fonte.sb, fontSize: 18 },
   sub: { fontSize: 12.5, color: cor.muted, fontFamily: fonte.m, marginTop: 2 },
   stats: { marginTop: 14, flexDirection: 'row', gap: 6, backgroundColor: cor.light, borderRadius: raio.card, paddingVertical: 12, paddingHorizontal: 14 },
@@ -276,18 +282,18 @@ const st = StyleSheet.create({
   tabsWrap: { backgroundColor: cor.surface, borderBottomWidth: 1, borderBottomColor: cor.border },
   tab: { paddingHorizontal: 14, paddingVertical: 10, position: 'relative' },
   tabTxt: { fontSize: 13 },
-  tabUnderline: { position: 'absolute', left: 14, right: 14, bottom: 0, height: 2, backgroundColor: cor.navy, borderRadius: 9999 },
+  tabUnderline: { position: 'absolute', left: 14, right: 14, bottom: 0, height: 2, backgroundColor: cor.texto, borderRadius: 9999 },
   fonte: { fontSize: 11, color: cor.mutedSoft, marginTop: 12, fontStyle: 'italic' },
-  kpiVal: { fontFamily: fonte.xb, fontSize: 18, color: cor.navy },
-  kpiVal2: { fontFamily: fonte.xb, fontSize: 16, color: cor.navy },
+  kpiVal: { fontFamily: fonte.xb, fontSize: 18, color: cor.texto },
+  kpiVal2: { fontFamily: fonte.xb, fontSize: 16, color: cor.texto },
   kpiLbl: { marginTop: 4, fontFamily: fonte.b, fontSize: 9.5, color: cor.muted, letterSpacing: 0.8, textTransform: 'uppercase' },
   filtro: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 9999, borderWidth: 1, marginRight: 6 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between' },
-  barLabel: { flex: 1, fontSize: 12, color: cor.navy, fontFamily: fonte.sb, marginBottom: 4 },
-  barVal: { fontSize: 12, color: cor.navy, fontFamily: fonte.b },
+  barLabel: { flex: 1, fontSize: 12, color: cor.texto, fontFamily: fonte.sb, marginBottom: 4 },
+  barVal: { fontSize: 12, color: cor.texto, fontFamily: fonte.b },
   trilho: { height: 8, borderRadius: 4, backgroundColor: cor.light, overflow: 'hidden' },
   preenche: { height: 8, borderRadius: 4 },
-  plNum: { fontFamily: fonte.xb, fontSize: 11.5, color: cor.navy, letterSpacing: 0.4, marginBottom: 4 },
+  plNum: { fontFamily: fonte.xb, fontSize: 11.5, color: cor.texto, letterSpacing: 0.4, marginBottom: 4 },
   plEmenta: { fontSize: 12.5, color: cor.ink, lineHeight: 17 },
   vazio: { fontSize: 13, color: cor.muted, lineHeight: 19 },
 });

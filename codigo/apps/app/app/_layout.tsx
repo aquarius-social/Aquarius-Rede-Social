@@ -10,7 +10,8 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter';
-import { cor, fonte } from '../lib/tema';
+import { fonte } from '../lib/tema';
+import { TemaProvider, useTema, useTemaCtrl } from '../lib/theme';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { Splash } from '../components/splash';
 
@@ -43,15 +44,25 @@ export default function RootLayout() {
     Inter_800ExtraBold,
   });
 
-  // Trava o render até a Inter carregar (evita flash com a fonte do sistema).
-  if (!fontsLoaded && !fontError) return <Splash />;
-
   return (
-    <AuthProvider>
-      <StatusBar style="dark" />
-      <Gate />
-    </AuthProvider>
+    <TemaProvider>
+      {/* Trava o render até a Inter carregar (evita flash com a fonte do sistema). */}
+      {(!fontsLoaded && !fontError) ? (
+        <Splash />
+      ) : (
+        <AuthProvider>
+          <BarraStatus />
+          <Gate />
+        </AuthProvider>
+      )}
+    </TemaProvider>
   );
+}
+
+/** StatusBar que acompanha o tema (ícones claros no modo escuro). */
+function BarraStatus() {
+  const { modo } = useTemaCtrl();
+  return <StatusBar style={modo === 'dark' ? 'light' : 'dark'} />;
 }
 
 /**
@@ -59,6 +70,7 @@ export default function RootLayout() {
  * inteiro. Enquanto a sessão inicial resolve, mostra o Splash.
  */
 function Gate() {
+  const cor = useTema();
   const { session, carregando, onboarded } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -82,8 +94,8 @@ function Gate() {
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: cor.surface },
-        headerTintColor: cor.navy,
-        headerTitleStyle: { fontFamily: 'Inter_800ExtraBold', color: cor.navy },
+        headerTintColor: cor.texto,
+        headerTitleStyle: { fontFamily: 'Inter_800ExtraBold', color: cor.texto },
         contentStyle: { backgroundColor: cor.surface },
       }}
     >

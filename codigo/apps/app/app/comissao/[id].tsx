@@ -3,7 +3,8 @@ import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from 'react-nat
 import { useLocalSearchParams } from 'expo-router';
 import { obterComissao, type Comissao } from '../../lib/dados';
 import { frescor } from '../../lib/formato';
-import { cor, raio, fonte } from '../../lib/tema';
+import { raio, fonte, type Tema } from '../../lib/tema';
+import { useTemaEstilos } from '../../lib/theme';
 import { Cover, Monogram, Tag, Card, SectionHeader, Divider, Icon } from '../../components/base';
 
 // Seções do protótipo (mesa/membros/agenda/votações) que dependem de dados ainda
@@ -16,6 +17,7 @@ const PENDENTES = [
 ] as const;
 
 export default function ComissaoScreen() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [c, setC] = useState<Comissao | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -37,7 +39,7 @@ export default function ComissaoScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        <View style={{ backgroundColor: cor.white }}>
+        <View style={{ backgroundColor: cor.cartao }}>
           <Cover height={88} />
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, marginTop: -30 }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
@@ -75,14 +77,14 @@ export default function ComissaoScreen() {
   );
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: cor.surface, padding: 24 },
   erro: { color: cor.muted, textAlign: 'center' },
-  monoRing: { borderRadius: 9999, borderWidth: 3, borderColor: cor.white, backgroundColor: cor.white },
-  nome: { marginTop: 12, fontSize: 20, fontFamily: fonte.xb, color: cor.navy, letterSpacing: -0.3, lineHeight: 26 },
+  monoRing: { borderRadius: 9999, borderWidth: 3, borderColor: cor.cartao, backgroundColor: cor.cartao },
+  nome: { marginTop: 12, fontSize: 20, fontFamily: fonte.xb, color: cor.texto, letterSpacing: -0.3, lineHeight: 26 },
   fonte: { marginTop: 8, fontSize: 11.5, color: cor.mutedSoft },
   pendLinha: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   pendIcon: { width: 34, height: 34, borderRadius: raio.cardPequeno, backgroundColor: cor.light, alignItems: 'center', justifyContent: 'center' },
-  pendLabel: { fontSize: 14, fontFamily: fonte.b, color: cor.navy },
+  pendLabel: { fontSize: 14, fontFamily: fonte.b, color: cor.texto },
   pendNota: { fontSize: 12, color: cor.muted, marginTop: 2 },
 });

@@ -6,7 +6,8 @@ import {
   type Parlamentar, type ResumoDespesas, type ResumoEmendas,
 } from '../../lib/dados';
 import { reais, kbr, dataBR, URL_EMENDAS_CONSULTA, frescor } from '../../lib/formato';
-import { cor, raio, fonte } from '../../lib/tema';
+import { raio, fonte, type Tema } from '../../lib/tema';
+import { useTemaEstilos } from '../../lib/theme';
 import {
   Avatar, Cover, PartyChip, Tag, SituacaoBadge, Stat, Card, SectionHeader, Divider, AlignmentBar,
   AIPill, AICard, AIBanner, FollowButton, BottomNav, Icon, Donut, LineChart, BarChart,
@@ -35,6 +36,7 @@ function rotuloCargo(oc: string | null) {
 }
 
 export default function PerfilParlamentar() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [p, setP] = useState<Parlamentar | null>(null);
   const [desp, setDesp] = useState<ResumoDespesas | null>(null);
@@ -64,7 +66,7 @@ export default function PerfilParlamentar() {
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
         {/* ── Header cover ── */}
-        <View style={{ backgroundColor: cor.white }}>
+        <View style={{ backgroundColor: cor.cartao }}>
           <Cover height={88} />
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, marginTop: -30 }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14 }}>
@@ -91,7 +93,7 @@ export default function PerfilParlamentar() {
                   <Icon name="info" size={14} color={cor.sky} />
                   <Text style={st.transTxt}>
                     Assumiu em {dataBR(p.assumiu_em)} no lugar de{' '}
-                    <Text style={{ fontFamily: fonte.b, color: cor.navy }}>{p.titular_nome}</Text>
+                    <Text style={{ fontFamily: fonte.b, color: cor.texto }}>{p.titular_nome}</Text>
                     {p.causa ? ` · ${p.causa}` : ''}
                   </Text>
                   <Icon name="chevR" size={14} color={cor.mutedSoft} />
@@ -103,7 +105,7 @@ export default function PerfilParlamentar() {
                 <Pressable style={st.transCard}>
                   <Icon name="info" size={14} color={cor.warn} />
                   <Text style={st.transTxt}>
-                    Licenciado — <Text style={{ fontFamily: fonte.b, color: cor.navy }}>{p.suplente_nome}</Text> assumiu em {dataBR(p.suplente_desde)}
+                    Licenciado — <Text style={{ fontFamily: fonte.b, color: cor.texto }}>{p.suplente_nome}</Text> assumiu em {dataBR(p.suplente_desde)}
                   </Text>
                   <Icon name="chevR" size={14} color={cor.mutedSoft} />
                 </Pressable>
@@ -122,7 +124,7 @@ export default function PerfilParlamentar() {
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
               <FollowButton />
               <Pressable style={st.ctaGhost}>
-                <Icon name="spark" size={15} color={cor.navy} />
+                <Icon name="spark" size={15} color={cor.texto} />
                 <Text style={st.ctaGhostTxt}>Perguntar à IA</Text>
               </Pressable>
             </View>
@@ -136,7 +138,7 @@ export default function PerfilParlamentar() {
               const sel = t.id === tab;
               return (
                 <Pressable key={t.id} onPress={() => setTab(t.id)} style={st.tab}>
-                  <Text style={[st.tabTxt, { color: sel ? cor.navy : cor.muted, fontFamily: sel ? fonte.b : fonte.sb }]}>{t.label}</Text>
+                  <Text style={[st.tabTxt, { color: sel ? cor.texto : cor.muted, fontFamily: sel ? fonte.b : fonte.sb }]}>{t.label}</Text>
                   {sel ? <View style={st.tabUnderline} /> : null}
                 </Pressable>
               );
@@ -161,11 +163,13 @@ export default function PerfilParlamentar() {
 }
 
 function Fonte({ texto }: { texto: string }) {
+  const { st } = useTemaEstilos(criarSt);
   return <Text style={st.fonte}>{texto}</Text>;
 }
 
 /* ── FEED ── */
 function TabFeed({ nome }: { nome: string }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <View style={{ padding: 14 }}>
       <View style={st.infoNote}>
@@ -179,13 +183,14 @@ function TabFeed({ nome }: { nome: string }) {
 
 /* ── PROPOSIÇÕES (protótipo) ── */
 function TabProposicoes() {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <View style={{ padding: 14 }}>
       <AIPill label="Analisar 47 proposições com IA" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 12 }}>
         {['Todos', 'PL', 'PEC', 'REQ', 'PDL'].map((c, i) => (
-          <View key={c} style={[st.filtro, { backgroundColor: i === 0 ? cor.navy : cor.white, borderColor: i === 0 ? cor.navy : cor.border }]}>
-            <Text style={{ color: i === 0 ? cor.white : cor.navy, fontFamily: fonte.sb, fontSize: 11.5 }}>{c}</Text>
+          <View key={c} style={[st.filtro, { backgroundColor: i === 0 ? cor.navy : cor.cartao, borderColor: i === 0 ? cor.navy : cor.border }]}>
+            <Text style={{ color: i === 0 ? cor.white : cor.texto, fontFamily: fonte.sb, fontSize: 11.5 }}>{c}</Text>
           </View>
         ))}
       </ScrollView>
@@ -220,6 +225,7 @@ function TabProposicoes() {
 
 /* ── VOTAÇÕES (protótipo) ── */
 function TabVotacoes() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const sims = VOTACOES.filter((v) => v.voto === 'Sim').length;
   const naos = VOTACOES.filter((v) => v.voto === 'Não').length;
   const absts = VOTACOES.filter((v) => v.voto === 'Abstenção').length;
@@ -274,6 +280,7 @@ function TabVotacoes() {
 
 /* ── PRESENÇA (protótipo) ── */
 function TabPresenca() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const media = (PRESENCA.reduce((s, v) => s + v, 0) / PRESENCA.length).toFixed(1);
   return (
     <View style={{ padding: 14 }}>
@@ -306,6 +313,7 @@ function TabPresenca() {
 
 /* ── DESPESAS (REAL) ── */
 function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   const [catAberta, setCatAberta] = useState<string | null>(null);
   if (!desp) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
   const donutData = desp.categorias.slice(0, 7).map((c, i) => ({ valor: c.total, cor: PALETA[i % PALETA.length] }));
@@ -339,11 +347,11 @@ function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
                   <Pressable onPress={() => setCatAberta(aberta ? null : c.tipo)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: PALETA[i % PALETA.length] }} />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 13, fontFamily: fonte.sb, color: cor.navy }} numberOfLines={1}>{c.tipo}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: fonte.sb, color: cor.texto }} numberOfLines={1}>{c.tipo}</Text>
                       <Text style={{ fontSize: 10.5, color: cor.mutedSoft, marginTop: 2 }}>{c.itens.length} lançamento{c.itens.length !== 1 ? 's' : ''}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={{ fontSize: 13, fontFamily: fonte.b, color: cor.navy }}>{kbr(c.total)}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: fonte.b, color: cor.texto }}>{kbr(c.total)}</Text>
                       <Text style={{ fontSize: 10.5, color: cor.muted, marginTop: 2 }}>{((c.total / desp.totalLiquido) * 100).toFixed(1).replace('.', ',')}%</Text>
                     </View>
                     <View style={{ transform: [{ rotate: aberta ? '90deg' : '0deg' }] }}>
@@ -365,7 +373,7 @@ function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
                               ) : null}
                             </View>
                           </View>
-                          <Text style={{ fontSize: 12.5, fontFamily: fonte.b, color: cor.navy }}>{reais(it.valorLiquido)}</Text>
+                          <Text style={{ fontSize: 12.5, fontFamily: fonte.b, color: cor.texto }}>{reais(it.valorLiquido)}</Text>
                         </View>
                       ))}
                       {c.itens.length > 15 ? <Text style={st.maisItens}>+ {c.itens.length - 15} outros lançamentos</Text> : null}
@@ -386,7 +394,7 @@ function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
                   {desp.anual.map((a) => (
                     <View key={a.ano} style={{ alignItems: 'center', flex: 1 }}>
                       <Text style={st.plMeta}>{a.ano}</Text>
-                      <Text style={{ fontSize: 11, fontFamily: fonte.b, color: cor.navy }}>{kbr(a.total)}</Text>
+                      <Text style={{ fontSize: 11, fontFamily: fonte.b, color: cor.texto }}>{kbr(a.total)}</Text>
                     </View>
                   ))}
                 </View>
@@ -402,16 +410,18 @@ function TabDespesas({ desp }: { desp: ResumoDespesas | null }) {
 
 /* ── EMENDAS (REAL) ── */
 function EstagioLinha({ rotulo, valor, forte }: { rotulo: string; valor: number | null; forte?: boolean }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   if (valor === null || valor === 0) return null;
   return (
     <View style={st.estagioLinha}>
-      <Text style={[st.estagioRot, forte ? { color: cor.navy, fontFamily: fonte.b } : null]}>{rotulo}</Text>
+      <Text style={[st.estagioRot, forte ? { color: cor.texto, fontFamily: fonte.b } : null]}>{rotulo}</Text>
       <Text style={[st.estagioVal, forte ? { color: cor.pos } : null]}>{reais(valor)}</Text>
     </View>
   );
 }
 
 function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   const [aberta, setAberta] = useState<string | null>(null);
   if (!emd) return <View style={{ padding: 14 }}><ActivityIndicator color={cor.blue} /></View>;
 
@@ -436,12 +446,12 @@ function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
                 <View key={e.id}>
                   <Pressable onPress={() => setAberta(ab ? null : e.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 13, fontFamily: fonte.sb, color: cor.navy }} numberOfLines={1}>{e.finalidade ?? 'Área não informada'}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: fonte.sb, color: cor.texto }} numberOfLines={1}>{e.finalidade ?? 'Área não informada'}</Text>
                       <Text style={{ fontSize: 11, color: cor.muted, marginTop: 2 }} numberOfLines={1}>
                         {[e.subfuncao, e.uf, String(e.ano)].filter(Boolean).join(' · ')}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 14, fontFamily: fonte.b, color: cor.navy }}>{kbr(e.pago ?? 0)}</Text>
+                    <Text style={{ fontSize: 14, fontFamily: fonte.b, color: cor.texto }}>{kbr(e.pago ?? 0)}</Text>
                     <View style={{ transform: [{ rotate: ab ? '90deg' : '0deg' }] }}><Icon name="chevR" size={16} color={cor.mutedSoft} /></View>
                   </Pressable>
                   {ab ? (
@@ -481,13 +491,14 @@ function TabEmendas({ emd }: { emd: ResumoEmendas | null }) {
 
 /* ── DISCURSOS (protótipo) ── */
 function TabDiscursos() {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <View style={{ padding: 14 }}>
       <AIPill label="Analisar temas dos discursos" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 12 }}>
         {DISCURSO_TEMAS.map((t, i) => (
-          <View key={t} style={[st.filtro, { backgroundColor: i === 0 ? cor.navy : cor.white, borderColor: i === 0 ? cor.navy : cor.border }]}>
-            <Text style={{ color: i === 0 ? cor.white : cor.navy, fontFamily: fonte.sb, fontSize: 11 }}>{t}</Text>
+          <View key={t} style={[st.filtro, { backgroundColor: i === 0 ? cor.navy : cor.cartao, borderColor: i === 0 ? cor.navy : cor.border }]}>
+            <Text style={{ color: i === 0 ? cor.white : cor.texto, fontFamily: fonte.sb, fontSize: 11 }}>{t}</Text>
           </View>
         ))}
       </ScrollView>
@@ -510,6 +521,7 @@ function TabDiscursos() {
 
 /* ── AGENDA (protótipo) ── */
 function TabAgenda() {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <View style={{ padding: 14 }}>
       <SectionHeader title="Próximos compromissos" sub="Agenda pública oficial" />
@@ -523,7 +535,7 @@ function TabAgenda() {
                 <Tag tone={e.tipo === 'Comissão' ? 'navy' : e.tipo === 'Externa' ? 'sky' : 'muted'}>{e.tipo}</Tag>
                 <Text style={{ fontSize: 10.5, color: cor.muted, fontFamily: fonte.b, letterSpacing: 0.6 }}>{e.data.toUpperCase()}</Text>
               </View>
-              <Text style={{ fontFamily: fonte.b, fontSize: 13.5, color: cor.navy }}>{e.titulo}</Text>
+              <Text style={{ fontFamily: fonte.b, fontSize: 13.5, color: cor.texto }}>{e.titulo}</Text>
               <Text style={{ marginTop: 4, fontSize: 11.5, color: cor.muted }}>{e.local}</Text>
             </Card>
           </View>
@@ -536,6 +548,7 @@ function TabAgenda() {
 
 /* ── ÓRGÃOS (protótipo) ── */
 function TabOrgaos() {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <View style={{ padding: 14 }}>
       <SectionHeader title="Comissões e frentes" />
@@ -547,7 +560,7 @@ function TabOrgaos() {
                 <Icon name={o.nome.startsWith('Frente') ? 'star' : 'building'} size={18} color={cor.white} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: fonte.b, fontSize: 13, color: cor.navy, lineHeight: 17 }}>{o.nome}</Text>
+                <Text style={{ fontFamily: fonte.b, fontSize: 13, color: cor.texto, lineHeight: 17 }}>{o.nome}</Text>
                 <View style={{ marginTop: 3, flexDirection: 'row' }}>
                   <Tag tone={o.cargo.includes('Coord') || o.cargo.includes('Vice') ? 'sky' : 'muted'}>{o.cargo}</Tag>
                 </View>
@@ -562,29 +575,29 @@ function TabOrgaos() {
   );
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: cor.surface },
   erro: { color: cor.neg, textAlign: 'center', paddingHorizontal: 24 },
   avatarRing: { borderRadius: 9999, borderWidth: 3, borderColor: cor.white },
-  nome: { marginTop: 12, fontFamily: fonte.xb, fontSize: 24, color: cor.navy, letterSpacing: -0.4 },
+  nome: { marginTop: 12, fontFamily: fonte.xb, fontSize: 24, color: cor.texto, letterSpacing: -0.4 },
   sub: { fontSize: 12.5, color: cor.muted, fontFamily: fonte.m, marginTop: 2 },
   transCard: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, padding: 10, borderRadius: raio.cardPequeno, backgroundColor: cor.light, borderWidth: 1, borderColor: cor.border },
   transTxt: { flex: 1, fontSize: 12, color: cor.muted, lineHeight: 16 },
   stats: { marginTop: 14, flexDirection: 'row', gap: 6, backgroundColor: cor.light, borderRadius: raio.card, paddingVertical: 12, paddingHorizontal: 14 },
   statDiv: { width: 1, backgroundColor: cor.border },
-  ctaGhost: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.borderStrong },
-  ctaGhostTxt: { fontFamily: fonte.b, fontSize: 12.5, color: cor.navy },
+  ctaGhost: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 9999, backgroundColor: cor.cartao, borderWidth: 1, borderColor: cor.borderStrong },
+  ctaGhostTxt: { fontFamily: fonte.b, fontSize: 12.5, color: cor.texto },
   tabsWrap: { backgroundColor: cor.surface, borderBottomWidth: 1, borderBottomColor: cor.border },
   tab: { paddingHorizontal: 14, paddingVertical: 10, position: 'relative' },
   tabTxt: { fontSize: 13 },
-  tabUnderline: { position: 'absolute', left: 14, right: 14, bottom: 0, height: 2, backgroundColor: cor.navy, borderRadius: 9999 },
+  tabUnderline: { position: 'absolute', left: 14, right: 14, bottom: 0, height: 2, backgroundColor: cor.texto, borderRadius: 9999 },
   fonte: { fontSize: 11, color: cor.mutedSoft, marginTop: 12, fontStyle: 'italic' },
   infoNote: { flexDirection: 'row', gap: 8, alignItems: 'center', padding: 12, borderRadius: 12, backgroundColor: cor.light, borderWidth: 1, borderColor: cor.border, marginBottom: 12 },
   infoNoteTxt: { flex: 1, fontSize: 11, color: cor.muted, lineHeight: 16 },
   vazioCentro: { textAlign: 'center', paddingVertical: 30, fontSize: 13, color: cor.muted },
   vazio: { fontSize: 13, color: cor.muted, lineHeight: 19 },
   filtro: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 9999, borderWidth: 1, marginRight: 6 },
-  plNum: { fontFamily: fonte.xb, fontSize: 11.5, color: cor.navy, letterSpacing: 0.4 },
+  plNum: { fontFamily: fonte.xb, fontSize: 11.5, color: cor.texto, letterSpacing: 0.4 },
   plEmenta: { fontSize: 12.5, color: cor.ink, lineHeight: 17 },
   plMeta: { fontSize: 10.5, color: cor.muted, fontFamily: fonte.m },
   iaBadge: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 9999, backgroundColor: 'rgba(46,125,209,0.12)' },
@@ -592,17 +605,17 @@ const st = StyleSheet.create({
   dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: cor.border },
   secHeadTitle: { fontFamily: fonte.b, fontSize: 11, color: cor.muted, letterSpacing: 1.2, textTransform: 'uppercase' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between' },
-  barLabel: { fontSize: 12, color: cor.navy, fontFamily: fonte.sb, marginBottom: 4 },
-  barVal: { fontSize: 12, color: cor.navy, fontFamily: fonte.b },
+  barLabel: { fontSize: 12, color: cor.texto, fontFamily: fonte.sb, marginBottom: 4 },
+  barVal: { fontSize: 12, color: cor.texto, fontFamily: fonte.b },
   distSeg: { paddingVertical: 7, paddingHorizontal: 10, justifyContent: 'center' },
   distTxt: { color: cor.white, fontSize: 10.5, fontFamily: fonte.b, letterSpacing: 0.4 },
   votoBox: { width: 48, height: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  votoTitulo: { fontSize: 12.5, fontFamily: fonte.sb, color: cor.navy, lineHeight: 16 },
-  bigPct: { fontFamily: fonte.xb, fontSize: 30, color: cor.navy, letterSpacing: -0.6 },
-  kpiVal: { fontFamily: fonte.xb, fontSize: 17, color: cor.navy },
+  votoTitulo: { fontSize: 12.5, fontFamily: fonte.sb, color: cor.texto, lineHeight: 16 },
+  bigPct: { fontFamily: fonte.xb, fontSize: 30, color: cor.texto, letterSpacing: -0.6 },
+  kpiVal: { fontFamily: fonte.xb, fontSize: 17, color: cor.texto },
   kpiLbl: { marginTop: 4, fontFamily: fonte.b, fontSize: 9.5, color: cor.muted, letterSpacing: 0.8, textTransform: 'uppercase' },
   timeline: { position: 'absolute', left: 6, top: 6, bottom: 6, width: 2, backgroundColor: cor.border },
-  timelineDot: { position: 'absolute', left: -22, top: 8, width: 14, height: 14, borderRadius: 7, backgroundColor: cor.white, borderWidth: 2.5, borderColor: cor.sky },
+  timelineDot: { position: 'absolute', left: -22, top: 8, width: 14, height: 14, borderRadius: 7, backgroundColor: cor.cartao, borderWidth: 2.5, borderColor: cor.sky },
   orgIcon: { width: 38, height: 38, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   // drill-down despesas
   lancamento: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: cor.border },
@@ -615,7 +628,7 @@ const st = StyleSheet.create({
   detV: { flex: 1, fontSize: 12.5, color: cor.ink, fontFamily: fonte.sb },
   estagioLinha: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
   estagioRot: { fontSize: 12.5, color: cor.muted },
-  estagioVal: { fontSize: 12.5, color: cor.navy, fontFamily: fonte.sb },
+  estagioVal: { fontSize: 12.5, color: cor.texto, fontFamily: fonte.sb },
   fonteOficial: { fontSize: 11.5, color: cor.mutedSoft, marginTop: 12 },
   govBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 8, paddingVertical: 10, borderRadius: 9999, backgroundColor: cor.navy },
   govBtnTxt: { color: cor.white, fontFamily: fonte.b, fontSize: 12.5 },

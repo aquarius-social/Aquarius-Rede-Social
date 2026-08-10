@@ -5,13 +5,15 @@ import {
   listarParlamentares, listarPartidos, listarComissoes, listarFrentes,
   type Parlamentar, type Partido, type Comissao, type Frente,
 } from '../../lib/dados';
-import { cor, raio, fonte } from '../../lib/tema';
+import { raio, fonte, type Tema } from '../../lib/tema';
+import { useTemaEstilos } from '../../lib/theme';
 import { Avatar, Monogram, PartyChip, SituacaoBadge, Icon } from '../../components/base';
 import { PARTIDO_COR } from '../../lib/mock';
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 export default function Listagem() {
+  const { st } = useTemaEstilos(criarSt);
   const { tipo } = useLocalSearchParams<{ tipo: string }>();
   if (tipo === 'partidos') return <ListaPartidos />;
   if (tipo === 'parlamentares') return <ListaParlamentares />;
@@ -31,13 +33,14 @@ export default function Listagem() {
 
 /* ── Chips de filtro ── */
 function ChipRow({ opcoes, sel, onSel }: { opcoes: { v: string | null; l: string }[]; sel: string | null; onSel: (v: string | null) => void }) {
+  const { cor, st } = useTemaEstilos(criarSt);
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }} contentContainerStyle={{ gap: 6 }}>
       {opcoes.map((o) => {
         const s = o.v === sel;
         return (
-          <Pressable key={o.l} onPress={() => onSel(o.v)} style={[st.chip, { backgroundColor: s ? cor.navy : cor.white, borderColor: s ? cor.navy : cor.border }]}>
-            <Text style={{ color: s ? cor.white : cor.navy, fontFamily: fonte.sb, fontSize: 11.5 }}>{o.l}</Text>
+          <Pressable key={o.l} onPress={() => onSel(o.v)} style={[st.chip, { backgroundColor: s ? cor.navy : cor.cartao, borderColor: s ? cor.navy : cor.border }]}>
+            <Text style={{ color: s ? cor.white : cor.texto, fontFamily: fonte.sb, fontSize: 11.5 }}>{o.l}</Text>
           </Pressable>
         );
       })}
@@ -47,6 +50,7 @@ function ChipRow({ opcoes, sel, onSel }: { opcoes: { v: string | null; l: string
 
 /* ── PARLAMENTARES (com filtros) ── */
 function ListaParlamentares() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const [todos, setTodos] = useState<Parlamentar[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState('');
@@ -111,6 +115,7 @@ function ListaParlamentares() {
 
 /* ── COMISSÕES ── */
 function ListaComissoes() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const [todos, setTodos] = useState<Comissao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState('');
@@ -149,6 +154,7 @@ function ListaComissoes() {
 
 /* ── FRENTES ── */
 function ListaFrentes() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const [todos, setTodos] = useState<Frente[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState('');
@@ -184,6 +190,7 @@ function ListaFrentes() {
 
 /* ── PARTIDOS ── */
 function ListaPartidos() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const [todos, setTodos] = useState<Partido[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [busca, setBusca] = useState('');
@@ -219,16 +226,16 @@ function ListaPartidos() {
   );
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   tela: { flex: 1, backgroundColor: cor.surface, paddingHorizontal: 14, paddingTop: 12 },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: cor.surface, padding: 32 },
-  emBreveTit: { fontSize: 18, fontFamily: fonte.xb, color: cor.navy },
+  emBreveTit: { fontSize: 18, fontFamily: fonte.xb, color: cor.texto },
   emBreveTxt: { fontSize: 13, color: cor.muted, textAlign: 'center', marginTop: 8, lineHeight: 19 },
-  busca: { backgroundColor: cor.white, borderRadius: raio.input, borderWidth: 1, borderColor: cor.border, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: cor.ink, marginBottom: 10 },
+  busca: { backgroundColor: cor.cartao, borderRadius: raio.input, borderWidth: 1, borderColor: cor.border, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: cor.ink, marginBottom: 10 },
   chip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 9999, borderWidth: 1 },
   contador: { fontSize: 11.5, color: cor.mutedSoft, fontFamily: fonte.b, letterSpacing: 0.4, marginBottom: 6, paddingLeft: 2, textTransform: 'uppercase' },
-  linha: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: cor.white, borderRadius: raio.card, borderWidth: 1, borderColor: cor.border, padding: 12, marginBottom: 8 },
-  nome: { fontSize: 15, fontFamily: fonte.b, color: cor.navy },
+  linha: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: cor.cartao, borderRadius: raio.card, borderWidth: 1, borderColor: cor.border, padding: 12, marginBottom: 8 },
+  nome: { fontSize: 15, fontFamily: fonte.b, color: cor.texto },
   sub: { fontSize: 12.5, color: cor.muted, marginTop: 3 },
   vazio: { color: cor.muted, marginTop: 32, textAlign: 'center' },
   frenteIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: cor.skySoft, alignItems: 'center', justifyContent: 'center' },

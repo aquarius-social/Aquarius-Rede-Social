@@ -1,13 +1,19 @@
 /**
  * Fundação de UI do app — porte FIEL de `aq-foundation.jsx` (Claude Design)
  * para React Native. Mesmas cores, raios, tipografia e componentes.
+ *
+ * Tema: cada componente lê a paleta ativa via `useTema()` / `useTemaEstilos`
+ * (claro ou escuro). Regra de migração: `color: cor.navy → cor.texto`,
+ * `backgroundColor: cor.white → cor.cartao`; `navy`/`white` seguem nos
+ * preenchimentos coloridos (botões, badges, texto sobre fill). Ver lib/tema.ts.
  */
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, type ViewStyle, type TextStyle } from 'react-native';
+import { View, Text, Pressable, StyleSheet, type ViewStyle } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Polygon, Line, Rect, G, Text as SvgText, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
-import { cor, raio, fonte, gradienteAvatar, iniciais, shade } from '../lib/tema';
+import { raio, fonte, gradienteAvatar, iniciais, shade, type Tema } from '../lib/tema';
+import { useTema, useTemaEstilos } from '../lib/theme';
 import { PARTIDO_COR } from '../lib/mock';
 
 /* ── Ícones (subconjunto usado no perfil), 24×24, stroke 2 ─────────────── */
@@ -17,15 +23,17 @@ export type IconName =
   | 'home' | 'heart' | 'cal' | 'users' | 'flag'
   | 'gear' | 'logout' | 'trash' | 'download' | 'bell' | 'send';
 
-export function Icon({ name, size = 22, color = cor.navy, stroke = 2 }: {
+export function Icon({ name, size = 22, color, stroke = 2 }: {
   name: IconName; size?: number; color?: string; stroke?: number;
 }) {
-  const p = { stroke: color, strokeWidth: stroke, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' as const };
+  const cor = useTema();
+  const c = color ?? cor.texto;
+  const p = { stroke: c, strokeWidth: stroke, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' as const };
   const svg = (children: React.ReactNode) => (
     <Svg width={size} height={size} viewBox="0 0 24 24">{children}</Svg>
   );
   switch (name) {
-    case 'spark': return svg(<><Path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" {...p} /><Circle cx="12" cy="12" r="4" fill={color} /></>);
+    case 'spark': return svg(<><Path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" {...p} /><Circle cx="12" cy="12" r="4" fill={c} /></>);
     case 'plus': return svg(<Path d="M12 5v14M5 12h14" {...p} />);
     case 'check': return svg(<Path d="M5 12l4 4 10-10" {...p} />);
     case 'doc': return svg(<><Path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" {...p} /><Path d="M14 3v6h6M8 14h8M8 18h5" {...p} /></>);
@@ -35,7 +43,7 @@ export function Icon({ name, size = 22, color = cor.navy, stroke = 2 }: {
     case 'info': return svg(<><Circle cx="12" cy="12" r="9" {...p} /><Path d="M12 8v.01M11 12h1v5h1" {...p} /></>);
     case 'back': return svg(<Path d="M15 6l-6 6 6 6" {...p} />);
     case 'x': return svg(<Path d="M6 6l12 12M18 6L6 18" {...p} />);
-    case 'compass': return svg(<><Circle cx="12" cy="12" r="9" {...p} /><Polygon points="16,8 13,13 8,16 11,11" fill={color} /></>);
+    case 'compass': return svg(<><Circle cx="12" cy="12" r="9" {...p} /><Polygon points="16,8 13,13 8,16 11,11" fill={c} /></>);
     case 'search': return svg(<><Circle cx="11" cy="11" r="7" {...p} /><Path d="m20 20-4.3-4.3" {...p} /></>);
     case 'home': return svg(<Path d="M3 11l9-8 9 8M5 10v10h14V10M9 21v-6h6v6" {...p} />);
     case 'heart': return svg(<Path d="M12 21s-7-4.6-9.4-8.3C.9 10 2.4 5.5 6.2 5.5c2 0 3.2 1.3 3.8 2.3.6-1 1.8-2.3 3.8-2.3 3.8 0 5.3 4.5 3.6 7.2C19 16.4 12 21 12 21Z" {...p} />);
@@ -58,7 +66,8 @@ export function Icon({ name, size = 22, color = cor.navy, stroke = 2 }: {
 export function Logo({ height = 22, dark = false, mark = true, wordmark = true }: {
   height?: number; dark?: boolean; mark?: boolean; wordmark?: boolean;
 }) {
-  const tinta = dark ? cor.white : cor.navy;
+  const cor = useTema();
+  const tinta = dark ? cor.white : cor.texto;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height }}>
       {mark && (
@@ -81,6 +90,7 @@ export function Logo({ height = 22, dark = false, mark = true, wordmark = true }
 
 /* ── Avatar — gradiente determinístico navy/sky + iniciais ─────────────── */
 export function Avatar({ nome, size = 40, ring = false }: { nome: string; size?: number; ring?: boolean }) {
+  const cor = useTema();
   const [a, b] = gradienteAvatar(nome);
   return (
     <LinearGradient
@@ -101,11 +111,13 @@ export function Avatar({ nome, size = 40, ring = false }: { nome: string; size?:
 }
 
 /* ── Monograma de partido/órgão (círculo colorido com sigla) ───────────── */
-export function Monogram({ sigla, size = 72, color = cor.navy }: { sigla: string; size?: number; color?: string }) {
+export function Monogram({ sigla, size = 72, color }: { sigla: string; size?: number; color?: string }) {
+  const cor = useTema();
+  const base = color ?? cor.navy;
   const txt = sigla.length > 4 ? sigla.slice(0, 1) : sigla.slice(0, 4);
   return (
     <LinearGradient
-      colors={[color, shade(color, -0.18)]}
+      colors={[base, shade(base, -0.18)]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center' }}
@@ -117,6 +129,7 @@ export function Monogram({ sigla, size = 72, color = cor.navy }: { sigla: string
 
 /* ── Banner cover com onda Sky (cor base opcional p/ partido) ──────────── */
 export function Cover({ height = 88, base }: { height?: number; base?: string }) {
+  const cor = useTema();
   const colors = base ? [base, shade(base, 0.18), cor.sky] : [cor.navy, cor.blue, cor.sky];
   return (
     <View style={{ height, position: 'relative' }}>
@@ -137,6 +150,7 @@ export function Cover({ height = 88, base }: { height?: number; base?: string })
 
 /* ── Party chip ────────────────────────────────────────────────────────── */
 export function PartyChip({ sigla, uf }: { sigla: string | null; uf?: string | null }) {
+  const { cor, st: s } = useTemaEstilos(criarS);
   if (!sigla) return null;
   const dot = PARTIDO_COR[sigla] ?? cor.muted;
   return (
@@ -150,17 +164,20 @@ export function PartyChip({ sigla, uf }: { sigla: string | null; uf?: string | n
 
 /* ── Tag ───────────────────────────────────────────────────────────────── */
 type Tone = 'muted' | 'navy' | 'sky' | 'pos' | 'neg' | 'warn' | 'gold';
-const TONE: Record<Tone, { bg: string; fg: string }> = {
-  muted: { bg: cor.light, fg: cor.muted },
-  navy: { bg: cor.navy, fg: cor.white },
-  sky: { bg: cor.sky, fg: cor.white },
-  pos: { bg: 'rgba(30,142,92,0.12)', fg: cor.pos },
-  neg: { bg: 'rgba(198,58,58,0.12)', fg: cor.neg },
-  warn: { bg: 'rgba(217,123,46,0.13)', fg: cor.warn },
-  gold: { bg: 'rgba(200,164,0,0.16)', fg: '#8C7300' },
-};
+function tons(cor: Tema): Record<Tone, { bg: string; fg: string }> {
+  return {
+    muted: { bg: cor.light, fg: cor.muted },
+    navy: { bg: cor.navy, fg: cor.white },
+    sky: { bg: cor.sky, fg: cor.white },
+    pos: { bg: 'rgba(30,142,92,0.15)', fg: cor.pos },
+    neg: { bg: 'rgba(198,58,58,0.15)', fg: cor.neg },
+    warn: { bg: 'rgba(217,123,46,0.16)', fg: cor.warn },
+    gold: { bg: 'rgba(200,164,0,0.18)', fg: cor.gold },
+  };
+}
 export function Tag({ children, tone = 'muted' }: { children: React.ReactNode; tone?: Tone }) {
-  const t = TONE[tone];
+  const { cor, st: s } = useTemaEstilos(criarS);
+  const t = tons(cor)[tone];
   return (
     <View style={[s.tag, { backgroundColor: t.bg }]}>
       <Text style={[s.tagTxt, { color: t.fg }]}>{children}</Text>
@@ -177,6 +194,7 @@ export function SituacaoBadge({ situacao }: { situacao: string | null | undefine
 
 /* ── Stat (célula da faixa de KPIs) ────────────────────────────────────── */
 export function Stat({ value, label, sub, tone }: { value: React.ReactNode; label: string; sub?: string; tone?: 'pos' | 'neg' }) {
+  const { cor, st: s } = useTemaEstilos(criarS);
   return (
     <View style={{ flex: 1, minWidth: 0 }}>
       <Text style={s.statValue}>{value}</Text>
@@ -188,9 +206,11 @@ export function Stat({ value, label, sub, tone }: { value: React.ReactNode; labe
 
 /* ── Card / SectionHeader / Divider / AlignmentBar ─────────────────────── */
 export function Card({ children, padding = 14, style }: { children: React.ReactNode; padding?: number; style?: ViewStyle }) {
+  const { st: s } = useTemaEstilos(criarS);
   return <View style={[s.card, { padding }, style]}>{children}</View>;
 }
 export function SectionHeader({ title, sub, action }: { title: string; sub?: string; action?: React.ReactNode }) {
+  const { st: s } = useTemaEstilos(criarS);
   return (
     <View style={s.secHead}>
       <View>
@@ -202,18 +222,21 @@ export function SectionHeader({ title, sub, action }: { title: string; sub?: str
   );
 }
 export function Divider({ inset = 0 }: { inset?: number }) {
+  const cor = useTema();
   return <View style={{ height: 1, backgroundColor: cor.border, marginLeft: inset }} />;
 }
-export function AlignmentBar({ pct, color = cor.sky, height = 8 }: { pct: number; color?: string; height?: number }) {
+export function AlignmentBar({ pct, color, height = 8 }: { pct: number; color?: string; height?: number }) {
+  const cor = useTema();
   return (
     <View style={{ backgroundColor: cor.light, borderRadius: 9999, height, overflow: 'hidden' }}>
-      <View style={{ width: `${pct}%`, height: '100%', backgroundColor: color, borderRadius: 9999 }} />
+      <View style={{ width: `${pct}%`, height: '100%', backgroundColor: color ?? cor.sky, borderRadius: 9999 }} />
     </View>
   );
 }
 
 /* ── Tratamentos de IA (pill / card / banner) ──────────────────────────── */
 export function AIPill({ label, onPress }: { label: string; onPress?: () => void }) {
+  const { cor, st: s } = useTemaEstilos(criarS);
   return (
     <Pressable onPress={onPress} style={s.aiPill}>
       <Icon name="spark" size={14} color={cor.sky} />
@@ -222,8 +245,9 @@ export function AIPill({ label, onPress }: { label: string; onPress?: () => void
   );
 }
 export function AICard({ title, body, onAsk }: { title: string; body: string; onAsk?: () => void }) {
+  const { cor, st: s } = useTemaEstilos(criarS);
   return (
-    <LinearGradient colors={[cor.light, cor.white]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={s.aiCard}>
+    <LinearGradient colors={[cor.light, cor.cartao]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={s.aiCard}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 8 }}>
         <View style={s.aiCardBadge}><Icon name="spark" size={13} color={cor.white} /></View>
         <Text style={s.aiCardTitle}>{title}</Text>
@@ -240,6 +264,7 @@ export function AICard({ title, body, onAsk }: { title: string; body: string; on
   );
 }
 export function AIBanner({ hint, cta = 'Resumir', onPress }: { hint: string; cta?: string; onPress?: () => void }) {
+  const { cor, st: s } = useTemaEstilos(criarS);
   return (
     <Pressable onPress={onPress} style={s.aiBanner}>
       <View style={s.aiBannerIcon}><Icon name="spark" size={15} color={cor.white} /></View>
@@ -251,11 +276,12 @@ export function AIBanner({ hint, cta = 'Resumir', onPress }: { hint: string; cta
 
 /* ── Botão Seguir (toggle) ─────────────────────────────────────────────── */
 export function FollowButton() {
+  const { cor, st: s } = useTemaEstilos(criarS);
   const [f, setF] = React.useState(false);
   return (
     <Pressable onPress={() => setF((v) => !v)} style={[s.cta, { flex: 1, backgroundColor: f ? cor.light : cor.navy, borderWidth: f ? 1 : 0, borderColor: cor.borderStrong }]}>
-      <Icon name={f ? 'check' : 'plus'} size={15} color={f ? cor.navy : cor.white} stroke={2.4} />
-      <Text style={[s.ctaTxt, { color: f ? cor.navy : cor.white }]}>{f ? 'Seguindo' : 'Seguir'}</Text>
+      <Icon name={f ? 'check' : 'plus'} size={15} color={f ? cor.texto : cor.white} stroke={2.4} />
+      <Text style={[s.ctaTxt, { color: f ? cor.texto : cor.white }]}>{f ? 'Seguindo' : 'Seguir'}</Text>
     </Pressable>
   );
 }
@@ -263,11 +289,12 @@ export function FollowButton() {
 /* ── Bottom nav (shell) — 5 abas do protótipo, com IA central ──────────── */
 type NavId = 'feed' | 'explorar' | 'prometeus' | 'interesses' | 'calendario';
 export function BottomNav({ active = 'explorar' }: { active?: NavId }) {
+  const { cor, st: s } = useTemaEstilos(criarS);
   const router = useRouter();
   // Destino por aba; null = ainda não construída (inerte por ora).
   const cel = (id: NavId, icon: IconName, label: string, destino: Href | null) => {
     const sel = id === active;
-    const cl = sel ? cor.navy : cor.mutedSoft;
+    const cl = sel ? cor.texto : cor.mutedSoft;
     return (
       <Pressable key={id} style={s.navCell} disabled={!destino || sel}
         onPress={() => { if (destino) router.push(destino); }}>
@@ -293,6 +320,7 @@ export function BottomNav({ active = 'explorar' }: { active?: NavId }) {
 export function Donut({ data, w = 130, valueLabel, sub }: {
   data: { valor: number; cor: string }[]; w?: number; valueLabel: string; sub?: string;
 }) {
+  const cor = useTema();
   const total = data.reduce((s2, d) => s2 + d.valor, 0) || 1;
   const r = w / 2 - 14, cx = w / 2, cy = w / 2, strokeW = 22;
   const C = 2 * Math.PI * r;
@@ -310,15 +338,17 @@ export function Donut({ data, w = 130, valueLabel, sub }: {
             transform={`rotate(-90 ${cx} ${cy})`} />
         );
       })}
-      <SvgText x={cx} y={cy + 3} textAnchor="middle" fontFamily="Inter_800ExtraBold" fontSize="18" fill={cor.navy}>{valueLabel}</SvgText>
+      <SvgText x={cx} y={cy + 3} textAnchor="middle" fontFamily="Inter_800ExtraBold" fontSize="18" fill={cor.texto}>{valueLabel}</SvgText>
       {sub ? <SvgText x={cx} y={cy + 16} textAnchor="middle" fontFamily="Inter_600SemiBold" fontSize="9" fill={cor.muted}>{sub}</SvgText> : null}
     </Svg>
   );
 }
 
-export function LineChart({ data, labels, w = 320, h = 120, accent = cor.sky, min, max }: {
+export function LineChart({ data, labels, w = 320, h = 120, accent, min, max }: {
   data: number[]; labels?: string[]; w?: number; h?: number; accent?: string; min?: number; max?: number;
 }) {
+  const cor = useTema();
+  const ac = accent ?? cor.sky;
   const _min = min ?? Math.min(...data), _max = max ?? Math.max(...data);
   const pad = { l: 8, r: 8, t: 14, b: 18 };
   const iW = w - pad.l - pad.r, iH = h - pad.t - pad.b;
@@ -329,24 +359,26 @@ export function LineChart({ data, labels, w = 320, h = 120, accent = cor.sky, mi
     <Svg width={w} height={h}>
       <Defs>
         <SvgGrad id="lineFill" x1="0" x2="0" y1="0" y2="1">
-          <Stop offset="0%" stopColor={accent} stopOpacity={0.22} />
-          <Stop offset="100%" stopColor={accent} stopOpacity={0} />
+          <Stop offset="0%" stopColor={ac} stopOpacity={0.22} />
+          <Stop offset="100%" stopColor={ac} stopOpacity={0} />
         </SvgGrad>
       </Defs>
       {[0, 0.5, 1].map((g, i) => (
         <Line key={i} x1={pad.l} x2={w - pad.r} y1={pad.t + iH * g} y2={pad.t + iH * g} stroke={cor.border} strokeDasharray={g === 0 ? undefined : '2 3'} />
       ))}
       <Path d={dArea} fill="url(#lineFill)" />
-      <Path d={d} fill="none" stroke={accent} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-      {pts.map((pt, i) => (i % 2 === 0 ? <Circle key={i} cx={pt[0]} cy={pt[1]} r={2.5} fill={accent} /> : null))}
+      <Path d={d} fill="none" stroke={ac} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+      {pts.map((pt, i) => (i % 2 === 0 ? <Circle key={i} cx={pt[0]} cy={pt[1]} r={2.5} fill={ac} /> : null))}
       {labels?.map((l, i) => <SvgText key={'l' + i} x={pts[i][0]} y={h - 4} textAnchor="middle" fontSize="9" fill={cor.muted} fontFamily="Inter_600SemiBold">{l}</SvgText>)}
     </Svg>
   );
 }
 
-export function BarChart({ data, labels, w = 320, h = 120, accent = cor.navy, max }: {
+export function BarChart({ data, labels, w = 320, h = 120, accent, max }: {
   data: number[]; labels?: string[]; w?: number; h?: number; accent?: string; max?: number;
 }) {
+  const cor = useTema();
+  const ac = accent ?? cor.navy;
   const m = max ?? Math.max(...data);
   const pad = { l: 8, r: 8, t: 8, b: 18 };
   const iW = w - pad.l - pad.r, iH = h - pad.t - pad.b;
@@ -361,7 +393,7 @@ export function BarChart({ data, labels, w = 320, h = 120, accent = cor.navy, ma
         const bh = (v / m) * iH;
         return (
           <G key={i}>
-            <Rect x={x} y={pad.t + iH - bh} width={bw} height={bh} rx={3} fill={accent} />
+            <Rect x={x} y={pad.t + iH - bh} width={bw} height={bh} rx={3} fill={ac} />
             {labels?.[i] ? <SvgText x={x + bw / 2} y={h - 4} textAnchor="middle" fontSize="9.5" fill={cor.muted} fontFamily="Inter_600SemiBold">{labels[i]}</SvgText> : null}
           </G>
         );
@@ -370,29 +402,29 @@ export function BarChart({ data, labels, w = 320, h = 120, accent = cor.navy, ma
   );
 }
 
-const s = StyleSheet.create({
-  partyChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.border },
-  partyChipTxt: { fontSize: 10.5, fontFamily: fonte.sb, color: cor.navy, letterSpacing: 0.2 },
+const criarS = (cor: Tema) => StyleSheet.create({
+  partyChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 9999, backgroundColor: cor.cartao, borderWidth: 1, borderColor: cor.border },
+  partyChipTxt: { fontSize: 10.5, fontFamily: fonte.sb, color: cor.texto, letterSpacing: 0.2 },
   partyChipUf: { fontSize: 10.5, fontFamily: fonte.m, color: cor.muted },
   tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9999, alignSelf: 'flex-start' },
   tagTxt: { fontSize: 10.5, fontFamily: fonte.sb, letterSpacing: 0.5, textTransform: 'uppercase' },
-  statValue: { fontFamily: fonte.xb, fontSize: 20, color: cor.navy, letterSpacing: -0.2 },
+  statValue: { fontFamily: fonte.xb, fontSize: 20, color: cor.texto, letterSpacing: -0.2 },
   statLabel: { marginTop: 4, fontFamily: fonte.b, fontSize: 9.5, color: cor.muted, letterSpacing: 1, textTransform: 'uppercase' },
   statSub: { marginTop: 3, fontSize: 10.5, fontFamily: fonte.sb },
-  card: { backgroundColor: cor.white, borderRadius: raio.card, borderWidth: 1, borderColor: cor.border },
+  card: { backgroundColor: cor.cartao, borderRadius: raio.card, borderWidth: 1, borderColor: cor.border },
   secHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 10, paddingLeft: 2 },
   secHeadTitle: { fontFamily: fonte.b, fontSize: 11, color: cor.muted, letterSpacing: 1.4, textTransform: 'uppercase' },
   secHeadSub: { marginTop: 3, fontSize: 12, color: cor.muted },
   aiPill: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 9999, borderWidth: 1, borderColor: cor.borderStrong, backgroundColor: cor.light },
-  aiPillTxt: { fontFamily: fonte.sb, fontSize: 12.5, color: cor.navy },
+  aiPillTxt: { fontFamily: fonte.sb, fontSize: 12.5, color: cor.texto },
   aiCard: { borderRadius: raio.card, padding: 14, borderWidth: 1, borderColor: cor.border },
   aiCardBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
-  aiCardTitle: { fontFamily: fonte.b, fontSize: 11, color: cor.navy, letterSpacing: 1.4, textTransform: 'uppercase' },
+  aiCardTitle: { fontFamily: fonte.b, fontSize: 11, color: cor.texto, letterSpacing: 1.4, textTransform: 'uppercase' },
   aiCardBody: { fontSize: 13.5, lineHeight: 21, color: cor.ink },
   aiCardBtnPrim: { flex: 1, flexDirection: 'row', gap: 6, paddingVertical: 8, borderRadius: 9999, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
   aiCardBtnPrimTxt: { color: cor.white, fontFamily: fonte.sb, fontSize: 12 },
   aiCardBtnGhost: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 9999, borderWidth: 1, borderColor: cor.borderStrong },
-  aiCardBtnGhostTxt: { color: cor.navy, fontFamily: fonte.sb, fontSize: 12 },
+  aiCardBtnGhostTxt: { color: cor.texto, fontFamily: fonte.sb, fontSize: 12 },
   aiBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: raio.card, backgroundColor: cor.navy },
   aiBannerIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   aiBannerHint: { flex: 1, color: cor.white, fontSize: 13, fontFamily: fonte.m, lineHeight: 17 },
@@ -400,7 +432,7 @@ const s = StyleSheet.create({
   aiBannerCtaTxt: { color: cor.white, fontFamily: fonte.sb, fontSize: 11.5, letterSpacing: 0.4 },
   cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 12, borderRadius: 9999 },
   ctaTxt: { fontFamily: fonte.b, fontSize: 12.5 },
-  nav5: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: cor.white, borderTopWidth: 1, borderTopColor: cor.border, paddingTop: 8, paddingBottom: 20, paddingHorizontal: 4 },
+  nav5: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: cor.cartao, borderTopWidth: 1, borderTopColor: cor.border, paddingTop: 8, paddingBottom: 20, paddingHorizontal: 4 },
   navCell: { flex: 1, alignItems: 'center', gap: 3 },
   navCellTxt: { fontSize: 10.5, fontFamily: fonte.sb },
   navCenter: { width: 52, height: 52, borderRadius: 26, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center', marginTop: -18 },

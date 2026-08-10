@@ -1,6 +1,7 @@
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { cor, raio, fonte } from '../../lib/tema';
+import { raio, fonte, type Tema } from '../../lib/tema';
+import { useTemaEstilos } from '../../lib/theme';
 import { Icon, SectionHeader, BottomNav, type IconName } from '../../components/base';
 
 const SUGESTOES: { t: string; icon: IconName }[] = [
@@ -11,6 +12,7 @@ const SUGESTOES: { t: string; icon: IconName }[] = [
 ];
 
 export default function PrometeusLista() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
   const abrir = (prompt?: string) =>
     router.push({ pathname: '/prometeus/chat', params: prompt ? { prompt } : {} });
@@ -37,7 +39,7 @@ export default function PrometeusLista() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
           {SUGESTOES.map((s) => (
             <Pressable key={s.t} onPress={() => abrir(s.t)} style={st.sugCard}>
-              <View style={st.sugIcon}><Icon name={s.icon} size={14} color={cor.navy} /></View>
+              <View style={st.sugIcon}><Icon name={s.icon} size={14} color={cor.texto} /></View>
               <Text style={st.sugTxt}>{s.t}</Text>
             </Pressable>
           ))}
@@ -47,7 +49,7 @@ export default function PrometeusLista() {
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
           <SectionHeader title="Conversas" sub="O histórico chega junto do agente" />
           <View style={st.empty}>
-            <View style={st.emptyIcon}><Icon name="spark" size={20} color={cor.navy} /></View>
+            <View style={st.emptyIcon}><Icon name="spark" size={20} color={cor.texto} /></View>
             <Text style={st.emptyTit}>Nenhuma conversa ainda</Text>
             <Text style={st.emptyTxt}>Toque em uma sugestão ou no + para começar. O Prometeus responde com dados reais do banco — sempre com fonte.</Text>
           </View>
@@ -59,17 +61,17 @@ export default function PrometeusLista() {
   );
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'flex-end', gap: 12, paddingHorizontal: 16, paddingTop: 14 },
   badge: { width: 30, height: 30, borderRadius: 9999, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
-  titulo: { fontFamily: fonte.xb, fontSize: 24, color: cor.navy, letterSpacing: -0.5 },
+  titulo: { fontFamily: fonte.xb, fontSize: 24, color: cor.texto, letterSpacing: -0.5 },
   sub: { marginTop: 8, fontFamily: fonte.m, fontSize: 12, color: cor.muted },
   novo: { width: 38, height: 38, borderRadius: 9999, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
-  sugCard: { width: 172, padding: 14, borderRadius: raio.card, backgroundColor: cor.white, borderWidth: 1, borderColor: cor.border, gap: 8 },
+  sugCard: { width: 172, padding: 14, borderRadius: raio.card, backgroundColor: cor.cartao, borderWidth: 1, borderColor: cor.border, gap: 8 },
   sugIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: cor.light, alignItems: 'center', justifyContent: 'center' },
-  sugTxt: { fontFamily: fonte.sb, fontSize: 12.5, color: cor.navy, lineHeight: 17 },
+  sugTxt: { fontFamily: fonte.sb, fontSize: 12.5, color: cor.texto, lineHeight: 17 },
   empty: { alignItems: 'center', paddingVertical: 26, paddingHorizontal: 16 },
   emptyIcon: { width: 46, height: 46, borderRadius: 9999, backgroundColor: cor.light, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  emptyTit: { fontFamily: fonte.b, fontSize: 14.5, color: cor.navy },
+  emptyTit: { fontFamily: fonte.b, fontSize: 14.5, color: cor.texto },
   emptyTxt: { marginTop: 6, fontFamily: fonte.r, fontSize: 12.5, color: cor.muted, textAlign: 'center', lineHeight: 18, maxWidth: 300 },
 });

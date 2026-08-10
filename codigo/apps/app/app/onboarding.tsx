@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, Animated, Easing, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../lib/auth';
-import { cor, raio, fonte } from '../lib/tema';
+import { raio, fonte, type Tema } from '../lib/tema';
+import { useTemaEstilos } from '../lib/theme';
 import { Logo, Icon } from '../components/base';
 
 const TEMAS = [
@@ -15,6 +16,7 @@ type Step = 'intro' | 'temas' | 'partidos' | 'sobre' | 'montando';
 const ORDEM: Step[] = ['intro', 'temas', 'partidos', 'sobre', 'montando'];
 
 export default function Onboarding() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
   const { concluirOnboarding } = useAuth();
   const [step, setStep] = useState<Step>('intro');
@@ -63,7 +65,7 @@ export default function Onboarding() {
         </Text>
         <Pressable onPress={avancar} style={st.introCta}>
           <Text style={st.introCtaTxt}>Começar</Text>
-          <Icon name="chevR" size={18} color={cor.navy} />
+          <Icon name="chevR" size={18} color={cor.texto} />
         </Pressable>
         <Text style={st.introNota}>Seus dados ficam privados e podem ser alterados depois.</Text>
       </View>
@@ -77,7 +79,7 @@ export default function Onboarding() {
       {/* barra de progresso */}
       <View style={st.topo}>
         <Pressable onPress={voltar} hitSlop={8} style={{ padding: 6, marginLeft: -6 }}>
-          <Icon name="back" size={22} color={cor.navy} />
+          <Icon name="back" size={22} color={cor.texto} />
         </Pressable>
         <View style={st.progBase}><View style={[st.progFill, { width: `${progresso * 100}%` }]} /></View>
         <Text style={st.progTxt}>{idx}/{ORDEM.length - 2}</Text>
@@ -172,6 +174,7 @@ export default function Onboarding() {
 }
 
 function Montando() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const rot = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(Animated.timing(rot, { toValue: 1, duration: 1100, easing: Easing.linear, useNativeDriver: true })).start();
@@ -187,16 +190,25 @@ function Montando() {
   );
 }
 
-const Kicker = ({ children }: { children: string }) => <Text style={st.kicker}>{children}</Text>;
-const Titulo = ({ children }: { children: string }) => <Text style={st.titulo}>{children}</Text>;
-const Sub = ({ children }: { children: string }) => <Text style={st.subtitulo}>{children}</Text>;
+const Kicker = ({ children }: { children: string }) => {
+  const { st } = useTemaEstilos(criarSt);
+  return <Text style={st.kicker}>{children}</Text>;
+};
+const Titulo = ({ children }: { children: string }) => {
+  const { st } = useTemaEstilos(criarSt);
+  return <Text style={st.titulo}>{children}</Text>;
+};
+const Sub = ({ children }: { children: string }) => {
+  const { st } = useTemaEstilos(criarSt);
+  return <Text style={st.subtitulo}>{children}</Text>;
+};
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   intro: { flex: 1, justifyContent: 'center', paddingHorizontal: 28, backgroundColor: cor.navy },
   introH1: { fontSize: 30, fontFamily: fonte.xb, color: cor.white, lineHeight: 36, letterSpacing: -0.5 },
   introP: { marginTop: 16, fontSize: 15, color: 'rgba(255,255,255,0.75)', lineHeight: 23 },
-  introCta: { marginTop: 34, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: cor.white, paddingVertical: 15, borderRadius: 9999 },
-  introCtaTxt: { fontFamily: fonte.b, fontSize: 15, color: cor.navy },
+  introCta: { marginTop: 34, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: cor.cartao, paddingVertical: 15, borderRadius: 9999 },
+  introCtaTxt: { fontFamily: fonte.b, fontSize: 15, color: cor.texto },
   introNota: { marginTop: 14, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.5)' },
 
   topo: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 10 },
@@ -205,14 +217,14 @@ const st = StyleSheet.create({
   progTxt: { fontFamily: fonte.b, fontSize: 11.5, color: cor.muted, width: 34, textAlign: 'right' },
 
   kicker: { fontFamily: fonte.b, fontSize: 10.5, color: cor.sky, letterSpacing: 1.6 },
-  titulo: { marginTop: 8, fontSize: 23, fontFamily: fonte.xb, color: cor.navy, letterSpacing: -0.4, lineHeight: 28 },
+  titulo: { marginTop: 8, fontSize: 23, fontFamily: fonte.xb, color: cor.texto, letterSpacing: -0.4, lineHeight: 28 },
   subtitulo: { marginTop: 8, fontSize: 13.5, color: cor.muted, lineHeight: 20 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 16 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 9999, backgroundColor: cor.white, borderWidth: 1.5, borderColor: cor.border },
-  chipTxt: { fontFamily: fonte.sb, fontSize: 13.5, color: cor.navy },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 9999, backgroundColor: cor.cartao, borderWidth: 1.5, borderColor: cor.border },
+  chipTxt: { fontFamily: fonte.sb, fontSize: 13.5, color: cor.texto },
 
   campoLabel: { marginTop: 20, fontFamily: fonte.b, fontSize: 10.5, color: cor.muted, letterSpacing: 1.4, textTransform: 'uppercase' },
-  campo: { marginTop: 8, backgroundColor: cor.white, borderRadius: raio.input, borderWidth: 1.5, borderColor: cor.border, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: cor.navy, fontFamily: fonte.m },
+  campo: { marginTop: 8, backgroundColor: cor.cartao, borderRadius: raio.input, borderWidth: 1.5, borderColor: cor.border, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: cor.texto, fontFamily: fonte.m },
 
   rodape: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 10, alignItems: 'center', paddingHorizontal: 24, paddingTop: 12, paddingBottom: 28, backgroundColor: cor.surface, borderTopWidth: 1, borderTopColor: cor.border },
   pular: { paddingVertical: 14, paddingHorizontal: 18 },

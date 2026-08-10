@@ -115,6 +115,9 @@ filtrável, Splash, Login (e-mail OTP + gate de sessão), Onboarding (gate por e
 Configurações (+ logout), Editar perfil (opt-in LGPD), Interesses, Prometeus (lista +
 chat, com placeholder honesto), **Feed v1** (destaques de dinheiro reais), **Calendário**
 (agenda real). BottomNav 100% navegável. Fonte Inter + logo do protótipo.
+**Modo escuro:** sistema de tema claro/escuro (`lib/theme.tsx` + `lib/tema.ts`, tokens
+semânticos `texto`/`cartao`), todas as telas + `base.tsx` migradas, toggle
+Automático/Claro/Escuro em Configurações (persiste em AsyncStorage). Verificado em runtime.
 
 **A fazer / refinar:**
 - 🟡 — **Header custom (AqHeader)** — telas internas usam o header nativo do

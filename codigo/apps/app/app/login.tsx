@@ -5,12 +5,14 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../lib/auth';
-import { cor, raio, fonte } from '../lib/tema';
+import { raio, fonte, type Tema } from '../lib/tema';
+import { useTemaEstilos } from '../lib/theme';
 import { Logo } from '../components/base';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Login() {
+  const { cor, st } = useTemaEstilos(criarSt);
   const { enviarCodigo, verificarCodigo } = useAuth();
   const [step, setStep] = useState<0 | 1>(0);
   const [email, setEmail] = useState('');
@@ -162,17 +164,17 @@ function traduzErro(msg?: string): string {
   return 'Não deu para completar agora. Tente novamente.';
 }
 
-const st = StyleSheet.create({
+const criarSt = (cor: Tema) => StyleSheet.create({
   bg: { flex: 1, backgroundColor: cor.light },
   onda: { position: 'absolute', top: 62, right: -30, opacity: 0.55 },
   conteudo: { flex: 1, paddingHorizontal: 28, paddingTop: 84, paddingBottom: 32 },
-  h1: { marginTop: 42, marginBottom: 8, fontSize: 26, fontFamily: fonte.xb, color: cor.navy, letterSpacing: -0.5, lineHeight: 31 },
+  h1: { marginTop: 42, marginBottom: 8, fontSize: 26, fontFamily: fonte.xb, color: cor.texto, letterSpacing: -0.5, lineHeight: 31 },
   p: { fontSize: 14, lineHeight: 22, color: cor.muted, maxWidth: 320 },
-  forte: { color: cor.navy, fontFamily: fonte.b },
+  forte: { color: cor.texto, fontFamily: fonte.b },
   label: { fontFamily: fonte.b, fontSize: 10.5, color: cor.muted, letterSpacing: 1.6, textTransform: 'uppercase' },
   input: {
-    marginTop: 8, backgroundColor: cor.white, borderRadius: raio.input, borderWidth: 1.5, borderColor: cor.border,
-    paddingHorizontal: 14, paddingVertical: 14, fontSize: 16, color: cor.navy, fontFamily: fonte.m,
+    marginTop: 8, backgroundColor: cor.cartao, borderRadius: raio.input, borderWidth: 1.5, borderColor: cor.border,
+    paddingHorizontal: 14, paddingVertical: 14, fontSize: 16, color: cor.texto, fontFamily: fonte.m,
   },
   cta: { marginTop: 14, paddingVertical: 15, borderRadius: 9999, backgroundColor: cor.navy, alignItems: 'center', justifyContent: 'center' },
   ctaTxt: { color: cor.white, fontFamily: fonte.b, fontSize: 14, letterSpacing: 0.3 },
@@ -183,7 +185,7 @@ const st = StyleSheet.create({
   otpRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   otpBox: {
     flex: 1, height: 54, borderRadius: raio.input, textAlign: 'center', borderWidth: 1.5, borderColor: cor.border,
-    backgroundColor: cor.white, fontFamily: fonte.xb, fontSize: 22, color: cor.navy,
+    backgroundColor: cor.cartao, fontFamily: fonte.xb, fontSize: 22, color: cor.texto,
   },
   linkBtn: { marginTop: 14, paddingVertical: 4, alignItems: 'center' },
   linkBtnTxt: { fontFamily: fonte.sb, fontSize: 12.5, color: cor.sky },
