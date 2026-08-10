@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, Animated, Easing, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../lib/auth';
+import { useFollows } from '../lib/follows';
 import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
 import { Logo, Icon } from '../components/base';
@@ -19,6 +20,7 @@ export default function Onboarding() {
   const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
   const { concluirOnboarding } = useAuth();
+  const { seguir } = useFollows();
   const [step, setStep] = useState<Step>('intro');
   const [temas, setTemas] = useState<string[]>([]);
   const [partidos, setPartidos] = useState<string[]>([]);
@@ -33,11 +35,16 @@ export default function Onboarding() {
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   const concluir = async () => {
-    // Marca onboarded no perfil (server-side). Em sucesso, o GATE leva ao app
-    // quando onboarded=true propaga (evita corrida com um replace prematuro).
-    // Em falha de rede, faz replace como fallback para não travar no spinner.
+    // Persiste os interesses como FOLLOWS (fonte única) e marca onboarded no
+    // perfil (só os dados opt-in vão para prefs). Em sucesso, o GATE leva ao app
+    // quando onboarded=true propaga. Em falha de rede, faz replace como fallback.
     try {
-      await concluirOnboarding({ temas, partidos, cep, idade, genero });
+      const novos = [
+        ...temas.map((t) => ({ tipo: 'tema' as const, ref_id: t, rotulo: t })),
+        ...partidos.map((p) => ({ tipo: 'partido' as const, ref_id: p, rotulo: p })),
+      ];
+      await Promise.all(novos.map((f) => seguir(f).catch(() => {})));
+      await concluirOnboarding({ cep, idade, genero, migradoFollows: true });
     } catch {
       router.replace('/');
     }

@@ -20,6 +20,8 @@ export interface Prefs {
   renda?: string;
   ocupacao?: string;
   nome?: string;
+  /** Marca a migração única de temas/partidos (antigos) para a tabela `follows`. */
+  migradoFollows?: boolean;
 }
 
 interface AuthCtx {

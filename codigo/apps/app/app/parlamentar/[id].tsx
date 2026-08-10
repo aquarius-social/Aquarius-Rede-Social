@@ -122,7 +122,8 @@ export default function PerfilParlamentar() {
             </View>
 
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-              <FollowButton />
+              <FollowButton tipo="parlamentar" refId={p.id} rotulo={p.nome}
+                meta={{ sigla: p.partido_sigla_atual, uf: p.uf_atual }} />
               <Pressable style={st.ctaGhost}>
                 <Icon name="spark" size={15} color={cor.texto} />
                 <Text style={st.ctaGhostTxt}>Perguntar à IA</Text>

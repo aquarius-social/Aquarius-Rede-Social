@@ -5,7 +5,7 @@ import { obterFrente, type Frente } from '../../lib/dados';
 import { frescor } from '../../lib/formato';
 import { raio, fonte, type Tema } from '../../lib/tema';
 import { useTemaEstilos } from '../../lib/theme';
-import { Cover, Tag, Card, SectionHeader, Divider, Icon } from '../../components/base';
+import { Cover, Tag, Card, SectionHeader, Divider, Icon, FollowButton } from '../../components/base';
 
 // Composição e atividade da frente dependem de dados ainda NÃO ingeridos.
 const PENDENTES = [
@@ -47,6 +47,9 @@ export default function FrenteScreen() {
             </View>
             <Text style={st.nome}>{f.nome}</Text>
             <Text style={st.fonte}>Fonte: {f.source} · {frescor(f.synced_at)}</Text>
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <FollowButton tipo="frente" refId={f.id} rotulo={f.nome} />
+            </View>
           </View>
         </View>
 

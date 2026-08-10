@@ -10,7 +10,7 @@ import { raio, fonte, type Tema } from '../../lib/tema';
 import { useTemaEstilos } from '../../lib/theme';
 import {
   Cover, Monogram, Avatar, PartyChip, Tag, SituacaoBadge, Stat, Card, SectionHeader, Divider,
-  AlignmentBar, AIPill, AICard, BottomNav, Icon,
+  AlignmentBar, AIPill, AICard, BottomNav, Icon, FollowButton,
 } from '../../components/base';
 import {
   PARTIDO_KPI_PLACEHOLDER, PARTIDO_COESAO, PARTIDO_LIDERANCAS, PROPOSICOES,
@@ -85,6 +85,9 @@ export default function PartidoScreen() {
               <Stat value={kbr(emd?.totalPago ?? 0)} label="Emendas pagas" tone="pos" />
             </View>
 
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <FollowButton tipo="partido" refId={pt.sigla_atual} rotulo={pt.sigla_atual} meta={{ nome: pt.nome_atual }} />
+            </View>
             <Pressable style={[st.cta, { backgroundColor: cor.navy }]}>
               <Icon name="spark" size={16} color={cor.white} />
               <Text style={st.ctaTxt}>Perguntar ao Prometeus sobre o {pt.sigla_atual}</Text>

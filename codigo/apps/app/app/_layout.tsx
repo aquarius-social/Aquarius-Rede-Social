@@ -13,6 +13,7 @@ import {
 import { fonte } from '../lib/tema';
 import { TemaProvider, useTema, useTemaCtrl } from '../lib/theme';
 import { AuthProvider, useAuth } from '../lib/auth';
+import { FollowsProvider } from '../lib/follows';
 import { Splash } from '../components/splash';
 import { AqHeaderNav } from '../components/header';
 
@@ -52,8 +53,10 @@ export default function RootLayout() {
         <Splash />
       ) : (
         <AuthProvider>
-          <BarraStatus />
-          <Gate />
+          <FollowsProvider>
+            <BarraStatus />
+            <Gate />
+          </FollowsProvider>
         </AuthProvider>
       )}
     </TemaProvider>

@@ -5,7 +5,7 @@ import { obterComissao, type Comissao } from '../../lib/dados';
 import { frescor } from '../../lib/formato';
 import { raio, fonte, type Tema } from '../../lib/tema';
 import { useTemaEstilos } from '../../lib/theme';
-import { Cover, Monogram, Tag, Card, SectionHeader, Divider, Icon } from '../../components/base';
+import { Cover, Monogram, Tag, Card, SectionHeader, Divider, Icon, FollowButton } from '../../components/base';
 
 // Seções do protótipo (mesa/membros/agenda/votações) que dependem de dados ainda
 // NÃO ingeridos (⛔Pro/⛔fonte). Mostradas rotuladas, sem inventar conteúdo.
@@ -51,6 +51,9 @@ export default function ComissaoScreen() {
             </View>
             <Text style={st.nome}>{c.nome}</Text>
             <Text style={st.fonte}>Fonte: {c.source} · {frescor(c.synced_at)}</Text>
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <FollowButton tipo="comissao" refId={c.id} rotulo={c.sigla ?? c.nome} meta={{ nome: c.nome }} />
+            </View>
           </View>
         </View>
 

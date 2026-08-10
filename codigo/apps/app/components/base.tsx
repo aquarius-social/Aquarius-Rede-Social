@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle, Polygon, Line, Rect, G, Text as SvgText, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { raio, fonte, gradienteAvatar, iniciais, shade, type Tema } from '../lib/tema';
 import { useTema, useTemaEstilos } from '../lib/theme';
+import { useFollows, type TipoFollow } from '../lib/follows';
 import { PARTIDO_COR } from '../lib/mock';
 
 /* ── Ícones (subconjunto usado no perfil), 24×24, stroke 2 ─────────────── */
@@ -274,12 +275,19 @@ export function AIBanner({ hint, cta = 'Resumir', onPress }: { hint: string; cta
   );
 }
 
-/* ── Botão Seguir (toggle) ─────────────────────────────────────────────── */
-export function FollowButton() {
+/* ── Botão Seguir (persistido via useFollows) ──────────────────────────── */
+export function FollowButton({ tipo, refId, rotulo, meta }: {
+  tipo: TipoFollow; refId: string; rotulo?: string; meta?: Record<string, unknown>;
+}) {
   const { cor, st: s } = useTemaEstilos(criarS);
-  const [f, setF] = React.useState(false);
+  const { estaSeguindo, seguir, deixarDeSeguir } = useFollows();
+  const f = estaSeguindo(tipo, refId);
+  const onPress = () => {
+    if (f) deixarDeSeguir(tipo, refId);
+    else seguir({ tipo, ref_id: refId, rotulo, meta });
+  };
   return (
-    <Pressable onPress={() => setF((v) => !v)} style={[s.cta, { flex: 1, backgroundColor: f ? cor.light : cor.navy, borderWidth: f ? 1 : 0, borderColor: cor.borderStrong }]}>
+    <Pressable onPress={onPress} style={[s.cta, { flex: 1, backgroundColor: f ? cor.light : cor.navy, borderWidth: f ? 1 : 0, borderColor: cor.borderStrong }]}>
       <Icon name={f ? 'check' : 'plus'} size={15} color={f ? cor.texto : cor.white} stroke={2.4} />
       <Text style={[s.ctaTxt, { color: f ? cor.texto : cor.white }]}>{f ? 'Seguindo' : 'Seguir'}</Text>
     </Pressable>
