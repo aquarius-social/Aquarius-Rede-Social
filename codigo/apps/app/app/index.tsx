@@ -5,7 +5,8 @@ import { contagens, type Contagens } from '../lib/dados';
 import { useAuth } from '../lib/auth';
 import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
-import { Avatar, Icon, BottomNav, Logo } from '../components/base';
+import { Icon, BottomNav } from '../components/base';
+import { AqHeader } from '../components/header';
 
 type IconeEnt = 'users' | 'flag' | 'building' | 'star' | 'doc';
 
@@ -43,21 +44,13 @@ export default function Explorar() {
   const [c, setC] = useState<Contagens | null>(null);
   useEffect(() => { contagens().then(setC).catch(() => {}); }, []);
 
-  const nome = prefs.nome || session?.user?.email?.split('@')[0] || 'Você';
-
   // Data corrente no eyebrow (masthead), como no protótipo "57ª LEGISLATURA · 23 MAI 2026".
   const hoje = new Date();
   const dataHoje = `${hoje.getDate()} ${MESES[hoje.getMonth()]} ${hoje.getFullYear()}`;
 
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
-      {/* Header */}
-      <View style={st.header}>
-        <Logo height={22} />
-        <Pressable onPress={() => router.push('/configuracoes')} hitSlop={8}>
-          <Avatar nome={nome} size={32} />
-        </Pressable>
-      </View>
+      <AqHeader variant="home" />
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}>
         <Text style={st.eyebrow}>57ª LEGISLATURA · {dataHoje}</Text>

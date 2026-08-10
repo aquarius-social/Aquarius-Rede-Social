@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { raio, fonte, type Tema } from '../../lib/tema';
 import { useTemaEstilos } from '../../lib/theme';
 import { Icon, SectionHeader, BottomNav, type IconName } from '../../components/base';
+import { AqHeader } from '../../components/header';
 
 const SUGESTOES: { t: string; icon: IconName }[] = [
   { t: 'Como votou meu deputado em 2025?', icon: 'doc' },
@@ -19,6 +20,7 @@ export default function PrometeusLista() {
 
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
+      <AqHeader variant="home" />
       <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
         {/* Cabeçalho */}
         <View style={st.head}>

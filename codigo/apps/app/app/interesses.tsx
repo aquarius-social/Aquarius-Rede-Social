@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
 import { Icon, Card, SectionHeader, Divider, Monogram, BottomNav } from '../components/base';
+import { AqHeader } from '../components/header';
 import { PARTIDO_COR } from '../lib/mock';
 import { TEMAS, PARTIDOS } from '../lib/catalogos';
 
@@ -26,6 +27,7 @@ export default function Interesses() {
 
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
+      <AqHeader variant="home" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100 }}>
         <Text style={st.h1}>Interesses</Text>
         <Text style={st.sub}>Seus temas e partidos guiam o feed. Ajuste quando quiser.</Text>

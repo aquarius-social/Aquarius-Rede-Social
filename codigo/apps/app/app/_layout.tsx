@@ -14,6 +14,7 @@ import { fonte } from '../lib/tema';
 import { TemaProvider, useTema, useTemaCtrl } from '../lib/theme';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { Splash } from '../components/splash';
+import { AqHeaderNav } from '../components/header';
 
 // Default global de fonte: prefixa Inter Regular no estilo de TODO <Text>, de
 // modo que o texto de corpo (sem peso) use Inter, mas estilos com fontFamily
@@ -93,9 +94,7 @@ function Gate() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: cor.surface },
-        headerTintColor: cor.texto,
-        headerTitleStyle: { fontFamily: 'Inter_800ExtraBold', color: cor.texto },
+        header: (props) => <AqHeaderNav options={props.options} route={props.route} navigation={props.navigation} />,
         contentStyle: { backgroundColor: cor.surface },
       }}
     >

@@ -6,7 +6,8 @@ import { useAuth } from '../lib/auth';
 import { reais, frescor, URL_EMENDAS_CONSULTA } from '../lib/formato';
 import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
-import { Logo, Avatar, Icon, PartyChip, Tag, BottomNav } from '../components/base';
+import { Avatar, Icon, PartyChip, Tag, BottomNav } from '../components/base';
+import { AqHeader } from '../components/header';
 
 type Aba = 'voce' | 'seguindo';
 
@@ -19,21 +20,9 @@ export default function Feed() {
 
   useEffect(() => { destaquesFeed().then(setPosts).catch(() => setPosts([])); }, []);
 
-  const nome = prefs.nome || session?.user?.email?.split('@')[0] || 'Você';
-
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
-      {/* Header */}
-      <View style={st.header}>
-        <Logo height={23} />
-        <View style={{ flex: 1 }} />
-        <Pressable style={st.bell} hitSlop={6} onPress={() => {}}>
-          <Icon name="bell" size={18} color={cor.texto} />
-        </Pressable>
-        <Pressable onPress={() => router.push('/configuracoes')} hitSlop={6}>
-          <Avatar nome={nome} size={34} />
-        </Pressable>
-      </View>
+      <AqHeader variant="home" bell />
 
       {/* Abas */}
       <View style={st.tabs}>

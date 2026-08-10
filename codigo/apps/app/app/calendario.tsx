@@ -6,7 +6,8 @@ import { useAuth } from '../lib/auth';
 import { frescor } from '../lib/formato';
 import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
-import { Logo, Avatar, Icon, Card, Tag, BottomNav } from '../components/base';
+import { Icon, Card, Tag, BottomNav } from '../components/base';
+import { AqHeader } from '../components/header';
 
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -34,8 +35,6 @@ export default function Calendario() {
 
   useEffect(() => { listarEventos().then(setEventos).catch(() => setEventos([])); }, []);
 
-  const nome = prefs.nome || session?.user?.email?.split('@')[0] || 'Você';
-
   const grupos = useMemo(() => {
     if (!eventos) return [];
     const filtrados = casa ? eventos.filter((e) => e.casa === casa) : eventos;
@@ -53,12 +52,7 @@ export default function Calendario() {
 
   return (
     <View style={{ flex: 1, backgroundColor: cor.surface }}>
-      {/* Header */}
-      <View style={st.header}>
-        <Logo height={23} />
-        <View style={{ flex: 1 }} />
-        <Pressable onPress={() => router.push('/configuracoes')} hitSlop={6}><Avatar nome={nome} size={34} /></Pressable>
-      </View>
+      <AqHeader variant="home" />
 
       <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
         <Text style={st.h1}>Calendário</Text>
