@@ -38,6 +38,12 @@ export async function emendasPorAno(anos = [2023, 2024, 2025, 2026]): Promise<{ 
   return anos.map((a, i) => ({ ano: a, total: res[i].count ?? 0 }));
 }
 
+/** Total de lançamentos de despesa (contagem real). */
+export async function despesasTotal(): Promise<number> {
+  const { count } = await supabase.from('despesa_publica').select('*', { count: 'exact', head: true });
+  return count ?? 0;
+}
+
 /** Frescor: data de sincronização mais recente vista nas emendas. */
 export async function ultimoSync(): Promise<string | null> {
   const { data } = await supabase

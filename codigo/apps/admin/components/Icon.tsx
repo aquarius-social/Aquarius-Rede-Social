@@ -3,7 +3,8 @@ import type { CSSProperties } from 'react';
 export type IconName =
   | 'grid' | 'pipe' | 'list' | 'star' | 'eye' | 'shield' | 'spark' | 'users'
   | 'trend' | 'globe' | 'flag' | 'lock' | 'gear' | 'cal' | 'download' | 'chevR'
-  | 'menu' | 'sun' | 'moon' | 'search' | 'bell' | 'check' | 'x';
+  | 'menu' | 'sun' | 'moon' | 'search' | 'bell' | 'check' | 'x'
+  | 'alert' | 'sync' | 'pause' | 'dots';
 
 const P: Record<IconName, string> = {
   grid: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
@@ -29,6 +30,10 @@ const P: Record<IconName, string> = {
   bell: 'M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0',
   check: 'M5 12l4 4 10-10',
   x: 'M6 6l12 12M18 6L6 18',
+  alert: 'M12 3 22 20H2zM12 10v4M12 17.5v.5',
+  sync: 'M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15',
+  pause: 'M8 5v14M16 5v14',
+  dots: 'M5 12h.01M12 12h.01M19 12h.01',
 };
 
 export function Icon({ name, size = 18, color = 'currentColor', stroke = 2, style }: {
