@@ -52,7 +52,7 @@ export function TemaProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }
 
-function usarCtx(): TemaCtx {
+function useTemaCtx(): TemaCtx {
   const c = useContext(Ctx);
   if (!c) throw new Error('useTema precisa de <TemaProvider>');
   return c;
@@ -60,12 +60,12 @@ function usarCtx(): TemaCtx {
 
 /** Paleta ativa. Uso mais comum nos componentes. */
 export function useTema(): Tema {
-  return usarCtx().cor;
+  return useTemaCtx().cor;
 }
 
 /** Controle do tema (modo efetivo, preferência e setters) — para o toggle. */
 export function useTemaCtrl(): Omit<TemaCtx, 'cor'> {
-  const { modo, pref, definir, alternar } = usarCtx();
+  const { modo, pref, definir, alternar } = useTemaCtx();
   return { modo, pref, definir, alternar };
 }
 

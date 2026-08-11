@@ -39,10 +39,10 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
 
-  typecheck-apps:
-    # Roda o tsc do app (Expo) e do admin (Next) na nuvem — a maquina de dev tem
-    # RAM limitada e o tsc local concorre com o Metro. Aqui roda folgado.
-    name: Type-check dos apps
+  checks-apps:
+    # Roda tsc + ESLint do app (Expo) e do admin (Next) na nuvem — a maquina de dev
+    # tem RAM limitada e o tsc local concorre com o Metro. Aqui roda folgado.
+    name: Checks dos apps (tsc + lint)
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -56,4 +56,5 @@ jobs:
         with:
           node-version: '20'
       - run: npm ci
-      - run: npx tsc --noEmit
+      - run: npm run typecheck
+      - run: npm run lint
