@@ -7,6 +7,13 @@
       "runtimeArgs": ["expo", "start", "--web", "--port", "8081", "--max-workers", "1"],
       "port": 8081,
       "cwd": "codigo/apps/app"
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3001,
+      "cwd": "codigo/apps/admin"
     }
   ]
 }

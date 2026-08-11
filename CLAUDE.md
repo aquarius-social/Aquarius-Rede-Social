@@ -36,48 +36,31 @@ Todo o código real vive aqui. Nada de código deve ser criado fora.
   e Siga Brasil), com resolução de identidade e pipeline em camadas.
 - `codigo/supabase/migrations/` — migrations SQL (0001, 0002, 0003…).
 
-### Documentos-fonte (originais do usuário, NÃO editar)
+### Contexto e referências — repositório SEPARADO `aquarius-contexto`
 
-- `Aquarius_Metodologia_de_Dados.docx` — jul/26. **Autoridade máxima sobre
-  a camada de dados** (ingestão, identidade, qualificação, contrato de
-  resposta).
-- `Aquarius_Concepcao_do_Produto.docx` — jul/26. **Autoridade máxima sobre
-  intenção de produto e arquitetura macro.**
-- `PRD_Aquarius_redesocial/` — 4 arquivos PRD_*.md (mai/26), histórico
-  do produto. Cede para os DOCX acima quando houver conflito.
+Os arquivos de **referência** (não-código) foram movidos para um repositório
+irmão, na pasta vizinha **`aquarius-contexto/`**, para manter este repo de código
+enxuto (e pavimentar deploy). Lá vivem:
 
-### Protótipo navegável (não portar, referência de UX)
+- `docs-fonte/` — **`Aquarius_Metodologia_de_Dados.docx`** (jul/26, **autoridade
+  máxima sobre a camada de dados**: ingestão, identidade, qualificação, contrato
+  de resposta) e **`Aquarius_Concepcao_do_Produto.docx`** (jul/26, **autoridade
+  máxima sobre intenção de produto e arquitetura macro**). São Word — abrir para
+  consultar; **não editar**.
+- `PRD_Aquarius_redesocial/` — 4 PRD_*.md (mai/26), histórico do produto; cede
+  para os DOCX acima quando houver conflito.
+- `prototipo/` — `Aquarius Rede Social.zip` (protótipo completo: HTML+JSX+imagens;
+  `handoff/prototype/*.jsx` = telas, `handoff/docs/*.md` = UX/dados/API/DaaS), o
+  zip do admin, e os HTMLs standalone (Homepage, Deck, `Protótipos.dc.html`).
+  **Referência de UX — não portar.**
+- `telas/` — ~33 PNGs numerados (app: `01-splash.png`…`19-editar-perfil.png`;
+  admin: `01-visao-geral.png`…`05-revisao-editorial.png`). **São screenshots
+  (imagens), não documentos `.md` numerados** — não infira nomes de vizinhos;
+  liste por ferramenta antes de descrever.
+- `marketing/` — decks (`aquarius-pitch-deck-v6.pptx` + versões) e one-pagers PDF.
 
-- `Aquarius Rede Social.zip` — pacote completo do protótipo (HTML + JSX
-  + imagens). Contém `handoff/prototype/*.jsx` que definem cada tela e
-  `handoff/docs/*.md` que documentam UX, dados, API, DaaS, ROADMAP antigo.
-- `Aquarius Rede Social Homepage (standalone).html` — landing.
-- `Aquarius Rede Social Deck (standalone).html` — pitch em slides HTML.
-- `Aquarius - Protótipos.dc.html` — protótipo de design.
-
-### Referências visuais (PNGs numerados)
-
-19 imagens de tela do app e do admin: `01-splash.png`, `02-login.png`,
-`03-onboarding.png`, `04-feed.png`, `05-explorar.png`, `06-moderacao.png`,
-`06-prometeus-lista.png`, `07-prometeus-chat.png`, `07-prometeus.png`,
-`08-interesses.png`, `08-usuarios.png`, `09-calendario.png`,
-`09-engajamento.png`, `10-audiencias-daas.png`, `10-notificacoes.png`,
-`11-feature-flags.png`, `11-perfil-parlamentar.png`, `12-auditoria-lgpd.png`,
-`12-proposicao.png`, `13-equipe-permissoes.png`, `13-partido.png`,
-`14-comissao.png`, `14-configuracoes.png`, `15-frente.png`, `16-busca.png`,
-`17-listagem.png`, `18-configuracoes.png`, `19-editar-perfil.png`,
-`01-visao-geral.png`, `02-pipelines.png`, `03-feed-posts.png`,
-`04-stories.png`, `05-revisao-editorial.png`.
-
-**Estes são screenshots (imagens), não documentos de texto.** Não
-interprete os números como se fossem uma série de arquivos `.md`
-numerados. Se for descrever esta pasta, use ferramenta de listagem —
-não infira.
-
-### Material de marketing
-
-`aquarius-pitch-deck-v6.pptx` (mais recente), versões anteriores, e
-`aquarius-one-pager-v2.pdf`. Referência de posicionamento.
+**Hierarquia de fontes** (onde divergem): protótipo (observável em tela) >
+Metodologia (dados) > Concepção (produto) > handoff > PRDs. Detalhe em `PLANO.md`.
 
 ---
 
