@@ -133,7 +133,8 @@ export default function Login() {
                       }}
                       keyboardType="number-pad"
                       inputMode="numeric"
-                      maxLength={1}
+                      textContentType="oneTimeCode"
+                      maxLength={6}
                       style={[st.otpBox, c ? { borderColor: cor.sky } : null]}
                       editable={!verificando}
                     />
