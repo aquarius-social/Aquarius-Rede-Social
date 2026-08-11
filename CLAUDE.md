@@ -16,9 +16,13 @@ está aqui, pergunte antes de agir.
 ### Documentos de trabalho (na raiz)
 
 - `CLAUDE.md` — este arquivo.
-- `ESTADO_ATUAL.md` — onde o desenvolvimento está e qual é o próximo passo.
-  **Leia este antes de tudo.**
-- `PLANO.md` — auditoria do plano original e plano em 12 fases (Ondas).
+- `ESTADO_ATUAL.md` — estado atual (enxuto): onde estamos, ações pendentes e o
+  próximo passo. **Leia este antes de tudo.**
+- `RELATORIO_DESENVOLVIMENTO.md` — fotografia completa e legível de todas as
+  camadas (estado, o que falta, fases, melhorias). Também publicado como página.
+- `MELHORIAS.md` — backlog granular por área (A ingestão … I produto).
+- `HISTORICO.md` — marcos detalhados (números de ingestão, achados, débitos).
+- `PLANO.md` — auditoria do plano original e plano em ondas (0 → 3).
 - `ONDA-0-LEIA-ME.md` — o que foi entregue na fundação de identidade.
 - `ONDA-1-LEIA-ME.md` — o que foi entregue na ingestão da Câmara.
 

@@ -1,3 +1,7 @@
+# Normaliza fim de linha: repo e working tree em LF (mata o churn LF<->CRLF no Windows).
+# As linhas de binario/LFS abaixo vem depois e sobrescrevem (viram -text de novo).
+* text=auto eol=lf
+
 *.docx filter=lfs diff=lfs merge=lfs -text
 *.pptx filter=lfs diff=lfs merge=lfs -text
 *.pdf filter=lfs diff=lfs merge=lfs -text
