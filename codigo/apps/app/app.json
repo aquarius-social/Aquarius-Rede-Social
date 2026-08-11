@@ -5,13 +5,17 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "aquarius",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "backgroundColor": "#0D2B5E"
     },
-    "ios": { "supportsTablet": true },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aquarius.app"
+    },
     "android": {
+      "package": "com.aquarius.app",
       "adaptiveIcon": { "backgroundColor": "#0D2B5E" }
     },
     "web": { "bundler": "metro", "output": "single" },
