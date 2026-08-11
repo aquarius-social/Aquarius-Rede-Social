@@ -4,7 +4,7 @@ Documento vivo, **enxuto de propósito** — é o 2º arquivo a ler (depois do `
 Para a fotografia completa, leia `RELATORIO_DESENVOLVIMENTO.md`; para o backlog granular,
 `MELHORIAS.md`; para os marcos detalhados (números de ingestão, achados), `HISTORICO.md`.
 
-Atualização: 2026-08-10.
+Atualização: 2026-08-11.
 
 ## Onde estamos (resumo)
 
@@ -17,8 +17,13 @@ Atualização: 2026-08-10.
   coletor; **servidas no banco:** despesas (Câmara+Senado), emendas, eventos. Proposições/
   votações/tramitações/discursos: coletor pronto, **truncados por espaço**. Presença: sem
   coletor. Banco no **teto do Free (~476/500 MB)**.
-- **Admin (Next.js).** Fundação no ar em `localhost:3001`: 14 telas fiéis ao protótipo
-  (via adaptador de dados) + **RBAC** (`admin_roles` + RLS + gate de login). Sem deploy.
+- **Admin (Next.js).** 14 telas fiéis ao protótipo (via adaptador de dados) + **RBAC**
+  (`admin_roles` + RLS + gate de login). **Deploy na Vercel ✅** (produção) + `localhost:3001`.
+- **Login & deploys (11/08).** App web e Admin **no ar na Vercel**. Login por **OTP de 6
+  dígitos** funcionando (Supabase + **Resend como SMTP custom**); o "colar o código inteiro"
+  foi corrigido. Ressalva de produção: com `onboarding@resend.dev` o código só chega no
+  **e-mail da própria conta Resend** — liberar para qualquer usuário depende de **domínio
+  verificado** (ver pendências).
 - **Agente Prometeus (IA): NÃO iniciado.** As telas têm placeholder honesto; o serviço
   Python + contrato de resposta é a próxima grande peça (Onda 2).
 
@@ -29,7 +34,12 @@ Atualização: 2026-08-10.
    app, que usa a `anon`.) **Prioridade: segurança.**
 2. **Rodar a migration `0018_follows`** no SQL editor do Supabase — sem ela, o "seguir"
    não persiste.
-3. **Template de OTP** — editar o e-mail "Magic Link" do Supabase para incluir `{{ .Token }}`.
+3. **E-mail de produção — comprar domínio + verificar no Resend.** *(Parqueado até adquirir
+   o domínio.)* O SMTP do Resend já está configurado no Supabase e o template já envia o
+   `{{ .Token }}` (código de 6 dígitos). Mas `onboarding@resend.dev` só entrega para o e-mail
+   da própria conta Resend — sem um **domínio verificado**, Bruno e demais usuários **não
+   recebem o código**. Fluxo: Resend → Domains → registros DNS no provedor → trocar o Sender
+   no Supabase para `login@seudominio`.
 4. **Secrets do repo** (`SUPABASE_URL`/`SUPABASE_SERVICE_KEY`) — para o agendador
    `ingestao.yml` rodar sozinho 2×/dia.
 5. **Supabase Free → Pro** — quando for ligar as áreas pesadas (legislativo, bronze,
