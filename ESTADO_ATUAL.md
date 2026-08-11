@@ -30,6 +30,18 @@ do `CLAUDE.md`.
 - **Fidelidade ao protótipo (2026-08-10):** auditoria das 15 telas do app;
   correções seguras de texto/rótulo aplicadas; gaps que dependem de feature/dado
   documentados em `MELHORIAS.md` F.1 (não "fingidos").
+- **Header custom (AqHeader) (2026-08-10): concluído.** `components/header.tsx`,
+  variantes home (logo+avatar) e detalhe (voltar+título+avatar), safe-area + tema;
+  header nativo do Stack substituído via option `header` (`AqHeaderNav`).
+- **Sistema de "seguir" (2026-08-10): núcleo + consumidores.** Migration
+  `0018_follows` (tabela `follows` + RLS por dono) + `lib/follows.tsx`
+  (`FollowsProvider`/`useFollows`, estado otimista, migração única de temas/partidos
+  antigos). Botão Seguir persistido nas 4 telas de entidade; onboarding grava follows;
+  Interesses e Configurações leem follows; Feed "Seguindo" filtra os destaques por quem
+  se segue. **AÇÃO PENDENTE:** rodar `0018_follows` no SQL editor do Supabase (sem ela,
+  seguir não persiste). Verificação de boot ao vivo ficou bloqueada por RAM baixa da
+  máquina (Metro OOM) — `tsc` verde. Badges de "novidades" deferidas (dependem do feed
+  editorial). Notificações: pendente.
 - **Admin (Next.js) — FUNDAÇÃO no ar** em `codigo/apps/admin`: shell (sidebar 16
   itens/5 seções + topbar) + tema ADM_DARK/ADM_LIGHT com toggle + **Visão geral**
   com KPIs reais (623 parlamentares, 22 partidos, 19.476 emendas, 89 comissões,
@@ -43,9 +55,10 @@ do `CLAUDE.md`.
   editorial** (freio de segurança do agente). Plano tela a tela em `MELHORIAS.md`
   seção G. O protótipo do admin está em `handoff/prototype/aq-admin-*.jsx` (no zip)
   — mesma fonte do Claude Design.
-- **PRÓXIMO PASSO DO APP:** header custom (AqHeader) e sistema de "seguir"
-  (habilita Feed "Seguindo", stories, badges de novidades e Notificações).
-  Backlog completo em `MELHORIAS.md` seção F (+ F.1 fidelidade). Modo escuro: ✅.
+- **PRÓXIMO PASSO DO APP:** rodar a migration `0018_follows` e testar o seguir ponta a
+  ponta; depois **Notificações (tela)** e a **tela de Proposição** (ou o **agente
+  Prometeus**, a peça mais delicada). Backlog completo em `MELHORIAS.md` seção F (+ F.1
+  fidelidade). Modo escuro ✅ · AqHeader ✅ · Seguir ✅ (falta migration + novidades).
 
 **Onda 0 — Fundação de identidade: concluída.**
 

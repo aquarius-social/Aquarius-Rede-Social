@@ -118,17 +118,19 @@ chat, com placeholder honesto), **Feed v1** (destaques de dinheiro reais), **Cal
 **Modo escuro:** sistema de tema claro/escuro (`lib/theme.tsx` + `lib/tema.ts`, tokens
 semânticos `texto`/`cartao`), todas as telas + `base.tsx` migradas, toggle
 Automático/Claro/Escuro em Configurações (persiste em AsyncStorage). Verificado em runtime.
+**Header custom (AqHeader):** logo+avatar (abas) / voltar+título+avatar (detalhe), safe-area + tema.
+**Sistema de seguir:** tabela `follows` (0018) + `useFollows` (otimista) + botões nas 4 telas de
+entidade + onboarding/Interesses/Configurações unificados + Feed "Seguindo" real (filtra destaques
+por quem se segue). Falta rodar a migration 0018 no Supabase e as **badges de "novidades"** (dependem
+do feed editorial + tracking de "última visita").
 
 **A fazer / refinar:**
-- 🟡 — **Header custom (AqHeader)** — telas internas usam o header nativo do
-  `@react-navigation` (título sai Inter SemiBold em vez de ExtraBold). Trocar por
-  logo à esquerda + avatar à direita.
 - 🔴 ⛔IA — **Feed editorial** — os posts gerados pela IA (com fonte + confiança +
   revisão). Hoje o Feed só tem os destaques de dinheiro (sem IA). Depende do agente +
   tabelas de post + fila editorial.
-- 🔴 — **Sistema de "seguir"** — botões nos perfis (parlamentar/partido/comissão/
-  frente/PL) + Feed "Seguindo" real + Interesses (grupos de parlamentares e
-  proposições) + Notificações. Depende da tabela `follows`.
+- 🟠 — **Seguir — refinos** — seguir proposições (PL) quando a área legislativa existir;
+  badges de "N novidades desde a última visita" por item (precisa tracking de visita +
+  conteúdo por entidade); botão Seguir também na Listagem/cards.
 - 🟡 — **Camada social do Feed** — curtir/reagir/comentar/salvar/compartilhar +
   modais (comentários com disclaimer de neutralidade, share sheet). Depende das
   tabelas sociais + moderação.
