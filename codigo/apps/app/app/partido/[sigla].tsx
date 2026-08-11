@@ -5,7 +5,7 @@ import {
   obterPartido, membrosDoPartido, resumoEmendasPartido,
   type Partido, type Parlamentar, type ResumoEmendasPartido,
 } from '../../lib/dados';
-import { reais, kbr, frescor } from '../../lib/formato';
+import { kbr, frescor } from '../../lib/formato';
 import { raio, fonte, type Tema } from '../../lib/tema';
 import { useTemaEstilos } from '../../lib/theme';
 import {

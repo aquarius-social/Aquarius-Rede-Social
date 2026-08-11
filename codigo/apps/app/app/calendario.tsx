@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator, Linking, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
 import { listarEventos, type Evento } from '../lib/dados';
-import { useAuth } from '../lib/auth';
 import { frescor } from '../lib/formato';
-import { raio, fonte, type Tema } from '../lib/tema';
+import { fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
 import { Icon, Card, Tag, BottomNav } from '../components/base';
 import { AqHeader } from '../components/header';
@@ -28,8 +26,6 @@ function partesData(iso: string | null): { chave: string; dia: string; hora: str
 
 export default function Calendario() {
   const { cor, st } = useTemaEstilos(criarSt);
-  const router = useRouter();
-  const { session, prefs } = useAuth();
   const [eventos, setEventos] = useState<Evento[] | null>(null);
   const [casa, setCasa] = useState<'camara' | 'senado' | null>(null);
 

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAdmTheme } from '../../lib/theme';
 import { AUDIENCIAS_KPIS, AUDIENCIAS_BARRAS, AUDIENCIAS_PRONTAS } from '../../lib/demo';
-import { Card, PageHeader, SectionLabel, Badge, Selo } from '../../components/ui';
+import { Card, PageHeader, SectionLabel, Badge } from '../../components/ui';
 import { KpiCard, Button } from '../../components/charts';
 import { Icon, type IconName } from '../../components/Icon';
 

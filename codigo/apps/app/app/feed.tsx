@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator, Linking, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { destaquesFeed, type FeedPost } from '../lib/dados';
-import { useAuth } from '../lib/auth';
 import { reais, frescor, URL_EMENDAS_CONSULTA } from '../lib/formato';
 import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
@@ -15,7 +14,6 @@ type Aba = 'voce' | 'seguindo';
 export default function Feed() {
   const { cor, st } = useTemaEstilos(criarSt);
   const router = useRouter();
-  const { session, prefs } = useAuth();
   const [posts, setPosts] = useState<FeedPost[] | null>(null);
   const [aba, setAba] = useState<Aba>('voce');
 

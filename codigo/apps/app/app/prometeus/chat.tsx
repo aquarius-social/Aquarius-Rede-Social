@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView, Platform, StyleSheet,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { raio, fonte, type Tema } from '../../lib/tema';
+import { fonte, type Tema } from '../../lib/tema';
 import { useTemaEstilos } from '../../lib/theme';
 import { Icon } from '../../components/base';
 

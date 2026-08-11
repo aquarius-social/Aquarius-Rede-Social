@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { contagens, type Contagens } from '../lib/dados';
-import { useAuth } from '../lib/auth';
 import { raio, fonte, type Tema } from '../lib/tema';
 import { useTemaEstilos } from '../lib/theme';
 import { Icon, BottomNav } from '../components/base';
@@ -39,8 +38,6 @@ function EntCard({ icon, cor: c, titulo, sub, tipo, wide }: {
 
 export default function Explorar() {
   const { cor, st } = useTemaEstilos(criarSt);
-  const router = useRouter();
-  const { session, prefs } = useAuth();
   const [c, setC] = useState<Contagens | null>(null);
   useEffect(() => { contagens().then(setC).catch(() => {}); }, []);
 

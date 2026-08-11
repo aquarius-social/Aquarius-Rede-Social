@@ -1,7 +1,7 @@
 'use client';
 import { useAdmTheme } from '../../lib/theme';
 import { STORIES_KPIS, STORIES_PRODUCAO, STORIES_PUBLICADAS } from '../../lib/demo';
-import { Card, PageHeader, SectionLabel, Badge, Selo } from '../../components/ui';
+import { Card, PageHeader, SectionLabel, Badge } from '../../components/ui';
 import { KpiCard, Button } from '../../components/charts';
 import { Icon } from '../../components/Icon';
 

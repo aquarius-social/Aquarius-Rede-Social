@@ -38,3 +38,22 @@ jobs:
           node-version: '20'
       - run: npm ci
       - run: npx tsc --noEmit
+
+  typecheck-apps:
+    # Roda o tsc do app (Expo) e do admin (Next) na nuvem — a maquina de dev tem
+    # RAM limitada e o tsc local concorre com o Metro. Aqui roda folgado.
+    name: Type-check dos apps
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [app, admin]
+    defaults:
+      run:
+        working-directory: codigo/apps/${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx tsc --noEmit
