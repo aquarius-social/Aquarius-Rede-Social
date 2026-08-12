@@ -4,7 +4,7 @@ Documento vivo, **enxuto de propósito** — é o 2º arquivo a ler (depois do `
 Para a fotografia completa, leia `RELATORIO_DESENVOLVIMENTO.md`; para o backlog granular,
 `MELHORIAS.md`; para os marcos detalhados (números de ingestão, achados), `HISTORICO.md`.
 
-Atualização: 2026-08-11.
+Atualização: 2026-08-12.
 
 ## Onde estamos (resumo)
 
@@ -24,8 +24,12 @@ Atualização: 2026-08-11.
   foi corrigido. Ressalva de produção: com `onboarding@resend.dev` o código só chega no
   **e-mail da própria conta Resend** — liberar para qualquer usuário depende de **domínio
   verificado** (ver pendências).
-- **Agente Prometeus (IA): NÃO iniciado.** As telas têm placeholder honesto; o serviço
-  Python + contrato de resposta é a próxima grande peça (Onda 2).
+- **Agente Prometeus (IA) — Onda 2 em construção.** Plano fechado em sub-etapas 2.0→2.5
+  (ver `PLANO.md`): ReAct + servidor MCP + Sonnet 5 (fall-back nativo Claude→Claude), no GCP.
+  **Etapa 2.1 pronta:** serviço `codigo/services/prometeus/` — servidor MCP com **7 consultas
+  seguras** à camada ouro (despesas, emendas, eventos, identidade), cada uma com proveniência
+  e honrando o contrato de resposta da Metodologia §20; **14 testes sem rede, verdes**. Falta
+  plugar a IA (Etapa 2.2). As telas do app seguem com placeholder honesto.
 
 ## ⚠️ Ações pendentes do usuário (fora do código)
 
