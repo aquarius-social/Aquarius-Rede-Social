@@ -178,6 +178,50 @@ Precedida de estimativa de custo de LLM com teto configurável.
 que a resposta correta é a recusa; e um editor humano aprova conteúdo pela
 interface, com registro.
 
+#### Construção do Prometeus — sub-etapas (Etapas 2.0 → 2.5)
+
+> Detalhamento de execução da Onda 2, fechado com o usuário em 12/08/2026.
+> "Etapa 2.x" é passo de construção **interno à Onda 2** — não confundir com a
+> estratégica **Onda 2.5 (Camada social)** logo abaixo.
+
+**Arquitetura travada** (o "como" do Prometeus):
+
+- **Cérebro:** ReAct (loop nativo de tool-calling do Claude) como principal; **RAG**
+  para dado textual (teor de proposição, discurso — via `pgvector` no próprio
+  Supabase); **text-to-SQL** só para casos que pedem, sempre com guarda-corpos
+  (role só-leitura, views restritas, tabelas em allow-list).
+- **Ferramentas:** expostas por um **servidor MCP** próprio — cada consulta segura
+  ao Supabase devolve dado + `source`/`source_url`/`synced_at`. Analogia: o agente
+  é o pesquisador; as ferramentas MCP são as gavetas; o banco é o conteúdo das
+  gavetas. Ampliar cobertura = **adicionar gaveta**, sem trocar o pesquisador.
+- **Modelo:** **Sonnet 5** principal; fall-back **nativo Claude→Claude** (Sonnet 5 →
+  Opus 4.8) em recusa/erro/limite — **1 chave (Anthropic)**. Cross-provider (OpenAI,
+  ex.: "GPT-5.6 Terra" a validar) parqueado para depois, se o uptime exigir.
+- **Hospedagem:** servidor próprio no **GCP** (Cloud Run + Secret Manager).
+- **Faces:** fundação compartilhada (mesmo MCP/modelo/contrato), **endpoints
+  distintos por tipo de info**; **geração de posts = pipeline dedicado**.
+- **Ordem:** **chat primeiro**, posts depois.
+
+**Sub-etapas:**
+
+- **2.0 — Fundação e decisões.** Fixar o contrato de resposta lendo a Metodologia
+  (autoridade); definir o conjunto inicial de ferramentas MCP e o dado disponível
+  hoje (despesas Câmara+Senado, emendas, eventos). Pré-requisitos externos: chave
+  Anthropic (com teto de gasto), chave do MCP, projeto GCP. *(As decisões de
+  arquitetura acima já são parte desta etapa.)*
+- **2.1 — Servidor MCP.** As consultas seguras ao Supabase com proveniência.
+  Testável sem IA, na disciplina "um caso aceita, um recusa". As duas faces usam.
+- **2.2 — Agente conversacional (ReAct) + ligar no app.** Loop Claude↔MCP; contrato
+  de chat; gating de confiança → resposta honesta "não tenho esse dado". Trocar o
+  placeholder de `app/prometeus/chat.tsx`.
+- **2.3 — Pipeline de posts + freio editorial.** Seleção (quais fatos viram post) →
+  gerar post neutro com fonte → gating: `confiança < 0.65` ou nula = fila de
+  **revisão editorial no admin** antes de publicar; `≥ 0.65` = publica no feed.
+- **2.4 — Deploy e operação.** Hospedar MCP + orquestrador + agendador dos posts no
+  GCP; chaves como secrets; teto de gasto no painel Anthropic.
+- **2.5 — Refino (pós-MVP).** Roteamento Haiku/Opus, RAG para texto, rate limit,
+  observabilidade, monitor de custo, cross-provider (se necessário).
+
 ### Onda 2.5 — Camada social
 
 Feed personalizado, stories, curtidas, comentários com thread, seguir,
