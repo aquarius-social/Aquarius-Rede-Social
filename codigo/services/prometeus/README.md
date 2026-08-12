@@ -11,12 +11,21 @@ resposta da Metodologia (§20). Nada é servido sem fonte.
 
 ## Estrutura
 
+**Etapa 2.1 — acesso ao dado (as ferramentas):**
 - `gateway.py` — `Consulta`/`Filtro` + protocolo `Gateway`.
 - `resultado.py` — `Resultado`/`Proveniencia`/`Completude` + `recusar()`.
-- `consultas.py` — as ferramentas (puras, testáveis sem rede).
+- `consultas.py` — as consultas seguras (puras, testáveis sem rede).
 - `supabase_gateway.py` — gateway real (PostgREST; `httpx` só em runtime).
 - `servidor_mcp.py` — expõe as consultas como ferramentas MCP (requer `mcp`).
-- `tests/` — suíte sem rede (FakeGateway).
+
+**Etapa 2.2 — o cérebro (o agente ReAct):**
+- `contrato.py` — as 7 regras do contrato de resposta (§20) como system prompt.
+- `ferramentas.py` — registro das ferramentas (esquema p/ o modelo + despacho).
+- `modelo.py` — `Modelo` (porto) + `ModeloClaude` (Sonnet 5 + fall-back Opus 4.8).
+- `agente.py` — o loop ReAct: escolhe/chama ferramentas e acumula fontes/ressalvas.
+- `api.py` — endpoint HTTP (`POST /perguntar`) sobre o agente.
+
+- `tests/` — suíte sem rede (modelo fake + FakeGateway).
 
 ## Ferramentas (primeira leva — o que já está servido no banco)
 
@@ -33,11 +42,27 @@ cd codigo/services/prometeus
 py -m unittest discover -s . -t .
 ```
 
-## Rodar o servidor MCP (execução real — Etapas 2.2/2.4)
+## Rodar ao vivo (execução real — Etapas 2.2/2.4)
 
+Variáveis de ambiente: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (lê só as views ouro,
+via RLS/GRANT) e `ANTHROPIC_API_KEY` (com teto de gasto no painel Anthropic).
+
+**Endpoint de chat (a face conversacional):**
+```
+pip install fastapi uvicorn anthropic httpx
+uvicorn api:app --reload
+# POST http://localhost:8000/perguntar  {"pergunta": "quanto o deputado X gastou em 2024?"}
+```
+
+**Servidor MCP (interface reutilizável das ferramentas):**
 ```
 pip install "mcp[cli]" httpx
-export SUPABASE_URL=...            # projeto Supabase
-export SUPABASE_ANON_KEY=...       # chave anon (lê só as views ouro, via RLS/GRANT)
 py servidor_mcp.py
 ```
+
+> Nota de arquitetura: as ferramentas vivem em `consultas.py` e são a fonte única.
+> `servidor_mcp.py` as expõe como **servidor MCP** (interface reutilizável — outros
+> consumidores, DaaS futuro). O agente de chat, por ser co-localizado, usa o mesmo
+> registro **em processo** (via `ferramentas.py`) — sem pagar um ida-e-volta MCP a
+> si mesmo. Trocar o agente para consumir via cliente MCP é um adaptador fino, se
+> um dia o agente e as ferramentas forem separados.
