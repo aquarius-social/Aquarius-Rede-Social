@@ -1,25 +1,34 @@
 name: CI
 
-# Fecha a exigência de "build e CI verdes" da Onda 0. Roda a cada push e PR.
+# Fecha a exigência de "build e CI verdes" da Onda 0. Roda a cada push e PR de
+# CÓDIGO. Push que só mexe em documentação (*.md) NÃO dispara CI — economiza
+# minutos do plano free do GitHub Actions.
 on:
   push:
+    paths-ignore:
+      - '**.md'
+      - '.gitattributes'
+      - '.gitignore'
   pull_request:
+    paths-ignore:
+      - '**.md'
 
 jobs:
   testes-python:
-    name: Testes da ingestão (Python, sem rede)
+    name: Testes Python (sem rede)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: codigo/services/ingestao
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      # A suíte não tem dependências externas: HTTP e banco são injetados,
-      # os testes usam dubles. Nada de pip install aqui — é deliberado.
-      - name: Rodar a suíte
+      # Suítes sem dependências externas: HTTP e banco são injetados (dubles).
+      # Nada de pip install — é deliberado. Um runner só, dois serviços.
+      - name: Ingestão
+        working-directory: codigo/services/ingestao
+        run: python -m unittest discover -s . -t .
+      - name: Prometeus
+        working-directory: codigo/services/prometeus
         run: python -m unittest discover -s . -t .
 
   typecheck-ts:
