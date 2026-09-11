@@ -440,6 +440,9 @@ def ingerir(
         for d in dep.prata.aprovados:
             rd = rodada_despesas(
                 cliente_http, d["id_fonte"], ano=ano,
+                # A API de despesas da Câmara EXIGE idLegislatura (sem ele, 200 +
+                # lista vazia). A rodada incremental que não informa cai na atual (57).
+                id_legislatura=id_legislatura or 57,
                 canario_validado=canario_validado,
                 linha_base=base.despesas, politica=politica)
             # Bronze de despesa: id composto deputado:documento:parcela.
