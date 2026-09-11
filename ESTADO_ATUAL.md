@@ -5,16 +5,21 @@ ler (depois do `CLAUDE.md`). Complementos: `PLANO.md` (roadmap em ondas),
 `RELATORIO_DESENVOLVIMENTO.md` (fotografia por camada, também publicada como página),
 `MELHORIAS.md` (backlog A–I), `HISTORICO.md` (marcos e números de ingestão).
 
-Atualização: 2026-08-12.
+Atualização: 2026-09-08.
 
 ## Resumo executivo
 
 O Aquarius tem **app (Expo) e admin (Next.js) no ar na Vercel**, com a camada de leitura
 navegando dado oficial real (despesas, emendas, eventos) e login por OTP funcionando. A
 peça em construção é o **Prometeus (Onda 2)** — o agente de IA. O **backend do Prometeus
-está pronto e testado** (servidor MCP de consultas seguras + agente ReAct + endpoint),
-faltando só **publicar (deploy no GCP)** e a **chave da Anthropic** para ligá-lo ao vivo. A
-geração de posts (2ª face do Prometeus) e o deploy são os próximos grandes passos.
+está pronto, testado e agora VALIDADO contra o banco real** (as 7 ferramentas foram
+conferidas ao vivo via Supabase MCP — schema bate 100%, dado e proveniência presentes).
+Falta só **publicar (deploy no GCP Cloud Run)** e **colar a chave da Anthropic** — a chave
+**já foi criada** e o **projeto GCP já existe com as APIs ativas**; o deploy será feito
+**pelo dev** (máquina mais robusta). Novidade estrutural: o **Supabase migrou para o plano
+Pago (Pro)**, com muito mais espaço — o que **destrava o backfill** das áreas truncadas e a
+extensão de despesa/emenda para anos anteriores a 2023. A geração de posts (2ª face do
+Prometeus) e o deploy são os próximos grandes passos.
 
 ## 1. App (Expo / React Native) — camada de leitura pronta
 
@@ -30,8 +35,8 @@ geração de posts (2ª face do Prometeus) e o deploy são os próximos grandes 
   própria conta Resend — produção depende de **domínio verificado** (ver pendências).
 - **Prometeus chat ligado ao endpoint:** `chat.tsx` chama `POST {EXPO_PUBLIC_PROMETEUS_URL}
   /perguntar`, renderiza resposta + **fontes clicáveis** + ressalvas, com fallback honesto
-  enquanto não publicado. ⚠️ Esse arquivo está **commitado localmente, ainda não pushado** —
-  o app publicado na Vercel segue com o placeholder até o push.
+  enquanto não publicado. ✅ **Já pushado** (`ae0019f`). O app publicado só mostrará o chat
+  real quando `EXPO_PUBLIC_PROMETEUS_URL` for setado (após o deploy); até lá, o fallback honesto.
 - **Deploy:** app web na Vercel (`aquarius-rede-social-app.vercel.app`). Mobile (EAS): não
   iniciado (`eas.json`/`app.json` prontos).
 
@@ -54,9 +59,26 @@ geração de posts (2ª face do Prometeus) e o deploy são os próximos grandes 
   presença.
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
-- **Banco no teto do Free (~476/500 MB).** Subir pro Pro destrava a reingestão das áreas
-  truncadas.
-- **Testes:** **308**, sem rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`).
+- **Cobertura real hoje (contagem das views ouro):** despesa **~1,86 mi** (Câmara + Senado,
+  anos **2018–2026** — o backfill desta sessão adicionou ~1,1 mi), emenda **19.476** (ainda só
+  **2023–2026**), voto_nominal 4.752, tramitacao 3.285, proposicao 2.300, frente 1.443,
+  votacao 1.312, discurso 949, evento 363, comissao 90, partido 22. `parlamentar_publico` segue
+  **624** (a view só traz vigentes; os ex-parlamentares do backfill entram como perfil
+  **inativo**, fora do app, só memória do Prometeus). Os **domínios de atividade** (proposição/
+  votação/voto_nominal/discurso/tramitação) seguem **parciais** (2ª rodada).
+- **Banco agora no Supabase Pro (plano PAGO)** — muito mais espaço. Isso **destrava**: (a) o
+  **backfill de despesa/emenda para 2018–2022**; (b) completar as **áreas truncadas**; (c) a
+  **paridade Senado** onde falta. **Diagnóstico (mapeamento desta sessão):** as lacunas são de
+  **execução, não de código** — o dinheiro rodou só na leg 57 e as áreas de atividade foram
+  **desligadas por flag** pra caber no Free. Correção é **re-execução** (mudar env), sem código
+  novo. Decisão: **fatia de valor primeiro** (identidade + dinheiro 2018–2022) — runbook em
+  `RUNBOOK-BACKFILL.md`. Atividade + paridade ficam pra 2ª rodada.
+- **Validação 2026-09-08:** as 7 ferramentas do Prometeus foram conferidas contra o dado real
+  (schema das 5 views consumidas bate 100%; encadeamento `parlamentar_publico.id` →
+  `despesa_publica.perfil_id` funciona; proveniência presente). **Achado:** `emenda.autor_profile_id`
+  já está **88% populado** (17.135/19.476) — a ressalva do código que diz "chave ainda não
+  carregada" ficou desatualizada (task `task_5e142e49` aberta pra melhorar a atribuição).
+- **Testes:** **315**, sem rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`).
 
 ## 4. Prometeus (Onda 2) — o agente de IA  [FOCO ATUAL]
 
@@ -82,9 +104,9 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 |---|---|
 | **2.0 Fundação e decisões** | ✅ Feito (arquitetura + contrato lido + ferramentas definidas) |
 | **2.1 Servidor MCP (consultas seguras)** | ✅ Feito — 14 testes; no repo |
-| **2.2 Agente ReAct + endpoint + ligar no app** | ✅ Código pronto — 21 testes; falta deploy + chave p/ ao vivo |
+| **2.2 Agente ReAct + endpoint + ligar no app** | ✅ Código pronto **e validado contra o banco real** (21 testes + 7 ferramentas conferidas ao vivo); falta só deploy p/ ao vivo |
 | **2.3 Pipeline de posts + freio editorial** | ⬜ Não iniciado |
-| **2.4 Deploy (GCP Cloud Run)** | ⬜ Não iniciado (precisa chave Anthropic + GCP) |
+| **2.4 Deploy (GCP Cloud Run)** | 🟡 Pré-requisitos quase prontos: **chave Anthropic criada**, **projeto GCP `aquarius-prometeus` + APIs ativas**; falta instalar `gcloud` (no PC do dev) + rodar o deploy |
 | **2.5 Refino (roteamento Haiku/Opus, RAG, rate limit, custo)** | ⬜ Pós-MVP |
 
 ### O serviço `codigo/services/prometeus/`
@@ -105,67 +127,102 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   `servidor_mcp.py` é a interface MCP reutilizável externa. Trocar o agente para o cliente MCP é
   um adaptador fino, se um dia forem separados.
 
-### O que falta pra ligar o Prometeus ao vivo
+### O que falta pra ligar o Prometeus ao vivo (a fazer **pelo dev**)
 
-1. **Chave da Anthropic** (Console + crédito + teto) — o motor.
-2. **Deploy no GCP Cloud Run** (via `gcloud` local, sem GitHub — evita Actions).
-3. Setar `EXPO_PUBLIC_PROMETEUS_URL` (app: env na Vercel + `.env` local) pra URL do Cloud Run.
-4. **Pushar o `chat.tsx`** (hoje local) pra o app web publicado usar o chat real.
+1. **Instalar o `gcloud`** no PC do dev + `gcloud init` (login + escolher o projeto
+   `aquarius-prometeus`).
+2. **Deploy no GCP Cloud Run** (`gcloud run deploy` a partir de `codigo/services/prometeus/`,
+   sem GitHub — evita Actions). Env já conhecidos: `SUPABASE_URL` + `SUPABASE_ANON_KEY` (seguros,
+   protegidos por RLS).
+3. **Colar a chave da Anthropic** (`ANTHROPIC_API_KEY`) no campo **Variáveis** do painel do
+   Cloud Run — nunca no chat nem no comando.
+4. Setar `EXPO_PUBLIC_PROMETEUS_URL` (app: env na Vercel + `.env` local) pra URL do Cloud Run.
+5. **Teste ao vivo** do chat com pergunta real (dado + fonte).
 
 ## 5. Deploys (o que está no ar)
 
 - **Admin → Vercel** (produção). ✅
 - **App web → Vercel** (`aquarius-rede-social-app.vercel.app`). ✅
-- **Prometeus (serviço) → GCP:** ⬜ não deployado (Etapa 2.4).
+- **Prometeus (serviço) → GCP:** 🟡 não deployado, mas pré-requisitos quase prontos (Etapa 2.4).
 - **App mobile → EAS:** ⬜ não iniciado.
 
 ## 6. Estado do git / repositórios
 
-- **Repo de código** (`Aquarius-Rede-Social`): `origin/main` em `1861d90`. **Local está 2 commits
-  À FRENTE, não pushados:**
-  - `ae0019f` — `chat.tsx` + `requirements.txt` + `Procfile` (os "pusháveis").
-  - `cd9b001` — `ci.yml` (economia de Actions; **precisa do escopo `workflow` no token** pra pushar).
-  - Motivo de segurar o push: **GitHub Actions no limite do mês**; validação feita **localmente**
-    pelos testes.
+- **Ownership transferida para a organização `aquarius-social`.** Remote do repo de código:
+  `github.com/aquarius-social/Aquarius-Rede-Social.git`.
+- **Repo de código:** `origin/main` e local **em `ccf526c`** (sincronizados) — os commits do
+  Prometeus 2.1/2.2 + ligação do chat + `ci.yml` + snapshot foram **todos pushados** na sessão
+  anterior. Working tree limpo, **exceto `.mcp.json` não versionado** (config do Supabase MCP —
+  commitar é opcional).
 - **Repo de contexto** (`aquarius-contexto`): separado, sem alteração nesta sessão (prints/telas,
   docs-fonte, marketing, protótipo).
+- **Segurança:** um **PAT do GitHub circulou no chat** na sessão anterior — **precisa ser revogado**
+  se ainda não foi (ver pendências).
 
-## 7. ⚠️ Ações pendentes do usuário (fora do código)
+## 7. ⚠️ Ações pendentes
 
-1. **Chave da Anthropic** (Console + crédito US$5–10 + teto ~US$20/mês) → destrava o teste ao vivo
-   da 2.2 e o deploy 2.4. *(O plano Claude Max NÃO dá crédito de API — é cobrança separada.)*
-2. **Projeto no GCP** → deploy do Prometeus (Cloud Run).
-3. **GitHub Actions no limite** → reseta no próximo mês (ou tornar o repo de código público =
-   Actions ilimitado, ou pagar). Até lá, **pushes segurados**.
-4. **Escopo `workflow` no token do GitHub** → pra pushar o commit do `ci.yml`.
-5. **E-mail de produção — comprar domínio + verificar no Resend** *(parqueado)*. Sem domínio
-   verificado, só o e-mail da conta Resend recebe o código.
-6. **Rotacionar a service key do Supabase** (circulou no chat; prioridade segurança).
-7. **Rodar a migration `0018_follows`** (sem ela o "seguir" não persiste).
-8. **Secrets do repo** (`SUPABASE_URL`/`SUPABASE_SERVICE_KEY`) pro agendador `ingestao.yml`.
-9. **Supabase Free → Pro** — destrava a reingestão das áreas truncadas + várias frentes.
-10. **WhatsApp Business** — habilitação Meta em paralelo (dependência externa mais longa).
+**Deploy do Prometeus (com o dev):**
+1. Instalar `gcloud` + deploy no Cloud Run + colar a **chave Anthropic** (já criada) no painel +
+   setar `EXPO_PUBLIC_PROMETEUS_URL`. *(Claude Max NÃO dá crédito de API — cobrança separada; teto
+   de gasto já recomendado no Console.)*
+
+**Dados (destravado pelo Supabase Pro):**
+2. **Backfill de despesa — FEITO (2018–2022, as duas casas).** ~1,1 mi de lançamentos novos
+   (total ~1,86 mi). Ex-parlamentares entram como **perfil inativo** (modelo escolhido: fora do
+   app, memória do Prometeus). **Falta a passada de emendas** (2018–2022) — precisa da chave da
+   Transparência no `.env`. Dois bugs corrigidos no caminho (com teste): crash de sobreposição de
+   vínculo e a mudança da API da Câmara (`idLegislatura`, que também derrubava a ingestão de
+   produção). **2ª rodada (depois):** religar atividade (proposições/votações/discursos — precisa
+   do canário) + paridade (frentes Senado, blocos Câmara). Ver `RUNBOOK-BACKFILL.md`.
+3. Melhorar **atribuição de emendas** usando `autor_profile_id` (88% populado) — decisão de
+   produto; task `task_5e142e49` aberta.
+
+**Segurança / infra:**
+4. **Revogar o PAT do GitHub** que circulou no chat (se ainda não).
+5. **Rotacionar a service key do Supabase** (também circulou no chat; prioridade segurança).
+6. **Rodar a migration `0018_follows`** (sem ela o "seguir" não persiste).
+7. **Secrets do repo** (`SUPABASE_URL`/`SUPABASE_SERVICE_KEY`) pro agendador `ingestao.yml`.
+
+**Parqueado (dependências externas / decisão futura):**
+8. **E-mail de produção — comprar domínio + verificar no Resend.** Sem domínio verificado, só o
+   e-mail da conta Resend recebe o código.
+9. **WhatsApp Business** — habilitação Meta em paralelo (dependência externa mais longa).
+
+**Feito recentemente:**
+- ✅ **Supabase Free → Pro** (plano pago ativo — mais espaço).
+- ✅ **Chave da Anthropic criada**; **projeto GCP `aquarius-prometeus` + APIs (Cloud Run, Cloud
+  Build) ativas**; crédito grátis do GCP ligado.
+- ✅ **Supabase MCP conectado** (via Conectores da GUI) — usado nesta sessão pra validar o dado.
+
+> **GitHub Actions:** só `git push` dispara Actions; o limite do plano free reseta por mês (ou
+> repo público = Actions ilimitado). Como não há nada pendente pra pushar agora, não é bloqueio.
 
 ## 8. Próximo passo
 
-- **Imediato (caminho "ao vivo"):** usuário cria a **chave Anthropic** → **deploy do Prometeus no
-  GCP (2.4)** → setar a URL no app → **teste ao vivo** do chat.
+- **Prometeus ao vivo (com o dev):** instalar `gcloud` → **deploy no GCP (2.4)** → colar a chave
+  no painel → setar a URL no app → **teste ao vivo** do chat.
+- **Dados (decidido):** o dev roda o **backfill fatia de valor** (`RUNBOOK-BACKFILL.md`) —
+  passada A (identidade 2018–2022) → Claude verifica vínculos via MCP → passadas B (cota) e C
+  (emendas). Aprofunda o Prometeus na hora. Atividade/paridade = 2ª rodada.
 - **Em paralelo (sem pré-requisitos):** construir a **2.3 (pipeline de posts + freio editorial)** —
   Python, testável local.
-- **Dados:** subir pro Pro e reingerir as áreas truncadas (destrava proposições/votações → mais
-  ferramentas do Prometeus).
 
 ## 9. Notas de ambiente
 
 - Interpretador Python é **`py`** (não `python`, alias fantasma da Microsoft Store).
-- **Testes sem rede:** ingestão **308** + Prometeus **21** = **329** verdes. Rodar dentro de cada
+- **Testes sem rede:** ingestão **315** + Prometeus **21** = **336** verdes. Rodar dentro de cada
   serviço: `py -m unittest discover -s . -t .`.
+- **Padrão da ingestão (fixado no código):** segredos no `.env` de `codigo/services/ingestao/`
+  (lido por `env_local.carregar_env`; nunca colar chave à mão — foi assim que a service key vazou).
+  Rodar `py run_backfill.py` (histórico) / `run_ingestao.py` (incremental). Ver `RUNBOOK-BACKFILL.md`.
 - **RAM limitada:** Metro (Expo web) e `tsc` estouram memória; parar preview antes do `tsc`. Ver a
-  memória do projeto `ambiente-ram-limitada`.
-- **GitHub Actions:** só `git push` dispara Actions; `git commit` local **não**. Estamos
-  committando local e segurando os pushes até o limite resetar.
+  memória do projeto `ambiente-ram-limitada`. **Relevante pro backfill:** rodar ingestão pesada
+  pode competir por memória — avaliar rodar por domínio/ano e/ou na máquina do dev.
+- **GitHub Actions:** só `git push` dispara Actions; `git commit` local **não**.
 - **Push ao GitHub** funciona via credencial de arquivo (memória `github-push-acesso`); alterar
-  `.github/workflows/` exige o escopo `workflow` no token.
+  `.github/workflows/` exige o escopo `workflow` no token. Remote agora na org `aquarius-social`.
+- **Supabase MCP** conectado (project ref `nqebfmyzchpkufsytvyf`) — usar só operações de leitura
+  sem pedido explícito (permissões amplas: database/functions/branching).
 
 ## 10. O que NÃO fazer (resumo — detalhe no `CLAUDE.md`)
 
