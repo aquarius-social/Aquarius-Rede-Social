@@ -60,8 +60,8 @@ Prometeus) e o deploy são os próximos grandes passos.
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
 - **Cobertura real hoje (contagem das views ouro):** despesa **~1,86 mi** (Câmara + Senado,
-  anos **2018–2026** — o backfill desta sessão adicionou ~1,1 mi), emenda **19.476** (ainda só
-  **2023–2026**), voto_nominal 4.752, tramitacao 3.285, proposicao 2.300, frente 1.443,
+  anos **2018–2026** — o backfill desta sessão adicionou ~1,1 mi), emenda **48.369**
+  (**2018–2026**, 88% com perfil resolvido), voto_nominal 4.752, tramitacao 3.285, proposicao 2.300, frente 1.443,
   votacao 1.312, discurso 949, evento 363, comissao 90, partido 22. `parlamentar_publico` segue
   **624** (a view só traz vigentes; os ex-parlamentares do backfill entram como perfil
   **inativo**, fora do app, só memória do Prometeus). Os **domínios de atividade** (proposição/
@@ -169,8 +169,8 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 **Dados (destravado pelo Supabase Pro):**
 2. **Backfill de despesa — FEITO (2018–2022, as duas casas).** ~1,1 mi de lançamentos novos
    (total ~1,86 mi). Ex-parlamentares entram como **perfil inativo** (modelo escolhido: fora do
-   app, memória do Prometeus). **Falta a passada de emendas** (2018–2022) — precisa da chave da
-   Transparência no `.env`. Dois bugs corrigidos no caminho (com teste): crash de sobreposição de
+   app, memória do Prometeus). Emendas 2018–2022 **também FEITAS** (+29 mil; total **48.369**,
+   88% com perfil) — **fatia de valor 100% completa**. Dois bugs corrigidos no caminho (com teste): crash de sobreposição de
    vínculo e a mudança da API da Câmara (`idLegislatura`, que também derrubava a ingestão de
    produção). **2ª rodada (depois):** religar atividade (proposições/votações/discursos — precisa
    do canário) + paridade (frentes Senado, blocos Câmara). Ver `RUNBOOK-BACKFILL.md`.
