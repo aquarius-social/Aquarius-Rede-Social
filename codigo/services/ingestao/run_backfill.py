@@ -32,6 +32,7 @@ import os
 import traceback
 from datetime import date
 
+from env_local import carregar_env
 from orquestracao.orquestrador import ingerir
 from persistencia.supabase_adapter import criar_banco_supabase
 from pipeline.coletor import JanelaMovel
@@ -51,6 +52,7 @@ def legislatura_do_ano(ano: int) -> int:
 
 
 def main() -> None:
+    carregar_env()  # segredos do .env local (padrão); não sobrescreve o ambiente
     url = os.environ["SUPABASE_URL"]
     key = os.environ["SUPABASE_SERVICE_KEY"]
     inicio = int(os.environ.get("AQUARIUS_BACKFILL_INICIO", "2018"))
