@@ -11,11 +11,12 @@ def gw() -> FakeGateway:
 
 
 class TestFerramentas(unittest.TestCase):
-    def test_esquemas_tem_as_sete(self):
+    def test_esquemas_tem_as_oito(self):
         esquemas = ferramentas.esquemas_anthropic()
         nomes = {e["name"] for e in esquemas}
-        self.assertEqual(len(nomes), 7)
+        self.assertEqual(len(nomes), 8)
         self.assertIn("despesas_parlamentar", nomes)
+        self.assertIn("emendas_por_autor_perfil", nomes)  # nova: atribuição por chave
         # todo esquema tem input_schema com 'required'
         for e in esquemas:
             self.assertIn("input_schema", e)

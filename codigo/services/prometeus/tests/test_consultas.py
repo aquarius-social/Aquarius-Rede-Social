@@ -42,10 +42,20 @@ DADOS = {
          "source_url": "https://dadosabertos.camara.leg.br/api/v2", "synced_at": "2026-08-11T00:00:00Z"},
     ],
     "emenda_publica": [
-        {"id": "e1", "autor_nome": "Fulano de Tal", "ano": 2024, "localidade_gasto": "Campinas - SP",
+        {"id": "e1", "autor_nome": "Fulano de Tal", "autor_nome_norm": "fulano de tal",
+         "ano": 2024, "localidade_gasto": "Campinas - SP",
          "funcao": "Saude", "valor_empenhado": 1000000.0, "valor_liquidado": 600000.0,
          "valor_pago": 500000.0, "valor_resto_inscrito": 0.0, "valor_resto_cancelado": 0.0,
-         "valor_resto_pago": 0.0, "autor_profile_id": None, "source": "transparencia.emendas",
+         "valor_resto_pago": 0.0, "autor_profile_id": "p1", "source": "transparencia.emendas",
+         "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
+         "synced_at": "2026-08-11T00:00:00Z"},
+        # Autor gravado SEM acento pela fonte (como o Portal manda) — a busca por
+        # nome acentuado precisa casar sobre autor_nome_norm (migration 0016).
+        {"id": "e2", "autor_nome": "JOSE SERRA", "autor_nome_norm": "jose serra",
+         "ano": 2023, "localidade_gasto": "Sao Paulo - SP", "funcao": "Educacao",
+         "valor_empenhado": 200000.0, "valor_liquidado": 100000.0, "valor_pago": 50000.0,
+         "valor_resto_inscrito": 0.0, "valor_resto_cancelado": 0.0, "valor_resto_pago": 0.0,
+         "autor_profile_id": None, "source": "transparencia.emendas",
          "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
          "synced_at": "2026-08-11T00:00:00Z"},
     ],
@@ -127,6 +137,24 @@ class TestEmendas(unittest.TestCase):
 
     def test_recusa_sem_municipio(self):
         self.assertIsNotNone(consultas.emendas_por_municipio(gw(), municipio="").recusa)
+
+    def test_por_autor_perfil_aceita_por_chave(self):  # atribuição verificada
+        r = consultas.emendas_por_autor_perfil(gw(), perfil_id="p1")
+        self.assertIsNone(r.recusa)
+        self.assertEqual(len(r.dados["emendas"]), 1)
+        self.assertEqual(r.dados["emendas"][0]["id"], "e1")
+        self.assertTrue(any("chave" in x.lower() for x in r.ressalvas))  # grau verificado
+        self.assertTrue(r.proveniencia)
+
+    def test_por_autor_perfil_recusa_sem_id(self):
+        self.assertIsNotNone(consultas.emendas_por_autor_perfil(gw(), perfil_id="  ").recusa)
+
+    def test_por_autor_nome_ignora_acento(self):  # furo do ilike (§6.3 / modo de falha 8)
+        # A fonte grava "JOSE SERRA" (sem acento); a busca "José Serra" tem de casar.
+        r = consultas.emendas_por_autor_nome(gw(), nome="José Serra")
+        self.assertIsNone(r.recusa)
+        self.assertEqual(len(r.dados["emendas"]), 1)
+        self.assertEqual(r.dados["emendas"][0]["id"], "e2")
 
 
 class TestEventos(unittest.TestCase):

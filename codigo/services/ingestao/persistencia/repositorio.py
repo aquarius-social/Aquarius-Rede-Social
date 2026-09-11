@@ -66,6 +66,15 @@ class ClienteBanco(Protocol):
         """Primeira linha que casa com todos os pares de `onde`, ou None."""
         ...
 
+    def selecionar_muitos(
+        self, tabela: str, onde: dict | None = None, colunas: str = "*",
+        *, ordem: str | None = None,
+    ) -> list[dict]:
+        """Todas as linhas que casam com `onde` (igualdade em cada par),
+        paginando. `onde` None/{} devolve a tabela inteira. `ordem` (nome de
+        coluna) estabiliza a paginação — passe uma chave única (ex.: 'id')."""
+        ...
+
 
 # -----------------------------------------------------------------------------
 # Bronze — imutável, insert ignorando conflito
@@ -491,6 +500,35 @@ def salvar_emendas(
         linha["source_url"] = source_url
         cliente.upsert("emenda", [linha], conflito="codigo_emenda")
     return len(aprovados)
+
+
+def rebackfill_autor_profile_id(
+    cliente: ClienteBanco, aprovados: Sequence[dict], lookup
+) -> int:
+    """Re-preenche APENAS `emenda.autor_profile_id` a partir do `id_externo`
+    (sistema='autor_orcamentario') já resolvido — sem reescrever os demais campos.
+
+    A fonte da atribuição continua sendo a resolução GRADUADA (id_externo, com
+    grau/sinais/pendência), não um join cru autor_nome↔perfil. Serve à curadoria
+    que re-roda a resolução com o universo completo de perfis: emendas cujo código
+    passou a ter perfil recebem o vínculo; as sem código resolvido ficam como
+    estão (honesto). Idempotente, upsert por `codigo_emenda`. Devolve quantas
+    emendas foram (re)vinculadas."""
+    if lookup is None:
+        return 0
+    linhas: list[dict] = []
+    for e in aprovados:
+        cod = e.get("autor_codigo")
+        codigo_emenda = e.get("codigo_emenda")
+        if not cod or not codigo_emenda:
+            continue
+        pid = lookup("autor_orcamentario", cod)
+        if pid is None:
+            continue
+        linhas.append({"codigo_emenda": codigo_emenda, "autor_profile_id": pid})
+    if linhas:
+        _upsert_lote(cliente, "emenda", linhas, conflito="codigo_emenda")
+    return len(linhas)
 
 
 _COLS_EVENTO = (

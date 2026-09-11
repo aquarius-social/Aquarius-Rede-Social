@@ -34,6 +34,8 @@ class _FakeTable:
         self._ignore = False
         self._match = {}
         self._limit = None
+        self._order = None
+        self._range = None
 
     def upsert(self, rows, on_conflict=None, ignore_duplicates=False):
         self._op, self._rows = "upsert", rows
@@ -51,6 +53,14 @@ class _FakeTable:
 
     def limit(self, n):
         self._limit = n
+        return self
+
+    def order(self, col):
+        self._order = col
+        return self
+
+    def range(self, inicio, fim):
+        self._range = (inicio, fim)          # inclusivo, como o PostgREST
         return self
 
     def execute(self):
@@ -77,7 +87,15 @@ class _FakeTable:
         if self._op == "select":
             res = [x for x in self._store
                    if all(x.get(k) == v for k, v in self._match.items())]
-            return _Resp(res[: self._limit] if self._limit else res)
+            if self._order:
+                res = sorted(
+                    res, key=lambda r: (r.get(self._order) is None, r.get(self._order)))
+            if self._range is not None:
+                inicio, fim = self._range
+                res = res[inicio:fim + 1]
+            elif self._limit:
+                res = res[: self._limit]
+            return _Resp(res)
         return _Resp([])
 
 
@@ -126,6 +144,19 @@ class TestBancoSupabase(unittest.TestCase):
             banco.selecionar_um("t", {"sistema": "camara", "identificador": "1"})["profile_id"],
             "P")
         self.assertIsNone(banco.selecionar_um("t", {"identificador": "999"}))
+
+    def test_selecionar_muitos_pagina_ate_esgotar(self):
+        cli = FakeSupabaseClient()
+        banco = BancoSupabase(cli, lote=2)     # lote pequeno força ≥3 páginas
+        for i in range(5):
+            banco.upsert("t", [{"slug": f"s{i}", "n": i}], conflito="slug")
+        todos = banco.selecionar_muitos("t", ordem="slug")
+        self.assertEqual([r["n"] for r in todos], [0, 1, 2, 3, 4])  # nada truncado
+        # com filtro de igualdade
+        um = banco.selecionar_muitos("t", {"slug": "s3"})
+        self.assertEqual([r["n"] for r in um], [3])
+        # tabela vazia
+        self.assertEqual(banco.selecionar_muitos("vazia"), [])
 
 
 # -----------------------------------------------------------------------------

@@ -90,9 +90,24 @@ FERRAMENTAS: list[Ferramenta] = [
         ),
     ),
     Ferramenta(
+        "emendas_por_autor_perfil",
+        "Emendas de um autor por CHAVE VERIFICADA (autor_profile_id). Atribuição sem "
+        "ambiguidade — PREFIRA esta: use buscar_parlamentar para obter o perfil_id e "
+        "então consulte aqui. Bancada/comissão não têm autor único e ficam de fora.",
+        {
+            "perfil_id": _s("string", "id do parlamentar (de buscar_parlamentar)."),
+            "ano": _s("integer", "Ano (opcional)."),
+        },
+        ["perfil_id"],
+        lambda gw, a: consultas.emendas_por_autor_perfil(
+            gw, perfil_id=a.get("perfil_id", ""), ano=a.get("ano")
+        ),
+    ),
+    Ferramenta(
         "emendas_por_autor_nome",
-        "Emendas de um autor, casadas por NOME (com ressalva — a chave autor↔perfil "
-        "ainda não está carregada; homônimos possíveis).",
+        "Emendas de um autor casadas por NOME (fallback, com ressalva de homônimo). "
+        "Insensível a acento/caixa. Use só quando não houver perfil_id; do contrário "
+        "prefira emendas_por_autor_perfil (mais confiável).",
         {
             "nome": _s("string", "Nome do autor."),
             "ano": _s("integer", "Ano (opcional)."),

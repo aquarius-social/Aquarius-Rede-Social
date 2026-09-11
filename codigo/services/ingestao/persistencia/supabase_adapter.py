@@ -117,6 +117,32 @@ class BancoSupabase:
         dados = list(getattr(resp, "data", None) or [])
         return dados[0] if dados else None
 
+    def selecionar_muitos(
+        self, tabela: str, onde: dict | None = None, colunas: str = "*",
+        *, ordem: str | None = None,
+    ) -> list[dict]:
+        """Lê todas as linhas paginando de `lote` em `lote` (o PostgREST limita a
+        página; sem paginar, tabelas grandes vêm truncadas em silêncio). `onde`
+        None/{} = tabela inteira; `ordem` estabiliza a paginação."""
+        filtro = dict(onde or {})
+        tam = self._lote
+        inicio = 0
+        saida: list[dict] = []
+        while True:
+            def _pag(ini=inicio):
+                q = self._c.table(tabela).select(colunas)
+                if filtro:
+                    q = q.match(filtro)
+                if ordem:
+                    q = q.order(ordem)
+                return q.range(ini, ini + tam - 1).execute()
+            pagina = list(getattr(_com_retry(_pag), "data", None) or [])
+            saida.extend(pagina)
+            if len(pagina) < tam:
+                break
+            inicio += tam
+        return saida
+
 
 def criar_banco_supabase(url: str, key: str) -> BancoSupabase:
     """Cria o adaptador com o cliente Supabase real.

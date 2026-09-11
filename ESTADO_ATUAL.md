@@ -5,7 +5,7 @@ ler (depois do `CLAUDE.md`). Complementos: `PLANO.md` (roadmap em ondas),
 `RELATORIO_DESENVOLVIMENTO.md` (fotografia por camada, também publicada como página),
 `MELHORIAS.md` (backlog A–I), `HISTORICO.md` (marcos e números de ingestão).
 
-Atualização: 2026-08-12.
+Atualização: 2026-09-11.
 
 ## Resumo executivo
 
@@ -52,11 +52,23 @@ geração de posts (2ª face do Prometeus) e o deploy são os próximos grandes 
   emendas (Portal da Transparência), eventos (agenda bicameral). **Truncadas** (coletor pronto,
   dados incompletos por espaço): proposições, votações, tramitações, discursos. **Sem coletor:**
   presença.
+- **Emendas — autoria (§6.3).** A base cresceu para **48.369** emendas (9 anos; backfill de 11/09).
+  Autor preenchido em **94,6%** (45.745); **individuais ~99,4%**. A resolução vive em `id_externo`
+  (sistema='autor_orcamentario', hoje **1.216** ligações) e é aplicada às emendas por backfill do
+  `autor_profile_id`. Em 11/09: preenchidas **1.347** já-resolvidas (defasagem de backfill) +
+  **95 autores casados por nome** (código real de resolução, 0 ambíguos) → +2.025 linhas. Todo
+  casamento por nome entra como `pendente_conferencia` (1 sinal, §5.3). Ainda sem autor: **13
+  autores individuais** (título/apelido/apóstrofo/perfil ausente — conferência manual) e **2.351
+  coletivas** (bancada/comissão), que exigem **modelagem de autor coletivo** (fase à parte — não se
+  atribui pessoa a autoria de bancada). Re-resolução canônica: `run_reresolver_autores_emendas.py`
+  (offline, idempotente; roda após novas ingestões trazerem mais perfis).
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
 - **Banco no teto do Free (~476/500 MB).** Subir pro Pro destrava a reingestão das áreas
   truncadas.
-- **Testes:** **308**, sem rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`).
+- **Testes:** **313** (eram 308; +5 do re-resolver de autoria + `selecionar_muitos`/backfill), sem
+  rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`). *O código novo (runner
+  + edições no repositório/adapter + testes) está **neste worktree, ainda não commitado**.*
 
 ## 4. Prometeus (Onda 2) — o agente de IA  [FOCO ATUAL]
 
@@ -145,6 +157,17 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 8. **Secrets do repo** (`SUPABASE_URL`/`SUPABASE_SERVICE_KEY`) pro agendador `ingestao.yml`.
 9. **Supabase Free → Pro** — destrava a reingestão das áreas truncadas + várias frentes.
 10. **WhatsApp Business** — habilitação Meta em paralelo (dependência externa mais longa).
+11. **Conferência da autoria de emendas** — revisar os **675 `pendente_conferencia`** de `id_externo`
+    (sistema='autor_orcamentario'; casamento por nome = 1 sinal). 560 são de 11/09 (backfill + as 95
+    do re-casamento). Listar: `select x.identificador, p.nome from id_externo x join profiles p on
+    p.id=x.profile_id where x.sistema='autor_orcamentario' and x.pendente_conferencia order by p.nome;`
+    Ao conferir, marcar `conferido_por_humano` no mapa curado e re-rodar (não editar id_externo cru).
+12. **13 autores individuais de emenda sem match** — criar/ajustar perfil e religar: Allan Garcês
+    ("DR."), Delegado Francischini, Luizão Goulart, Pedro D'Alua, Pedro Chaves (2 códigos), Rocha
+    (genérico), Jean Paul Prates, Arolde de Oliveira, Lindbergh Farias, Eunício Oliveira, Jorginho
+    Mello, Renzo Braz.
+13. **Modelagem de autoria coletiva** (bancada/comissão) — 2.351 emendas sem autor por design; decidir
+    como representar a entidade coletiva (não é pessoa) antes de expô-las no Prometeus.
 
 ## 8. Próximo passo
 
@@ -158,8 +181,8 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 ## 9. Notas de ambiente
 
 - Interpretador Python é **`py`** (não `python`, alias fantasma da Microsoft Store).
-- **Testes sem rede:** ingestão **308** + Prometeus **21** = **329** verdes. Rodar dentro de cada
-  serviço: `py -m unittest discover -s . -t .`.
+- **Testes sem rede:** ingestão **313** (era 308; +5 da curadoria de autoria — neste worktree) +
+  Prometeus **21** = **334** verdes. Rodar dentro de cada serviço: `py -m unittest discover -s . -t .`.
 - **RAM limitada:** Metro (Expo web) e `tsc` estouram memória; parar preview antes do `tsc`. Ver a
   memória do projeto `ambiente-ram-limitada`.
 - **GitHub Actions:** só `git push` dispara Actions; `git commit` local **não**. Estamos
