@@ -585,6 +585,7 @@ def salvar_vinculos_temporais(
     fica None e a sigla-fonte é preservada; resolver por linhagem é curadoria (§4).
     """
     salvos = 0
+    pulados_sobrepostos = 0
     for v in vinculos:
         # A casa do vínculo é também o sistema do id_externo (camara↔camara,
         # senado↔senado) — resolve bicameral sem hardcode.
@@ -601,7 +602,7 @@ def salvar_vinculos_temporais(
         titular_profile_id = None
         if v.get("titular_id_fonte"):
             titular_profile_id = lookup(v.get("casa", "camara"), v["titular_id_fonte"])
-        cliente.upsert("vinculo_temporal", [{
+        linha = {
             "profile_id": perfil_id,
             "casa": v["casa"],
             "legislatura": v.get("legislatura"),
@@ -614,8 +615,24 @@ def salvar_vinculos_temporais(
             "vigencia": _daterange(v["vigencia_inicio"], v.get("vigencia_fim")),
             "source": source,
             "source_url": source_url,
-        }], conflito="profile_id,casa,vigencia")
+        }
+        try:
+            cliente.upsert("vinculo_temporal", [linha], conflito="profile_id,casa,vigencia")
+        except Exception as e:  # noqa: BLE001 — só a sobreposição é engolida; o resto sobe
+            # A constraint de EXCLUSÃO `vinculo_sem_sobreposicao` rejeita um período que
+            # SE SOBREPÕE a um já gravado — o que o ON CONFLICT (chave exata) não resolve.
+            # Ocorre ao rebackfillar uma legislatura antiga cujos deputados já têm vínculos
+            # MAIS FINOS de uma ingestão anterior (ex.: troca de partido no meio do período).
+            # Mantém-se o existente (mais informativo) e pula-se o grosseiro: débito
+            # declarado, não crash (§4/§5.1). Erro que NÃO é sobreposição sobe.
+            if "vinculo_sem_sobreposicao" in str(e) or "23P01" in str(e):
+                pulados_sobrepostos += 1
+                continue
+            raise
         salvos += 1
+    if pulados_sobrepostos:
+        print(f"  [{pulados_sobrepostos} vínculo(s) '{source}' pulado(s) por sobreposição "
+              "com período já gravado — mantido o existente (§4/§5.1)]")
     return salvos
 
 

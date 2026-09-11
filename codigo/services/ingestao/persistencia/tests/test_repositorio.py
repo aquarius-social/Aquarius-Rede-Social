@@ -571,6 +571,49 @@ class TestVinculosTemporais(unittest.TestCase):
         self.assertEqual(por_sigla["MDB"]["partido_id"], partido_id)
         self.assertIsNone(por_sigla["PMDB"]["partido_id"])  # histórica → curadoria
 
+    def test_pula_sobreposicao_sem_derrubar_o_lote(self):
+        """Overlap com período já gravado (exclusion constraint `vinculo_sem_
+        sobreposicao`, que o ON CONFLICT não resolve) é PULADO e não derruba os
+        demais — mantém o existente, mais fino (§4/§5.1). Rebackfill de legislatura
+        antiga sobre deputado já ingerido com histórico completo."""
+        class BancoComExclusao(FakeBanco):
+            def upsert(self, tabela, linhas, *, conflito):
+                for linha in linhas:
+                    if (tabela == "vinculo_temporal"
+                            and "2019-01-31" in linha.get("vigencia", "")):
+                        raise RuntimeError(
+                            'conflicting key value violates exclusion constraint '
+                            '"vinculo_sem_sobreposicao" (23P01)')
+                return super().upsert(tabela, linhas, conflito=conflito)
+
+        banco = BancoComExclusao()
+        salvar_deputados(banco, [transformar_deputado(_dep())])
+        lookup = lookup_id_externo(banco)
+        n = salvar_vinculos_temporais(
+            banco,
+            [self._vinc(inicio="2015-02-01", fim="2015-09-24"),   # ok
+             self._vinc(inicio="2016-03-17", fim="2019-01-31")],  # colide → pula
+            lookup)
+        self.assertEqual(n, 1)  # só o não-conflitante contou
+        vigencias = [v["vigencia"] for v in banco.tabelas["vinculo_temporal"]]
+        self.assertIn("[2015-02-01,2015-09-24)", vigencias)
+        self.assertNotIn("[2016-03-17,2019-01-31)", vigencias)  # o grosseiro foi pulado
+
+    def test_erro_que_nao_e_sobreposicao_propaga(self):
+        """Um erro que NÃO é sobreposição (ex.: conexão) NÃO pode ser engolido —
+        senão um bug real vira dado faltando em silêncio (§5.2)."""
+        class BancoQuebrado(FakeBanco):
+            def upsert(self, tabela, linhas, *, conflito):
+                if tabela == "vinculo_temporal":
+                    raise RuntimeError("falha de conexao com o banco")
+                return super().upsert(tabela, linhas, conflito=conflito)
+
+        banco = BancoQuebrado()
+        salvar_deputados(banco, [transformar_deputado(_dep())])
+        lookup = lookup_id_externo(banco)
+        with self.assertRaises(RuntimeError):
+            salvar_vinculos_temporais(banco, [self._vinc()], lookup)
+
 
 # =============================================================================
 # Tramitações — resolução da FK de proposição
