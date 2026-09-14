@@ -7,7 +7,7 @@ Fonte:
 Por que este coletor precede o de votações na prática: cada voto nominal se
 vincula a um perfil por `id_externo` (sistema='camara'). Sem os deputados
 ingeridos, todo nominal cai na quarentena por integridade referencial. Este é
-o gargalo natural (ESTADO_ATUAL.md, Rota A → depois deputados).
+o gargalo natural: deputados primeiro, votações depois.
 
 DISCIPLINAS DA METODOLOGIA §12 (verificado contra a API viva em 2026-07-29):
 

@@ -25,7 +25,7 @@ export default function Secao({ params }: { params: { secao: string } }) {
             <div style={{ fontSize: 14, fontWeight: 700, color: theme.fg }}>“{titulo}” ainda não foi construída</div>
             <div style={{ marginTop: 3, fontSize: 12.5, color: theme.fgMuted, lineHeight: 1.5 }}>
               A fundação do admin (shell, tema claro/escuro, Visão geral) está pronta. As telas entram
-              uma a uma, fiéis ao protótipo. Ver ordem no MELHORIAS.md (seção G).
+              uma a uma, fiéis ao protótipo. A ordem está no board do Snaps.
             </div>
           </div>
         </div>
