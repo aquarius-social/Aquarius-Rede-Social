@@ -16,8 +16,8 @@ canônicos, tramitações, a persistência (com adaptador Supabase concreto), o
 cliente HTTP real e o orquestrador que amarra tudo.
 
 Para rodar em produção falta apenas `pip install supabase` + credenciais — ver
-`services/ingestao/run_ingestao.py` e `.env.example`. `ESTADO_ATUAL.md` traz o
-próximo passo.
+`services/ingestao/run_ingestao.py` e `.env.example`. O estado corrente e o
+próximo passo vivem na §9 do PRD, no Snaps.
 
 ## Mapa do repositório
 
@@ -27,16 +27,19 @@ codigo/
   packages/ui/             tokens de design + preset Tailwind
   services/ingestao/       coletores em Python (Câmara), pipeline em camadas,
                            resolução de identidade, persistência, orquestração
-  supabase/migrations/     schema SQL (0001–0005)
+  supabase/migrations/     schema SQL (0001–0018)
 ```
 
-Documentos de trabalho na raiz:
+Governança e documentação:
 
-- **`CLAUDE.md`** — regras de conduta e mapa do projeto (ponto de entrada).
-- **`ESTADO_ATUAL.md`** — onde o desenvolvimento está e o próximo passo.
-- **`ONDA-0-LEIA-ME.md` / `ONDA-1-LEIA-ME.md`** — o que cada onda entregou e por quê.
-- **`ANALISE-Metodologia-vs-Codigo.md`** — decisões de dados conferidas contra a fonte.
-- **`PLANO.md`** — auditoria e plano em fases.
+Este repositório **não guarda** PRD, roadmap, backlog nem estado do projeto. Eles vivem
+na plataforma **Snaps** e são consultados pelo MCP `snaps-db` (ADR-0019).
+
+- **`CLAUDE.md`** / **`AGENTS.md`** / **`GEMINI.md`** — ponto de entrada de agentes: as
+  sete regras de conduta e como ler o contexto no banco.
+- **`DEPLOY.md`** — runbook de deploy.
+- Estado do projeto, o que falta, decisões de arquitetura e backlog: tabelas
+  `governance_docs`, `decisions` e `cards` no Snaps.
 
 ## Rodar os testes
 
@@ -45,7 +48,7 @@ O ecossistema de dados/IA é Python 3.12+; os testes usam apenas `unittest`
 
 ```bash
 cd codigo/services/ingestao
-python -m unittest discover -s . -t .
+py -m unittest discover -s . -t .
 ```
 
 Devem passar **300 testes** com `OK`. (Em ambiente Windows onde `python` é o

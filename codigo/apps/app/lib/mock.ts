@@ -5,7 +5,7 @@
  * ⚠️ São placeholders do design — NÃO são dados reais deste parlamentar. Só
  * Despesas e Emendas leem o banco. Estas abas replicam o layout do Claude
  * Design com o conteúdo-exemplo, até a ingestão dessas áreas voltar (hoje o
- * Free do Supabase está priorizando dinheiro). Ver ESTADO_ATUAL.md.
+ * Free do Supabase está priorizando dinheiro). Ver card AQU-RD-4 no Snaps.
  */
 import { cor } from './tema';
 
