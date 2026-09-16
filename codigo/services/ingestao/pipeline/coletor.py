@@ -139,3 +139,24 @@ class JanelaMovel:
 
     def intervalo(self, ate: date) -> tuple[date, date]:
         return ate - timedelta(days=self.dias), ate
+
+
+# Algumas listas da Câmara (proposições, votações) rejeitam intervalos de data
+# largos com HTTP 400. O backfill (~1 ano) precisa ser fatiado; a janela
+# incremental (30 dias) cabe num pedaço só. 60 dias foi verificado ao vivo em
+# 2026-09 (2 meses passam; 1 ano dá 400).
+MAX_JANELA_CAMARA_DIAS = 60
+
+
+def fatiar_periodo(inicio: date, fim: date, max_dias: int) -> list[tuple[date, date]]:
+    """Divide [inicio, fim] (extremos inclusivos) em subintervalos de no máximo
+    `max_dias` dias cada, sem sobreposição. Vazio se `fim < inicio`."""
+    if fim < inicio:
+        return []
+    pedacos: list[tuple[date, date]] = []
+    atual = inicio
+    while atual <= fim:
+        prox = min(atual + timedelta(days=max_dias - 1), fim)
+        pedacos.append((atual, prox))
+        atual = prox + timedelta(days=1)
+    return pedacos

@@ -38,11 +38,13 @@ from pipeline.camadas import (
     portao_bronze_prata,
 )
 from pipeline.coletor import (
+    MAX_JANELA_CAMARA_DIAS,
     ClienteHttp,
     ErroFalha,
     ErroInstabilidade,
     JanelaMovel,
     PoliticaRetry,
+    fatiar_periodo,
     obter_com_retry,
 )
 
@@ -75,11 +77,33 @@ def coletar_bronze(
 ) -> list[RegistroBronze]:
     """Coleta proposições apresentadas na janela móvel.
 
-    Paginação segue os `links` da API. `limite_paginas` é backstop contra
-    laço infinito por bug de contrato — nunca contra volume legítimo.
+    A API `/proposicoes` rejeita intervalos de `dataApresentacao` largos (HTTP
+    400, verificado ao vivo 2026-09): a janela é FATIADA em pedaços curtos
+    (`MAX_JANELA_CAMARA_DIAS`). A janela incremental (30 dias) cabe num pedaço só;
+    o backfill (~1 ano) vira ~6 pedaços. Paginação segue os `links`; `limite_paginas`
+    é backstop contra laço infinito por bug de contrato — nunca contra volume.
     """
     inicio, fim = janela.intervalo(ate)
     url = f"{BASE}/proposicoes"
+    bronze: list[RegistroBronze] = []
+    for sub_ini, sub_fim in fatiar_periodo(inicio, fim, MAX_JANELA_CAMARA_DIAS):
+        bronze.extend(_coletar_intervalo(
+            cliente, url, sub_ini, sub_fim, politica=politica,
+            itens_por_pagina=itens_por_pagina, limite_paginas=limite_paginas))
+    return bronze
+
+
+def _coletar_intervalo(
+    cliente: ClienteHttp,
+    url: str,
+    inicio: date,
+    fim: date,
+    *,
+    politica: PoliticaRetry,
+    itens_por_pagina: int,
+    limite_paginas: int,
+) -> list[RegistroBronze]:
+    """Coleta UM sub-intervalo curto, paginando pelos `links` da API."""
     params: dict[str, Any] = {
         "dataApresentacaoInicio": inicio.isoformat(),
         "dataApresentacaoFim": fim.isoformat(),
@@ -87,26 +111,20 @@ def coletar_bronze(
         "ordem": "ASC",
         "ordenarPor": "id",
     }
-
     bronze: list[RegistroBronze] = []
     pagina = 1
     proximo: str | None = None
-
     while pagina <= limite_paginas:
         if proximo is None:
             corpo = obter_com_retry(cliente, url, params=params, politica=politica)
         else:
             corpo = obter_com_retry(cliente, proximo, politica=politica)
-
-        dados = (corpo or {}).get("dados", [])
-        for item in dados:
+        for item in (corpo or {}).get("dados", []):
             bronze.append(RegistroBronze.de(FONTE, url, item))
-
         proximo = _proximo_link(corpo)
         if proximo is None:
             break
         pagina += 1
-
     return bronze
 
 

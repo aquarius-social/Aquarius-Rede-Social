@@ -28,6 +28,7 @@ fonte, e o dado interno tem que refletir isso.
 from __future__ import annotations
 
 import re
+from datetime import date
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -40,10 +41,12 @@ from pipeline.camadas import (
     portao_bronze_prata,
 )
 from pipeline.coletor import (
+    MAX_JANELA_CAMARA_DIAS,
     ClienteHttp,
     ErroFalha,
     ErroInstabilidade,
     PoliticaRetry,
+    fatiar_periodo,
     obter_com_retry,
 )
 
@@ -190,8 +193,33 @@ def coletar_bronze_votacoes(
     cara (uma requisição por votação × ~513 votos). Separar permite ao
     orquestrador decidir se coleta nominais desta rodada ou não, e permite
     o teste de contrato rodar sobre a lista antes de gastar as chamadas caras.
+
+    A API `/votacoes` rejeita intervalos largos (HTTP 400, verificado 2026-09): a
+    janela é FATIADA em pedaços curtos (`MAX_JANELA_CAMARA_DIAS`), como em proposições.
     """
     url = f"{BASE}/votacoes"
+    ini = date.fromisoformat(str(data_inicio)[:10])
+    fim = date.fromisoformat(str(data_fim)[:10])
+    bronze: list[RegistroBronze] = []
+    for sub_ini, sub_fim in fatiar_periodo(ini, fim, MAX_JANELA_CAMARA_DIAS):
+        bronze.extend(_coletar_intervalo_votacoes(
+            cliente, url, sub_ini.isoformat(), sub_fim.isoformat(),
+            politica=politica, itens_por_pagina=itens_por_pagina,
+            limite_paginas=limite_paginas))
+    return bronze
+
+
+def _coletar_intervalo_votacoes(
+    cliente: ClienteHttp,
+    url: str,
+    data_inicio: str,
+    data_fim: str,
+    *,
+    politica: PoliticaRetry,
+    itens_por_pagina: int,
+    limite_paginas: int,
+) -> list[RegistroBronze]:
+    """Coleta UM sub-intervalo curto de votações, paginando pelos `links`."""
     params: dict[str, Any] = {
         "dataInicio": data_inicio,
         "dataFim": data_fim,
