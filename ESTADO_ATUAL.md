@@ -5,7 +5,7 @@ ler (depois do `CLAUDE.md`). Complementos: `PLANO.md` (roadmap em ondas),
 `RELATORIO_DESENVOLVIMENTO.md` (fotografia por camada, também publicada como página),
 `MELHORIAS.md` (backlog A–I), `HISTORICO.md` (marcos e números de ingestão).
 
-Atualização: 2026-09-08.
+Atualização: 2026-09-16.
 
 ## Resumo executivo
 
@@ -150,10 +150,12 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 
 - **Ownership transferida para a organização `aquarius-social`.** Remote do repo de código:
   `github.com/aquarius-social/Aquarius-Rede-Social.git`.
-- **Repo de código:** `origin/main` e local **em `ccf526c`** (sincronizados) — os commits do
-  Prometeus 2.1/2.2 + ligação do chat + `ci.yml` + snapshot foram **todos pushados** na sessão
-  anterior. Working tree limpo, **exceto `.mcp.json` não versionado** (config do Supabase MCP —
-  commitar é opcional).
+- **Repo de código:** `origin/main` e local **em `b1d6898`** (sincronizados) — os commits do
+  backfill de despesa 2018–2022, dos 2 fixes de ingestão e do loader de `.env` foram **pushados**.
+  Working tree limpo, **exceto `.mcp.json` não versionado** (commitar é opcional).
+- **Repo agora PÚBLICO** (Actions grátis/ilimitado) — resolveu o billing que travava a ingestão
+  agendada. Histórico varrido: **nenhum segredo commitado**. Docs de negócio ficam no repo separado
+  `aquarius-contexto` (não afetado).
 - **Repo de contexto** (`aquarius-contexto`): separado, sem alteração nesta sessão (prints/telas,
   docs-fonte, marketing, protótipo).
 - **Segurança:** um **PAT do GitHub circulou no chat** na sessão anterior — **precisa ser revogado**
@@ -199,13 +201,15 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 
 ## 8. Próximo passo
 
-- **Prometeus ao vivo (com o dev):** instalar `gcloud` → **deploy no GCP (2.4)** → colar a chave
-  no painel → setar a URL no app → **teste ao vivo** do chat.
-- **Dados (decidido):** o dev roda o **backfill fatia de valor** (`RUNBOOK-BACKFILL.md`) —
-  passada A (identidade 2018–2022) → Claude verifica vínculos via MCP → passadas B (cota) e C
-  (emendas). Aprofunda o Prometeus na hora. Atividade/paridade = 2ª rodada.
-- **Em paralelo (sem pré-requisitos):** construir a **2.3 (pipeline de posts + freio editorial)** —
-  Python, testável local.
+**Plano refeito em 5 partes — detalhe no `PLANO.md` (topo). Ordem decidida: 1 → 2 → 3 → 4 → 5.**
+
+- **Parte 1 — ligar o que já está pronto:** rodar migration `0018`; **deploy do Prometeus (2.4)**
+  pelo dev (gcloud + `ANTHROPIC_API_KEY` no painel + `EXPO_PUBLIC_PROMETEUS_URL`); secrets do repo
+  p/ ingestão agendada; **segurança** (revogar PAT + rotacionar service key); wire dos botões de IA.
+- **Parte 2 — completar os dados (2ª rodada, a próxima):** validar o **canário de proposições**
+  (dívida de integridade) → backfillar proposições/votações/tramitações/discursos; paridade (frentes
+  Senado, blocos Câmara); juntar as 2 pernas de tramitação; presença; curadoria (linhagem de partidos).
+- **Partes 3–5** (produto/social → monetização/mobile → DaaS): detalhe no `PLANO.md`.
 
 ## 9. Notas de ambiente
 

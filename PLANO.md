@@ -6,6 +6,73 @@ mais recentes do acervo e resolvem várias contradições que o v1 apontava em a
 
 ---
 
+## ⭐ PLANO REFEITO (2026-09) — a fonte de verdade atual
+
+> As Partes 1–6 abaixo são o plano original (ago/2026) — valem como **histórico e
+> decisões travadas** (hierarquia de fontes, arquitetura do Prometeus, matemática do
+> k-anonimato). Esta seção, no topo, é o **plano corrente**, refeito depois do backfill
+> 2018–2026, da migração para Supabase **Pro** e do repositório ter ficado **público**.
+
+### Onde estamos (set/2026)
+
+Prontos: dinheiro **2018–2026 das duas casas** (~1,86 mi despesas + 48k emendas);
+fundação de identidade + **perfis históricos inativos** (ex-parlamentares fora do app, só
+memória do Prometeus); **app de leitura** (~15 telas, web na Vercel); **admin** (14 telas +
+RBAC + revisão editorial, na Vercel); **Prometeus 2.0–2.2** (validado, 21 testes); **repo
+público** (Actions grátis); Supabase **Pro**. O bloqueio `⛔Pro` caiu em toda a lista de
+`MELHORIAS.md` — onde estava "truncado por espaço", agora falta **execução (2ª rodada)**,
+não espaço nem código novo.
+
+### As 5 partes — ordem decidida com o usuário: **1 → 2 → 3 → 4 → 5**
+
+**Parte 1 — Ligar o que já está pronto** 🟢
+- Rodar a migration `0018_follows` (destrava seguir persistido + feed "Seguindo").
+- **Deploy do Prometeus (2.4)** — pelo dev: `gcloud run deploy` de `codigo/services/prometeus/`,
+  colar `ANTHROPIC_API_KEY` no painel do Cloud Run, setar `EXPO_PUBLIC_PROMETEUS_URL` no app →
+  **chat da IA ao vivo**.
+- Pôr `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` nos secrets do repo → ingestão agendada roda sozinha.
+- **Segurança:** revogar o PAT do GitHub + rotacionar a `service_role` do Supabase (circularam no chat).
+- Wire dos botões "Perguntar ao Prometeus" nos perfis.
+
+**Parte 2 — Completar os dados (2ª rodada)** 🟡 ← *próxima após a Parte 1*
+- **Validar o canário de proposições** (nunca rodado ao vivo — dívida de integridade nº1).
+- Backfillar **proposições / votações+votos / tramitações / discursos** 2018–2026 (código pronto).
+- **Paridade:** frentes do Senado + blocos da Câmara (faltam nas duas direções).
+- **Juntar as 2 pernas de tramitação** (identidade cross-casa da proposição).
+- **Presença** (Área E) — coletor novo (não existe).
+- **Curadoria:** linhagem de partidos (`partido_id` histórico), resíduo de autores de emenda (12%),
+  vínculo do senador 5718, mapa de autores de emenda multi-ano.
+
+**Parte 3 — Conteúdo da IA + camada social** 🔴
+- Tabelas `post`/`story`/`editorial_review`/`retratacao` + social (`reacao`/`comentario`/`salvo`/
+  `compartilhamento`) + `notificacao` + `feature_flags` + `audit_log`.
+- **Prometeus 2.3:** IA gera post → fila editorial no admin → publica (gating `confiança < 0.65`
+  ou null → revisão humana). Ligar a **Revisão editorial** ponta-a-ponta (o freio) + server actions.
+- App: feed editorial + curtir/comentar/salvar/compartilhar + stories + notificações.
+- Ligar as 14 telas do admin nas tabelas reais (hoje são UI sobre dado de demonstração).
+
+**Parte 4 — Monetização + mobile + produção** 🔴
+- **Premium/billing (Stripe)** — ordem travada: **antes** do DaaS.
+- **App mobile via EAS** (builds nativos, push, ícones/splash).
+- Robustez (paginação/cache/error boundaries), acessibilidade, LGPD acionável (exportar/deletar),
+  compartilhamento nativo, fotos reais de perfil.
+- E-mail de produção (domínio + Resend); login por SMS/WhatsApp.
+
+**Parte 5 — DaaS + enriquecimento externo (longo prazo)** ⛔escala
+- Decidir **k** (com parecer jurídico); instrumentação de engajamento consentida.
+- DaaS k-anônimo; **convênios/transferências** ("pra onde o dinheiro foi de fato").
+- Enriquecimento externo (eleitoral/patrimônio/judiciário); Siga Brasil; backfill pré-2018.
+
+### Gotchas registrados
+
+- **Canário de proposições** nunca validado ao vivo; hoje roda assumindo `canario_validado=True`.
+  Validar antes de backfillar atividade (Parte 2).
+- **2 bugs de ingestão já corrigidos** (overlap de vínculo `c67b275`; API da Câmara exigindo
+  `idLegislatura` `f2f9cfc` — este também consertava a ingestão de produção).
+- Admin: as 14 telas existem como UI, mas **sem escrita real** até as tabelas da Parte 3.
+
+---
+
 ## Parte 1 — Hierarquia de fontes (decidir isto primeiro resolve metade das dúvidas)
 
 O acervo tem quatro gerações de documento, e elas se contradizem porque foram
