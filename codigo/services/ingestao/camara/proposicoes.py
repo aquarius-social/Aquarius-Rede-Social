@@ -6,22 +6,20 @@ Este é o primeiro tentáculo, e tem o papel deliberado de exercitar todas as
 disciplinas antes da largada em escala: pipeline em camadas, portão de
 qualidade, contrato com canário, dedup por conteúdo, janela móvel.
 
-ATENÇÃO SOBRE OS NOMES DE CAMPO.
+CANÁRIO VALIDADO AO VIVO em 2026-09-16 (janela jun/2025, endpoint `/proposicoes`).
+A resposta de lista traz as chaves: `id, siglaTipo, numero, ano, ementa,
+dataApresentacao, codTipo, uri`. Os 6 campos críticos (`CAMPOS_CRITICOS_PROPOSICAO`)
+estão TODOS presentes (§2 — amostra e data registradas).
 
-Os nomes usados aqui (`id`, `siglaTipo`, `numero`, `ano`, `ementa`,
-`dataApresentacao`, `statusProposicao`, `uriAutores`) vêm da documentação
-pública da API v2 da Câmara. NENHUM deles foi verificado contra a interface
-viva neste ambiente — a máquina onde este código foi escrito não tem acesso
-de rede às APIs governamentais.
+Ressalvas confirmadas contra a interface real:
+- `statusProposicao` NÃO vem na resposta de lista → `situacao` fica None aqui; a
+  situação real exige um passo de enriquecimento pelo detalhe (futuro).
+- `uriAutores` também NÃO vem na lista (ela traz `uri`, da própria proposição) →
+  `uri_autores` fica None; a autoria não é resolvida por aqui.
 
-A Metodologia é categórica na seção 2: "Toda afirmação sobre a estrutura ou
-o comportamento de uma fonte foi verificada por consulta à interface real,
-com amostra e data registradas, não inferida de documentação."
-
-Portanto: antes de rodar em produção, executar o canário desta fonte contra
-a API real. `CAMPOS_CRITICOS_PROPOSICAO` é a lista mínima que o portão exige;
-qualquer divergência precisa ser tratada como QUEBRA (seção 19) e a
-transformação ajustada, não silenciada.
+`CAMPOS_CRITICOS_PROPOSICAO` é a lista mínima que o portão exige; qualquer
+divergência futura precisa ser tratada como QUEBRA (seção 19) e a transformação
+ajustada, não silenciada.
 """
 
 from __future__ import annotations
