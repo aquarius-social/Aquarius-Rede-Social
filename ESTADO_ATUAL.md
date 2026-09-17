@@ -183,7 +183,6 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 4. **Revogar o PAT do GitHub** que circulou no chat (se ainda não).
 5. **Rotacionar a service key do Supabase** (também circulou no chat; prioridade segurança).
 6. **Rodar a migration `0018_follows`** (sem ela o "seguir" não persiste).
-7. **Secrets do repo** (`SUPABASE_URL`/`SUPABASE_SERVICE_KEY`) pro agendador `ingestao.yml`.
 
 **Parqueado (dependências externas / decisão futura):**
 8. **E-mail de produção — comprar domínio + verificar no Resend.** Sem domínio verificado, só o
@@ -195,9 +194,17 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 - ✅ **Chave da Anthropic criada**; **projeto GCP `aquarius-prometeus` + APIs (Cloud Run, Cloud
   Build) ativas**; crédito grátis do GCP ligado.
 - ✅ **Supabase MCP conectado** (via Conectores da GUI) — usado nesta sessão pra validar o dado.
+- ✅ **Repo PÚBLICO** (Actions grátis/ilimitado) + **secrets do repo setados** (`SUPABASE_URL`/
+  `SUPABASE_SERVICE_KEY`, via API) → a **ingestão incremental roda na NUVEM** 2×/dia (leve) +
+  1×/semana (completa), sem PC ligado. Confirmado ao vivo: run #100 verde gravou
+  proposições/eventos/discursos frescos no Supabase (2026-09-17 18:xx UTC).
+- ✅ **2 fixes de coleta** pushados: API Câmara exige `idLegislatura` (despesa) e janela de data
+  larga dá HTTP 400 (proposições/votações → fatiamento em pedaços ≤60 dias).
 
-> **GitHub Actions:** só `git push` dispara Actions; o limite do plano free reseta por mês (ou
-> repo público = Actions ilimitado). Como não há nada pendente pra pushar agora, não é bloqueio.
+> **GitHub Actions:** repo público = **grátis e ilimitado**. O agendador `ingestao.yml` está
+> **ATIVO** na nuvem (não depende do PC). Ressalva: o diário "leve" está pesado (~1–2h, faz
+> discursos das 2 casas) — ajustar depois pra ser mesmo leve. O **backfill HISTÓRICO** de
+> atividade (2018–2023) segue manual/pesado — próxima etapa: paralelismo + Actions fatiado.
 
 ## 8. Próximo passo
 
