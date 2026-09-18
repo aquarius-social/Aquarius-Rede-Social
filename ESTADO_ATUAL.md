@@ -205,11 +205,15 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   proposições/eventos/discursos frescos no Supabase (2026-09-17 18:xx UTC).
 - ✅ **2 fixes de coleta** pushados: API Câmara exige `idLegislatura` (despesa) e janela de data
   larga dá HTTP 400 (proposições/votações → fatiamento em pedaços ≤60 dias).
-- ✅ **Backfill de ATIVIDADE histórico na nuvem — DISPARADO** (`ccc1b8b`). Novo flag
-  `AQUARIUS_TRAMITACOES=0` desacopla a cauda cara de tramitações; novo workflow
-  `backfill-atividade.yml` roda **matriz por ano** (2018–2023, 2025, 2026) **em paralelo**,
-  cada ano <6h, sem PC. Ingere proposições/votações/discursos/eventos + Senado. Idempotente.
-  Testes: **322 verdes** (+1 par do gate de tramitações).
+- ✅ **Backfill de ATIVIDADE histórico na nuvem — proposições + discursos FEITOS 2018–2026.**
+  Novo flag `AQUARIUS_TRAMITACOES=0` (desacopla a cauda cara) + workflow `backfill-atividade.yml`
+  (**matriz por ano em paralelo**, sem PC). Run #1 encheu **proposições** (~34 mil) e **discursos**
+  (~92 mil) de todos os anos.
+- 🟡 **Votações — correção + re-run (run #2, em andamento).** No run #1 as votações falharam na
+  maioria dos anos: a resolução voto→perfil fazia **um SELECT ao Supabase por voto** (44 mil/ano),
+  o que estourava o tempo (jobs de 5,5h cortados) e quebrava num **502 avulso** (derrubava o ano).
+  Corrigido (`fdb3fac`): **memoização** do lookup (45k reads → ~600) + **retry em 502/503/504** de
+  gateway. **327 testes verdes.** Run #2 re-roda 2019–2023/2025/2026 pra completar as votações.
 
 > **GitHub Actions:** repo público = **grátis e ilimitado**. Dois workflows na nuvem (sem PC):
 > `ingestao.yml` (incremental, 2×/dia leve + 1×/semana completo) e `backfill-atividade.yml`
