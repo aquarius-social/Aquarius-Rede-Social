@@ -5,7 +5,7 @@ ler (depois do `CLAUDE.md`). Complementos: `PLANO.md` (roadmap em ondas),
 `RELATORIO_DESENVOLVIMENTO.md` (fotografia por camada, também publicada como página),
 `MELHORIAS.md` (backlog A–I), `HISTORICO.md` (marcos e números de ingestão).
 
-Atualização: 2026-09-16.
+Atualização: 2026-09-18.
 
 ## Resumo executivo
 
@@ -64,8 +64,13 @@ Prometeus) e o deploy são os próximos grandes passos.
   (**2018–2026**, 88% com perfil resolvido), voto_nominal 4.752, tramitacao 3.285, proposicao 2.300, frente 1.443,
   votacao 1.312, discurso 949, evento 363, comissao 90, partido 22. `parlamentar_publico` segue
   **624** (a view só traz vigentes; os ex-parlamentares do backfill entram como perfil
-  **inativo**, fora do app, só memória do Prometeus). Os **domínios de atividade** (proposição/
-  votação/voto_nominal/discurso/tramitação) seguem **parciais** (2ª rodada).
+  **inativo**, fora do app, só memória do Prometeus).
+- **Atividade — mapa verificado por ano (consulta ao banco em 2026-09-18):** dinheiro (despesa)
+  **completo 2018–2026** (1,86 mi). Atividade (proposição/votação/discurso) **só 2024 está
+  completo** (5.337 / 10.395 / 16.225) + o **2026 recente** que a nuvem mantém. **2018–2023, 2025
+  e o começo de 2026 estavam vazios** — agora **em backfill na nuvem** (ver §7). As **tramitações**
+  (a cauda cara, 1 chamada por proposição, ~14,7h/ano) ficaram de fora dessa passada — entram numa
+  rodada própria depois.
 - **Banco agora no Supabase Pro (plano PAGO)** — muito mais espaço. Isso **destrava**: (a) o
   **backfill de despesa/emenda para 2018–2022**; (b) completar as **áreas truncadas**; (c) a
   **paridade Senado** onde falta. **Diagnóstico (mapeamento desta sessão):** as lacunas são de
@@ -200,11 +205,18 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   proposições/eventos/discursos frescos no Supabase (2026-09-17 18:xx UTC).
 - ✅ **2 fixes de coleta** pushados: API Câmara exige `idLegislatura` (despesa) e janela de data
   larga dá HTTP 400 (proposições/votações → fatiamento em pedaços ≤60 dias).
+- ✅ **Backfill de ATIVIDADE histórico na nuvem — DISPARADO** (`ccc1b8b`). Novo flag
+  `AQUARIUS_TRAMITACOES=0` desacopla a cauda cara de tramitações; novo workflow
+  `backfill-atividade.yml` roda **matriz por ano** (2018–2023, 2025, 2026) **em paralelo**,
+  cada ano <6h, sem PC. Ingere proposições/votações/discursos/eventos + Senado. Idempotente.
+  Testes: **322 verdes** (+1 par do gate de tramitações).
 
-> **GitHub Actions:** repo público = **grátis e ilimitado**. O agendador `ingestao.yml` está
-> **ATIVO** na nuvem (não depende do PC). Ressalva: o diário "leve" está pesado (~1–2h, faz
-> discursos das 2 casas) — ajustar depois pra ser mesmo leve. O **backfill HISTÓRICO** de
-> atividade (2018–2023) segue manual/pesado — próxima etapa: paralelismo + Actions fatiado.
+> **GitHub Actions:** repo público = **grátis e ilimitado**. Dois workflows na nuvem (sem PC):
+> `ingestao.yml` (incremental, 2×/dia leve + 1×/semana completo) e `backfill-atividade.yml`
+> (histórico, **matriz por ano em paralelo**, disparo manual). O backfill histórico de atividade
+> **está RODANDO** (run #1, 8 anos em paralelo). **Falta ainda:** (a) as **tramitações**
+> (passada própria, fatiada fina — não cabem nos 6h junto do resto); (b) ajustar o diário "leve"
+> pra ser mesmo leve (~1–2h hoje, faz discursos das 2 casas).
 
 ## 8. Próximo passo
 
@@ -213,9 +225,11 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 - **Parte 1 — ligar o que já está pronto:** rodar migration `0018`; **deploy do Prometeus (2.4)**
   pelo dev (gcloud + `ANTHROPIC_API_KEY` no painel + `EXPO_PUBLIC_PROMETEUS_URL`); secrets do repo
   p/ ingestão agendada; **segurança** (revogar PAT + rotacionar service key); wire dos botões de IA.
-- **Parte 2 — completar os dados (2ª rodada, a próxima):** validar o **canário de proposições**
-  (dívida de integridade) → backfillar proposições/votações/tramitações/discursos; paridade (frentes
-  Senado, blocos Câmara); juntar as 2 pernas de tramitação; presença; curadoria (linhagem de partidos).
+- **Parte 2 — completar os dados (2ª rodada, EM ANDAMENTO):** canário de proposições **validado**
+  ✅; backfill de **atividade leve** (proposições/votações/discursos/eventos + Senado) 2018–2023/2025/
+  2026 **rodando na nuvem** ✅ (run #1). **Falta:** rodar as **tramitações** (passada própria fatiada);
+  paridade (frentes Senado, blocos Câmara); juntar as 2 pernas de tramitação; **presença** (sem coletor —
+  construir); curadoria (linhagem de partidos).
 - **Partes 3–5** (produto/social → monetização/mobile → DaaS): detalhe no `PLANO.md`.
 
 ## 9. Notas de ambiente
