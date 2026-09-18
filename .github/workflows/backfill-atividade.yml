@@ -15,6 +15,11 @@ name: Backfill de atividade (histórico)
 # é pesado e deliberado (Actions → "Backfill de atividade (histórico)" → Run).
 on:
   workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos a rodar (array JSON). Ex: ["2021","2023"]. Deixe o padrão para todos os pendentes.'
+        type: string
+        default: '["2018","2019","2020","2021","2022","2023","2025","2026"]'
 
 concurrency:
   group: backfill-atividade
@@ -24,12 +29,13 @@ jobs:
   backfill:
     name: Atividade ${{ matrix.ano }}
     runs-on: ubuntu-latest
-    timeout-minutes: 330      # guarda sob o teto de 6h do runner
+    timeout-minutes: 350      # guarda sob o teto de 6h do runner
     strategy:
       fail-fast: false        # um ano que falha não derruba os outros
       matrix:
         # Anos com dinheiro feito mas atividade faltando (2024 já está completo).
-        ano: ['2018', '2019', '2020', '2021', '2022', '2023', '2025', '2026']
+        # Substituível no disparo pelo input `anos` (re-rodar só os pendentes).
+        ano: ${{ fromJSON(github.event.inputs.anos) }}
     defaults:
       run:
         working-directory: codigo/services/ingestao

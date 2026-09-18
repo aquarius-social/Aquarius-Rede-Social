@@ -10,7 +10,8 @@ import unittest
 
 from camara.deputados import transformar_deputado
 from persistencia.repositorio import lookup_id_externo, salvar_bronze, salvar_deputados
-from persistencia.supabase_adapter import BancoSupabase, BRONZE_CONFLITO
+from persistencia.supabase_adapter import (
+    BancoSupabase, BRONZE_CONFLITO, _com_retry, _e_gateway_transitorio)
 from pipeline.camadas import RegistroBronze
 
 
@@ -139,6 +140,44 @@ class TestDropInClienteBanco(unittest.TestCase):
         lookup = lookup_id_externo(banco)
         self.assertEqual(lookup("camara", "204379"), pid)
         self.assertIsNone(lookup("camara", "000000"))
+
+
+# -----------------------------------------------------------------------------
+# Retry em erro TRANSITÓRIO de gateway (502/503/504 do proxy na frente do Supabase)
+# -----------------------------------------------------------------------------
+
+class _FakeAPIError(Exception):
+    """Imita o postgrest.APIError: str(e) é o dict com 'code' e o corpo de erro."""
+
+
+class TestRetryGatewayTransitorio(unittest.TestCase):
+    _ERRO_502 = _FakeAPIError(
+        "{'message': 'JSON could not be generated', 'code': 502, "
+        "'details': \"b'<html>502 Bad Gateway</html>'\"}")
+
+    def test_reconhece_502_como_transitorio_mas_nao_erro_de_dado(self):
+        self.assertTrue(_e_gateway_transitorio(self._ERRO_502))
+        self.assertFalse(_e_gateway_transitorio(
+            _FakeAPIError("duplicate key value violates unique constraint")))
+
+    def test_com_retry_repete_no_502_e_depois_conclui(self):
+        estado = {"n": 0}
+        def fn():
+            estado["n"] += 1
+            if estado["n"] < 3:
+                raise self._ERRO_502
+            return "ok"
+        self.assertEqual(_com_retry(fn, tentativas=5, espera=0), "ok")
+        self.assertEqual(estado["n"], 3)   # 2 falhas + 1 sucesso
+
+    def test_com_retry_nao_repete_erro_de_dado(self):
+        estado = {"n": 0}
+        def fn():
+            estado["n"] += 1
+            raise _FakeAPIError("violates foreign key constraint")
+        with self.assertRaises(_FakeAPIError):
+            _com_retry(fn, tentativas=5, espera=0)
+        self.assertEqual(estado["n"], 1)   # subiu na hora, sem repetir
 
 
 if __name__ == "__main__":

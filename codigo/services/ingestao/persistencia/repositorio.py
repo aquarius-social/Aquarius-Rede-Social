@@ -218,13 +218,30 @@ def lookup_id_externo(cliente: ClienteBanco):
     coletores recebiam injetado, mas agora respaldado pela tabela.
 
         (sistema, identificador) -> profile_id | None
-    """
+
+    MEMOIZADO (só ACERTOS): a mesma pessoa é resolvida MUITAS vezes numa rodada
+    (um deputado vota em centenas de votações → o mesmo id_externo seria lido do
+    banco a cada voto). Sem cache, um ano de votações fazia dezenas de milhares de
+    reads sequenciais ao Supabase — o gargalo de tempo (horas) e a superfície de
+    falha (um 502 avulso derrubava o ano). Cacheia só o ACERTO (profile_id != None)
+    porque a MISSA pode ser transitória dentro da rodada: o fallback de emenda por
+    nome resolve-e-INSERE o autor e relê esperando achar (miss → insert → hit).
+    Uma vez existente, um id_externo não é removido nem re-apontado numa rodada."""
+    cache: dict[tuple[str, str], str] = {}
+
     def _l(sistema: str, identificador: str) -> str | None:
+        chave = (sistema, str(identificador))
+        acerto = cache.get(chave)
+        if acerto is not None:
+            return acerto
         row = cliente.selecionar_um(
             "id_externo",
             {"sistema": sistema, "identificador": str(identificador)},
         )
-        return row["profile_id"] if row else None
+        pid = row["profile_id"] if row else None
+        if pid is not None:
+            cache[chave] = pid
+        return pid
     return _l
 
 

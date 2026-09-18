@@ -94,6 +94,50 @@ def _dep(did=204379, nome="Acácio Favacho", partido="MDB", uf="AP"):
 
 
 # =============================================================================
+# Lookup de id_externo — memoização (só acertos)
+# =============================================================================
+
+class _BancoContaLeituras(FakeBanco):
+    """FakeBanco que conta quantos selecionar_um foram ao 'banco'."""
+    def __init__(self):
+        super().__init__()
+        self.leituras = 0
+
+    def selecionar_um(self, tabela, onde):
+        self.leituras += 1
+        return super().selecionar_um(tabela, onde)
+
+
+class TestLookupMemoizado(unittest.TestCase):
+    def test_acerto_e_cacheado_missa_nao(self):
+        banco = _BancoContaLeituras()
+        banco.upsert("id_externo",
+                     [{"sistema": "camara", "identificador": "1", "profile_id": "P1"}],
+                     conflito="sistema,identificador")
+        lookup = lookup_id_externo(banco)
+
+        # ACERTO: 2 chamadas iguais → 1 leitura só (a 2ª vem do cache)
+        self.assertEqual(lookup("camara", "1"), "P1")
+        self.assertEqual(lookup("camara", "1"), "P1")
+        self.assertEqual(banco.leituras, 1)
+
+        # MISSA: não cacheia — cada chamada relê (o autor pode ser inserido no meio
+        # da rodada; o fallback de emenda por nome depende disso)
+        self.assertIsNone(lookup("camara", "999"))
+        self.assertIsNone(lookup("camara", "999"))
+        self.assertEqual(banco.leituras, 3)
+
+    def test_missa_depois_inserida_resolve_na_proxima(self):
+        banco = _BancoContaLeituras()
+        lookup = lookup_id_externo(banco)
+        self.assertIsNone(lookup("camara", "7"))       # miss (não cacheado)
+        banco.upsert("id_externo",
+                     [{"sistema": "camara", "identificador": "7", "profile_id": "P7"}],
+                     conflito="sistema,identificador")
+        self.assertEqual(lookup("camara", "7"), "P7")  # agora acha
+
+
+# =============================================================================
 # Bronze
 # =============================================================================
 
