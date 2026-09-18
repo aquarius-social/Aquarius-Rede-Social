@@ -200,6 +200,11 @@ def ingerir(
     persistir_bronze: bool = True,
     coletar_proposicoes: bool = True,
     coletar_votacoes: bool = True,
+    # Tramitações são a cauda CARA: uma chamada de API por proposição/matéria
+    # aprovada (~14,7h para um ano da Câmara). Desacopladas por flag para o
+    # backfill de atividade caber num job de nuvem (<6h); rodam numa passada
+    # própria depois. Default LIGADO preserva o comportamento existente.
+    coletar_tramitacoes: bool = True,
     # CEAPS do Senado é opt-out independente: permite re-rodar senadores+emendas
     # (para resolver o autor-senador por nome) SEM re-churnar os 73k de CEAPS.
     coletar_despesas_senado: bool = True,
@@ -547,16 +552,19 @@ def ingerir(
             # -- 3b. Tramitações: uma rodada por proposição aprovada ---------
             # A tramitação prende-se à proposição já persistida (FK). Por isso vem
             # depois de salvar as proposições, e só para as que passaram o portão.
-            for p in prop.prata.aprovados:
-                rt = rodada_tramitacoes(
-                    cliente_http, p["id_fonte"],
-                    canario_validado=canario_validado,
-                    linha_base=base.tramitacoes,
-                    politica=politica,
-                )
-                bronze_salvo += _sb(banco, rt.bronze)
-                if rt.estado in _PROCESSAVEL and rt.prata is not None:
-                    tramitacoes_salvas += salvar_tramitacoes(banco, rt.prata.aprovados)
+            # Gate `coletar_tramitacoes`: a cauda cara (1 chamada/proposição) é
+            # desligável para o backfill de atividade caber num job de nuvem.
+            if coletar_tramitacoes:
+                for p in prop.prata.aprovados:
+                    rt = rodada_tramitacoes(
+                        cliente_http, p["id_fonte"],
+                        canario_validado=canario_validado,
+                        linha_base=base.tramitacoes,
+                        politica=politica,
+                    )
+                    bronze_salvo += _sb(banco, rt.bronze)
+                    if rt.estado in _PROCESSAVEL and rt.prata is not None:
+                        tramitacoes_salvas += salvar_tramitacoes(banco, rt.prata.aprovados)
 
     # -- 3c. Matérias do Senado (proposições, bicameral §17) -----------------
     # Mesma tabela `proposicao` (casa_origem='senado'), mesma janela móvel.
@@ -580,20 +588,22 @@ def ingerir(
 
             # Tramitações do Senado: uma rodada por matéria, via /processo/{id}
             # (endpoint substituto — o antigo /movimentacoes foi descontinuado).
-            # Prende-se à matéria já persistida (FK), como na Câmara.
-            for m in rm.prata.aprovados:
-                id_proc = m.get("id_processo")
-                if not id_proc:
-                    continue
-                rts = rodada_tramitacoes_senado(
-                    cliente_http, id_proc, m["id_fonte"],
-                    canario_validado=canario_validado,
-                    linha_base=base.tramitacoes_senado, politica=politica)
-                bronze_salvo += _sb(banco, rts.bronze, chave_id="id")
-                if rts.estado in _PROCESSAVEL and rts.prata is not None:
-                    tramitacoes_senado_salvas += salvar_tramitacoes(
-                        banco, rts.prata.aprovados,
-                        source="senado.tramitacoes", source_url=BASE_SENADO)
+            # Prende-se à matéria já persistida (FK), como na Câmara. Mesmo gate
+            # `coletar_tramitacoes` da Câmara (cauda cara, desligável no backfill).
+            if coletar_tramitacoes:
+                for m in rm.prata.aprovados:
+                    id_proc = m.get("id_processo")
+                    if not id_proc:
+                        continue
+                    rts = rodada_tramitacoes_senado(
+                        cliente_http, id_proc, m["id_fonte"],
+                        canario_validado=canario_validado,
+                        linha_base=base.tramitacoes_senado, politica=politica)
+                    bronze_salvo += _sb(banco, rts.bronze, chave_id="id")
+                    if rts.estado in _PROCESSAVEL and rts.prata is not None:
+                        tramitacoes_senado_salvas += salvar_tramitacoes(
+                            banco, rts.prata.aprovados,
+                            source="senado.tramitacoes", source_url=BASE_SENADO)
 
     # -- 3e. Eventos das DUAS casas (área nova) — agenda legislativa ----------
     # Câmara por janela de data; Senado por mês (a agenda de comissões é mensal).

@@ -1,0 +1,68 @@
+name: Backfill de atividade (histórico)
+
+# Preenche a ATIVIDADE legislativa que faltava (proposições, votações, discursos,
+# eventos + Senado) dos anos em que o backfill de DINHEIRO já rodou mas a atividade
+# não. Cada ANO é um job independente que roda EM PARALELO — assim tudo cabe no
+# limite de 6h/job do GitHub Actions e termina numa passada só, sem PC ligado.
+#
+# O que este workflow NÃO faz (de propósito):
+#   • DESPESAS/EMENDAS/CEAPS — já ingeridos (dinheiro 2018–2026 está 100%).
+#   • BRONZE — o maior peso; o app/Prometeus leem da camada ouro, não do bronze.
+#   • TRAMITAÇÕES — a cauda cara (1 chamada de API por proposição, ~14,7h/ano).
+#     Estouraria os 6h. Entram numa passada própria, fatiada fina, depois.
+#
+# Idempotente (tudo é upsert): pode redisparar sem duplicar. Disparo MANUAL só —
+# é pesado e deliberado (Actions → "Backfill de atividade (histórico)" → Run).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: backfill-atividade
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    name: Atividade ${{ matrix.ano }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330      # guarda sob o teto de 6h do runner
+    strategy:
+      fail-fast: false        # um ano que falha não derruba os outros
+      matrix:
+        # Anos com dinheiro feito mas atividade faltando (2024 já está completo).
+        ano: ['2018', '2019', '2020', '2021', '2022', '2023', '2025', '2026']
+    defaults:
+      run:
+        working-directory: codigo/services/ingestao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências de runtime
+        run: pip install -r requirements.txt
+
+      - name: Backfill de atividade do ano ${{ matrix.ano }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AQUARIUS_BACKFILL_INICIO: ${{ matrix.ano }}
+          AQUARIUS_BACKFILL_FIM: ${{ matrix.ano }}
+          # --- Atividade LEVE: liga o alto valor, desliga o caro/já-feito ---
+          AQUARIUS_PROPOSICOES: '1'
+          AQUARIUS_VOTACOES: '1'
+          AQUARIUS_DISCURSOS: '1'
+          AQUARIUS_EVENTOS: '1'
+          AQUARIUS_SENADO: '1'      # matérias/votações/discursos do Senado
+          AQUARIUS_DESPESAS: '0'    # dinheiro Câmara já feito
+          AQUARIUS_CEAPS: '0'       # dinheiro Senado já feito
+          AQUARIUS_BRONZE: '0'      # maior peso; ouro não depende dele
+          AQUARIUS_TRAMITACOES: '0' # cauda cara — passada própria depois
+          AQUARIUS_ENRIQUECER: '0'  # perfis já existem (do backfill de dinheiro)
+          AQUARIUS_HISTORICO: '0'   # histórico de mandato já ingerido
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::notice::Secrets do Supabase ausentes — backfill pulado (workflow segue verde)."
+            exit 0
+          fi
+          echo "::notice::Backfill de atividade ${{ matrix.ano }} (sem tramitações/bronze/dinheiro)"
+          python run_backfill.py

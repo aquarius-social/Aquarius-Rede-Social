@@ -321,6 +321,22 @@ class TestOrquestrador(unittest.TestCase):
         # listas + detalhe da votação + 2 votos entram na contagem.
         self.assertGreaterEqual(r.bronze_salvo, 6)
 
+    def test_tramitacoes_desligadas_nao_salvam_mas_proposicao_entra(self):
+        """Par do teste ponta-a-ponta (que liga tramitações → 2): com
+        `coletar_tramitacoes=False` a cauda cara não roda (0 tramitações), mas a
+        proposição continua entrando. É o gate que faz o backfill de atividade
+        caber num job de nuvem (<6h)."""
+        http = _mundo()
+        banco = FakeBanco()
+        r = ingerir(http, banco, ate=date(2023, 6, 30), janela=JanelaMovel(dias=30),
+                    id_legislatura=57, coletar_tramitacoes=False)
+        # proposição AINDA entra (é dado de alto valor, leve)
+        self.assertEqual(r.proposicoes_salvas, 1)
+        self.assertEqual(len(banco.tabelas["proposicao"]), 1)
+        # tramitações NÃO — nem contagem nem linha
+        self.assertEqual(r.tramitacoes_salvas, 0)
+        self.assertEqual(len(banco.tabelas.get("tramitacao", [])), 0)
+
     def test_data_apresentacao_persistida_como_date(self):
         http = _mundo()
         banco = FakeBanco()
