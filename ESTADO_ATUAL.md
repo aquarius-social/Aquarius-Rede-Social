@@ -59,18 +59,20 @@ Prometeus) e o deploy são os próximos grandes passos.
   presença.
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
-- **Cobertura real hoje (contagem das views ouro):** despesa **~1,86 mi** (Câmara + Senado,
-  anos **2018–2026** — o backfill desta sessão adicionou ~1,1 mi), emenda **48.369**
-  (**2018–2026**, 88% com perfil resolvido), voto_nominal 4.752, tramitacao 3.285, proposicao 2.300, frente 1.443,
-  votacao 1.312, discurso 949, evento 363, comissao 90, partido 22. `parlamentar_publico` segue
-  **624** (a view só traz vigentes; os ex-parlamentares do backfill entram como perfil
-  **inativo**, fora do app, só memória do Prometeus).
-- **Atividade — mapa verificado por ano (consulta ao banco em 2026-09-18):** dinheiro (despesa)
-  **completo 2018–2026** (1,86 mi). Atividade (proposição/votação/discurso) **só 2024 está
-  completo** (5.337 / 10.395 / 16.225) + o **2026 recente** que a nuvem mantém. **2018–2023, 2025
-  e o começo de 2026 estavam vazios** — agora **em backfill na nuvem** (ver §7). As **tramitações**
-  (a cauda cara, 1 chamada por proposição, ~14,7h/ano) ficaram de fora dessa passada — entram numa
-  rodada própria depois.
+- **Cobertura real hoje (contagem das views ouro, 2026-09-20):** despesa **~1,88 mi** (Câmara +
+  Senado, **2018–2026**), emenda **48.369** (88% com perfil), **voto_nominal ~997 mil**,
+  **discurso 155.984**, **votação 65.623**, **proposição 52.869**, evento ~4 mil, frente 1.443,
+  tramitacao 3.285 (ainda parcial — passada própria), comissao 90, partido 22.
+  `parlamentar_publico` segue **624** (a view só traz vigentes; os ex-parlamentares do backfill
+  entram como perfil **inativo**, fora do app, só memória do Prometeus).
+- **Atividade — COMPLETA 2018–2026 (backfill desta sessão, verificado no banco 2026-09-20).**
+  Contagens ouro atuais: **despesa 1,88 mi**, **proposição 52.869**, **votação 65.623**,
+  **discurso 155.984**, **voto_nominal ~997 mil**. Todos os 9 anos têm proposição + votação +
+  discurso reais (antes só 2024). Rodou na nuvem (workflow `backfill-atividade.yml`, matriz por
+  ano); só as votações de **2021 e 2023** foram fechadas numa passada local (a API da Câmara
+  limitava o IP do runner nos 2 anos mais pesados — código correto, throttle de ambiente). As
+  **tramitações** (cauda cara, 1 chamada/proposição, ~14,7h/ano) e a **presença** ficam pra
+  rodada própria; **2020 votação=1.663** pode valer um top-up (ano de pandemia, ou throttle parcial).
 - **Banco agora no Supabase Pro (plano PAGO)** — muito mais espaço. Isso **destrava**: (a) o
   **backfill de despesa/emenda para 2018–2022**; (b) completar as **áreas truncadas**; (c) a
   **paridade Senado** onde falta. **Diagnóstico (mapeamento desta sessão):** as lacunas são de
@@ -209,18 +211,22 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   Novo flag `AQUARIUS_TRAMITACOES=0` (desacopla a cauda cara) + workflow `backfill-atividade.yml`
   (**matriz por ano em paralelo**, sem PC). Run #1 encheu **proposições** (~34 mil) e **discursos**
   (~92 mil) de todos os anos.
-- 🟡 **Votações — correção + re-run (run #2, em andamento).** No run #1 as votações falharam na
-  maioria dos anos: a resolução voto→perfil fazia **um SELECT ao Supabase por voto** (44 mil/ano),
-  o que estourava o tempo (jobs de 5,5h cortados) e quebrava num **502 avulso** (derrubava o ano).
-  Corrigido (`fdb3fac`): **memoização** do lookup (45k reads → ~600) + **retry em 502/503/504** de
-  gateway. **327 testes verdes.** Run #2 re-roda 2019–2023/2025/2026 pra completar as votações.
+- ✅ **Votações — COMPLETAS 2018–2026** (total 65.623). Dois consertos no caminho (`fdb3fac`,
+  **327 testes verdes**): (a) o lookup voto→perfil fazia **um SELECT ao Supabase por voto**
+  (44 mil/ano) → **memoizado** (45k reads → ~600), matando o gargalo de tempo; (b) **retry em
+  502/503/504** de gateway (um 502 avulso derrubava o ano). Achado de ambiente: nos **2 anos mais
+  pesados (2021, 2023)** a API da Câmara **rate-limita o IP do runner** quando as votações rodam
+  por último (após ~7k proposições + ~25k discursos); fechados numa passada **votações-primeiro
+  local** (2021: 308.971 votos nominais; 2023: 123.525).
 
 > **GitHub Actions:** repo público = **grátis e ilimitado**. Dois workflows na nuvem (sem PC):
 > `ingestao.yml` (incremental, 2×/dia leve + 1×/semana completo) e `backfill-atividade.yml`
-> (histórico, **matriz por ano em paralelo**, disparo manual). O backfill histórico de atividade
-> **está RODANDO** (run #1, 8 anos em paralelo). **Falta ainda:** (a) as **tramitações**
-> (passada própria, fatiada fina — não cabem nos 6h junto do resto); (b) ajustar o diário "leve"
-> pra ser mesmo leve (~1–2h hoje, faz discursos das 2 casas).
+> (histórico, **matriz por ano em paralelo**; input `anos` pra re-rodar seletivo). O backfill
+> histórico de atividade **está COMPLETO** (proposições/votações/discursos 2018–2026). **Falta
+> ainda:** (a) as **tramitações** (passada própria, fatiada fina — não cabem nos 6h junto do
+> resto); (b) **presença** (sem coletor); (c) ajustar o diário "leve" pra ser mesmo leve (~1–2h
+> hoje). **Lição de ambiente:** anos pesados na nuvem sofrem **rate-limit da API da Câmara** quando
+> as votações rodam por último — rodar votações-primeiro (ou solo) contorna.
 
 ## 8. Próximo passo
 
@@ -229,11 +235,11 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 - **Parte 1 — ligar o que já está pronto:** rodar migration `0018`; **deploy do Prometeus (2.4)**
   pelo dev (gcloud + `ANTHROPIC_API_KEY` no painel + `EXPO_PUBLIC_PROMETEUS_URL`); secrets do repo
   p/ ingestão agendada; **segurança** (revogar PAT + rotacionar service key); wire dos botões de IA.
-- **Parte 2 — completar os dados (2ª rodada, EM ANDAMENTO):** canário de proposições **validado**
-  ✅; backfill de **atividade leve** (proposições/votações/discursos/eventos + Senado) 2018–2023/2025/
-  2026 **rodando na nuvem** ✅ (run #1). **Falta:** rodar as **tramitações** (passada própria fatiada);
-  paridade (frentes Senado, blocos Câmara); juntar as 2 pernas de tramitação; **presença** (sem coletor —
-  construir); curadoria (linhagem de partidos).
+- **Parte 2 — completar os dados (2ª rodada):** canário de proposições **validado** ✅; backfill de
+  **atividade** (proposições/votações/discursos/eventos) **2018–2026 COMPLETO** ✅. **Falta:** rodar
+  as **tramitações** (passada própria fatiada); **presença** (sem coletor — construir); paridade
+  (frentes Senado, blocos Câmara, votações do Senado nos anos históricos); juntar as 2 pernas de
+  tramitação; curadoria (linhagem de partidos); top-up opcional de **2020 votação** (=1.663).
 - **Partes 3–5** (produto/social → monetização/mobile → DaaS): detalhe no `PLANO.md`.
 
 ## 9. Notas de ambiente
