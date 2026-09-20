@@ -430,6 +430,21 @@ class TestEmendas(unittest.TestCase):
         self.assertEqual(rebackfill_autor_profile_id(banco, nulos, lookup), 1)
         self.assertEqual(len(banco.tabelas["emenda"]), 1)
 
+    def test_codigo_bancada_71xx_nao_casa_pessoa(self):
+        """Guarda por código: emenda 71xx com nome atípico (não 'BANCADA...') NÃO é
+        casada a uma pessoa pelo resolvedor por nome — a bancada é o autor coletivo."""
+        from persistencia.repositorio import (
+            _codigo_bancada, lookup_id_externo, resolver_autores_emenda_por_nome)
+        self.assertTrue(_codigo_bancada("7125"))    # bancada SP
+        self.assertFalse(_codigo_bancada("2295"))   # individual (José Serra)
+        banco = FakeBanco()
+        lookup = lookup_id_externo(banco)
+        lookup_nome = lambda nome: "P-QUALQUER"      # casaria qualquer nome, se tentasse
+        emendas = [{"codigo_emenda": "E1", "autor_codigo": "7125", "autor_nome": "SP"}]
+        self.assertEqual(
+            resolver_autores_emenda_por_nome(banco, emendas, lookup, lookup_nome), 0)
+        self.assertEqual(banco.tabelas.get("id_externo", []), [])  # não virou pessoa
+
 
 def _senador(cod="5672", nome="Alan Rick", civil="Alan Rick Miranda",
              nasc="1976-10-23", mun="Rio Branco", uf_nasc="AC",

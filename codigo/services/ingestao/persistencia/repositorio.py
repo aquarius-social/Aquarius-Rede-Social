@@ -429,6 +429,14 @@ def _autor_emenda_coletivo(nome: str) -> bool:
             or n.startswith("COM.") or n.startswith("RELATOR"))
 
 
+def _codigo_bancada(codigo) -> bool:
+    """Código de autor orçamentário de bancada estadual (71xx). Guarda determinística
+    (§6.3): nenhum autor individual usa a faixa 71xx, então o resolvedor por nome não
+    deve tentar casar esses códigos a uma pessoa — a bancada é o autor (perfil coletivo)."""
+    c = (str(codigo) if codigo is not None else "").strip()
+    return len(c) == 4 and c.startswith("71") and c.isdigit()
+
+
 def resolver_autores_emenda_por_nome(
     cliente: ClienteBanco,
     aprovados: Sequence[dict],
@@ -456,8 +464,8 @@ def resolver_autores_emenda_por_nome(
         if not cod or not nome or cod in vistos:
             continue
         vistos.add(cod)
-        if _autor_emenda_coletivo(nome):
-            continue
+        if _autor_emenda_coletivo(nome) or _codigo_bancada(cod):
+            continue  # coletivo por nome OU por código de bancada (71xx) — não casa pessoa
         if lookup("autor_orcamentario", cod) is not None:
             continue  # o mapa curado já resolveu este código (não rebaixa)
         pid = lookup_parlamentar_nome(nome)

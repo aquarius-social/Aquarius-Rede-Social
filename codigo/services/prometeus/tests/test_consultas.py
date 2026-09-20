@@ -50,7 +50,7 @@ DADOS = {
          "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
          "synced_at": "2026-08-11T00:00:00Z"},
         # Autor gravado SEM acento pela fonte (como o Portal manda) — a busca por
-        # nome acentuado precisa casar sobre autor_nome_norm (migration 0016).
+        # nome acentuado precisa casar sobre autor_nome_norm (migration 0019).
         {"id": "e2", "autor_nome": "JOSE SERRA", "autor_nome_norm": "jose serra",
          "ano": 2023, "localidade_gasto": "Sao Paulo - SP", "funcao": "Educacao",
          "valor_empenhado": 200000.0, "valor_liquidado": 100000.0, "valor_pago": 50000.0,
@@ -67,6 +67,12 @@ DADOS = {
         {"id": "ev2", "casa": "senado", "tipo": "Reuniao", "titulo": "Reuniao Y",
          "data_hora_inicio": "2024-05-20T10:00:00", "situacao": "Agendada", "orgao_sigla": "CAE",
          "source": "senado.eventos", "source_url": "https://legis.senado.leg.br/dadosabertos",
+         "synced_at": "2026-08-11T00:00:00Z"},
+    ],
+    "bancada_publica": [
+        {"id": "b1", "nome": "Bancada de São Paulo", "uf": "SP", "slug": "bancada-sp",
+         "ativo": True, "source": "transparencia.emendas",
+         "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
          "synced_at": "2026-08-11T00:00:00Z"},
     ],
 }
@@ -86,6 +92,24 @@ class TestBuscarParlamentar(unittest.TestCase):
 
     def test_recusa_termo_vazio(self):
         self.assertIsNotNone(consultas.buscar_parlamentar(gw(), termo="   ").recusa)
+
+
+class TestBuscarBancada(unittest.TestCase):
+    def test_aceita_por_uf(self):
+        r = consultas.buscar_bancada(gw(), termo="SP")
+        self.assertIsNone(r.recusa)
+        self.assertEqual(len(r.dados), 1)
+        self.assertEqual(r.dados[0]["uf"], "SP")
+        self.assertTrue(r.proveniencia)
+        self.assertTrue(any("bancada" in x.lower() for x in r.ressalvas))  # não somar ao individual
+
+    def test_aceita_por_nome(self):
+        r = consultas.buscar_bancada(gw(), termo="São Paulo")
+        self.assertEqual(len(r.dados), 1)
+        self.assertEqual(r.dados[0]["uf"], "SP")
+
+    def test_recusa_vazio(self):
+        self.assertIsNotNone(consultas.buscar_bancada(gw(), termo="  ").recusa)
 
 
 class TestDespesas(unittest.TestCase):

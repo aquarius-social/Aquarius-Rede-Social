@@ -42,8 +42,15 @@ RESSALVA_ESTAGIOS = (
 
 RESSALVA_AUTOR_CHAVE = (
     "Atribuição por CHAVE VERIFICADA (autor_profile_id, resolvido na curadoria de "
-    "identidade). Autorias de bancada, comissão e relator não têm autor único e "
-    "ficam fora desta busca (regra 2)."
+    "identidade). Bancada estadual tem PERFIL COLETIVO próprio — a emenda é da "
+    "bancada, nunca somada ao total individual de um parlamentar. Comissão e "
+    "Relator-Geral podem ainda não ter perfil (autoria coletiva/rotativa) (regra 2)."
+)
+
+RESSALVA_BANCADA = (
+    "Emenda de BANCADA (autoria coletiva estadual, RP7): pertence à bancada, não a "
+    "um parlamentar. Não some com emendas individuais dos membros — são baldes "
+    "distintos (regra 2)."
 )
 
 RESSALVA_AUTOR_NOME = (
@@ -106,6 +113,27 @@ def buscar_partido(gw: Gateway, *, termo: str) -> Resultado:
         )
     )
     return Resultado(dados=linhas, proveniencia=proveniencia_das_linhas(linhas))
+
+
+def buscar_bancada(gw: Gateway, *, termo: str) -> Resultado:
+    """Encontra bancada(s) estadual(is) por UF (ex.: 'SP') ou nome ('São Paulo').
+    Devolve o perfil coletivo — use o id em emendas_por_autor_perfil."""
+    termo = (termo or "").strip()
+    if not termo:
+        return recusar("Informe a UF (ex.: SP) ou o nome do estado da bancada.")
+    t = termo.upper()
+    if len(t) == 2 and t.isalpha():
+        filtro = Filtro("uf", "eq", t)
+    else:
+        filtro = Filtro("nome", "ilike", termo)
+    linhas = gw.buscar(
+        Consulta(view="bancada_publica", filtros=[filtro], ordem="uf.asc", limite=30)
+    )
+    return Resultado(
+        dados=linhas,
+        proveniencia=proveniencia_das_linhas(linhas),
+        ressalvas=[RESSALVA_BANCADA] if linhas else [],
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -296,7 +324,7 @@ def _num(v: Any) -> float:
         return 0.0
 
 
-# Espelha `autor_nome_norm` da view (migration 0016): minúsculas + sem acento via
+# Espelha `autor_nome_norm` da view (migration 0019): minúsculas + sem acento via
 # translate. Manter as duas pontas idênticas — senão a busca por nome fura.
 _ACENTOS_DE = "áàâãäéèêëíìîïóòôõöúùûüç"
 _ACENTOS_PARA = "aaaaaeeeeiiiiooooouuuuc"

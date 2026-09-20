@@ -52,23 +52,29 @@ geração de posts (2ª face do Prometeus) e o deploy são os próximos grandes 
   emendas (Portal da Transparência), eventos (agenda bicameral). **Truncadas** (coletor pronto,
   dados incompletos por espaço): proposições, votações, tramitações, discursos. **Sem coletor:**
   presença.
-- **Emendas — autoria (§6.3).** A base cresceu para **48.369** emendas (9 anos; backfill de 11/09).
-  Autor preenchido em **94,6%** (45.745); **individuais ~99,4%**. A resolução vive em `id_externo`
-  (sistema='autor_orcamentario', hoje **1.216** ligações) e é aplicada às emendas por backfill do
-  `autor_profile_id`. Em 11/09: preenchidas **1.347** já-resolvidas (defasagem de backfill) +
-  **95 autores casados por nome** (código real de resolução, 0 ambíguos) → +2.025 linhas. Todo
-  casamento por nome entra como `pendente_conferencia` (1 sinal, §5.3). Ainda sem autor: **13
-  autores individuais** (título/apelido/apóstrofo/perfil ausente — conferência manual) e **2.351
-  coletivas** (bancada/comissão), que exigem **modelagem de autor coletivo** (fase à parte — não se
-  atribui pessoa a autoria de bancada). Re-resolução canônica: `run_reresolver_autores_emendas.py`
-  (offline, idempotente; roda após novas ingestões trazerem mais perfis).
+- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos). Autor preenchido em
+  **98,5%** (48.239). A resolução vive em `id_externo` (sistema='autor_orcamentario') + backfill do
+  `autor_profile_id`. Feito em 11–20/09: (a) **individuais** — backfill de já-resolvidas + 95
+  casados por nome + 3 conferidos à mão (Allan Garcês, Luizão Goulart, Fernando Francischini);
+  (b) **bancadas estaduais como PERFIL COLETIVO** — 27 perfis `tipo='bancada'`, ligação 71xx→bancada
+  em `id_externo` (fonte_direta/direto), **1.882 emendas de bancada** atribuídas, + views
+  `bancada_publica` e `bancada_membro_publico` (composição atual por UF: dep+senadores, sem
+  licenciados, **sem colunas de dinheiro**). **Invariante anti-duplicidade:** cada emenda tem 1 dono
+  (pessoa OU bancada, disjuntos); emenda de bancada NUNCA soma ao total individual do membro —
+  aparece na página dele por JOIN (exibição), não por cópia. Ainda sem autor (~727): **comissões**
+  (~250; códigos 5xxx/6xxx — perfis `tipo='comissao'` já existem, falta ligar), **Relator-Geral**
+  (código 8100, ~296 — papel rotativo, decisão de modelo pendente) e **~10 individuais** (perfis
+  DUPLICADOS no cadastro → dedup, ou perfil ausente). Re-resolução canônica:
+  `run_reresolver_autores_emendas.py`. Migrations: **0019** (autor_nome_norm), **0020** (enum
+  bancada) + **0021** (bancadas) — aplicadas no banco via conector; arquivos no repo para
+  `supabase db push`. (0016/0017/0018 já eram de outras frentes — suplente/admin/follows.)
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
 - **Banco no teto do Free (~476/500 MB).** Subir pro Pro destrava a reingestão das áreas
   truncadas.
-- **Testes:** **313** (eram 308; +5 do re-resolver de autoria + `selecionar_muitos`/backfill), sem
-  rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`). *O código novo (runner
-  + edições no repositório/adapter + testes) está **neste worktree, ainda não commitado**.*
+- **Testes:** ingestão **314** + Prometeus **27** (novas ferramentas `emendas_por_autor_perfil`,
+  `buscar_bancada`; guarda de código de bancada na resolução), sem rede
+  (`cd codigo/services/<serviço> && py -m unittest discover -s . -t .`).
 
 ## 4. Prometeus (Onda 2) — o agente de IA  [FOCO ATUAL]
 
