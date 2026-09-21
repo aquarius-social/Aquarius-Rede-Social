@@ -57,12 +57,30 @@ def _proposicoes_camara(raw, ano: int | None, tam: int = 1000) -> list[dict]:
 
 
 def _ids_com_tramitacao(raw, uuids: list[str]) -> set[str]:
-    """Dos `uuids` dados, quais JÁ têm ao menos uma tramitação (checagem em lote)."""
+    """Dos `uuids` dados, quais JÁ têm ao menos uma tramitação (checagem em lote).
+
+    GOTCHA: o PostgREST corta a resposta em 1000 linhas. Como cada proposição tem
+    ~14 tramitações, um `in_` de 500 uuids casa milhares de linhas → a resposta
+    truncada subconta os feitos (re-processa quem já estava pronto). Por isso
+    PAGINAMOS por keyset em `proposicao_id` até esgotar."""
     if not uuids:
         return set()
-    linhas = (raw.table("tramitacao").select("proposicao_id")
-              .in_("proposicao_id", uuids).execute().data)
-    return {l["proposicao_id"] for l in linhas}
+    done: set[str] = set()
+    ultimo: str | None = None
+    while True:
+        q = (raw.table("tramitacao").select("proposicao_id")
+             .in_("proposicao_id", uuids).order("proposicao_id").limit(1000))
+        if ultimo is not None:
+            q = q.gt("proposicao_id", ultimo)
+        linhas = q.execute().data
+        if not linhas:
+            break
+        for l in linhas:
+            done.add(l["proposicao_id"])
+        ultimo = linhas[-1]["proposicao_id"]
+        if len(linhas) < 1000:
+            break
+    return done
 
 
 def main() -> None:

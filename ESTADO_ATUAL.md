@@ -59,10 +59,10 @@ Prometeus) e o deploy são os próximos grandes passos.
   presença.
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
-- **Cobertura real hoje (contagem das views ouro, 2026-09-20):** despesa **~1,88 mi** (Câmara +
+- **Cobertura real hoje (contagem das views ouro, 2026-09-21):** despesa **~1,88 mi** (Câmara +
   Senado, **2018–2026**), emenda **48.369** (88% com perfil), **voto_nominal ~997 mil**,
-  **discurso 155.984**, **votação 65.623**, **proposição 52.869**, evento ~4 mil, frente 1.443,
-  tramitacao 3.285 (ainda parcial — passada própria), comissao 90, partido 22.
+  **tramitação 565.033** (Câmara 2018–2026 completa), **discurso 155.984**, **votação 65.623**,
+  **proposição 52.869**, evento ~4 mil, frente 1.443, comissao 90, partido 22.
   `parlamentar_publico` segue **624** (a view só traz vigentes; os ex-parlamentares do backfill
   entram como perfil **inativo**, fora do app, só memória do Prometeus).
 - **Atividade — COMPLETA 2018–2026 (backfill desta sessão, verificado no banco 2026-09-20).**
@@ -70,9 +70,13 @@ Prometeus) e o deploy são os próximos grandes passos.
   **discurso 155.984**, **voto_nominal ~997 mil**. Todos os 9 anos têm proposição + votação +
   discurso reais (antes só 2024). Rodou na nuvem (workflow `backfill-atividade.yml`, matriz por
   ano); só as votações de **2021 e 2023** foram fechadas numa passada local (a API da Câmara
-  limitava o IP do runner nos 2 anos mais pesados — código correto, throttle de ambiente). As
-  **tramitações** (cauda cara, 1 chamada/proposição, ~14,7h/ano) e a **presença** ficam pra
-  rodada própria; **2020 votação=1.663** pode valer um top-up (ano de pandemia, ou throttle parcial).
+  limitava o IP do runner nos 2 anos mais pesados — código correto, throttle de ambiente).
+- **Tramitações da Câmara — COMPLETAS 2018–2026** (verificado 2026-09-21): **565.033 linhas**, as
+  **41.046** proposições da Câmara cobertas. Coletadas por `run_tramitacoes.py` (standalone,
+  desacoplado, resumível) + workflow `backfill-tramitacoes.yml` (matriz por ano, max-parallel 3).
+  A nuvem fez ~66% (rate-limit por IP de runner derrubou 3 anos); o resto fechou numa passada
+  local. **Ainda pendente:** **tramitações do Senado** (precisam do `id_processo` da matéria) e a
+  **presença** (sem coletor). **2020 votação=1.663** pode valer um top-up.
 - **Banco agora no Supabase Pro (plano PAGO)** — muito mais espaço. Isso **destrava**: (a) o
   **backfill de despesa/emenda para 2018–2022**; (b) completar as **áreas truncadas**; (c) a
   **paridade Senado** onde falta. **Diagnóstico (mapeamento desta sessão):** as lacunas são de
@@ -219,14 +223,14 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   por último (após ~7k proposições + ~25k discursos); fechados numa passada **votações-primeiro
   local** (2021: 308.971 votos nominais; 2023: 123.525).
 
-> **GitHub Actions:** repo público = **grátis e ilimitado**. Dois workflows na nuvem (sem PC):
-> `ingestao.yml` (incremental, 2×/dia leve + 1×/semana completo) e `backfill-atividade.yml`
-> (histórico, **matriz por ano em paralelo**; input `anos` pra re-rodar seletivo). O backfill
-> histórico de atividade **está COMPLETO** (proposições/votações/discursos 2018–2026). **Falta
-> ainda:** (a) as **tramitações** (passada própria, fatiada fina — não cabem nos 6h junto do
-> resto); (b) **presença** (sem coletor); (c) ajustar o diário "leve" pra ser mesmo leve (~1–2h
-> hoje). **Lição de ambiente:** anos pesados na nuvem sofrem **rate-limit da API da Câmara** quando
-> as votações rodam por último — rodar votações-primeiro (ou solo) contorna.
+> **GitHub Actions:** repo público = **grátis e ilimitado**. Três workflows na nuvem (sem PC):
+> `ingestao.yml` (incremental, 2×/dia leve + 1×/semana completo), `backfill-atividade.yml`
+> (proposições/votações/discursos histórico) e `backfill-tramitacoes.yml` (tramitações, matriz por
+> ano, max-parallel 3). Backfill de atividade **COMPLETO** e tramitações da **Câmara COMPLETAS**
+> (2018–2026). **Falta ainda:** (a) **tramitações do Senado** (precisam do `id_processo`); (b)
+> **presença** (sem coletor); (c) ajustar o diário "leve" pra ser mesmo leve. **Lição de ambiente:**
+> a API da Câmara **rate-limita por IP de runner** sob volume alto — a nuvem faz o grosso, mas o
+> rabo teimoso (anos que pegam um IP throttled) fecha confiável numa passada **local** (idempotente).
 
 ## 8. Próximo passo
 
@@ -235,11 +239,12 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 - **Parte 1 — ligar o que já está pronto:** rodar migration `0018`; **deploy do Prometeus (2.4)**
   pelo dev (gcloud + `ANTHROPIC_API_KEY` no painel + `EXPO_PUBLIC_PROMETEUS_URL`); secrets do repo
   p/ ingestão agendada; **segurança** (revogar PAT + rotacionar service key); wire dos botões de IA.
-- **Parte 2 — completar os dados (2ª rodada):** canário de proposições **validado** ✅; backfill de
-  **atividade** (proposições/votações/discursos/eventos) **2018–2026 COMPLETO** ✅. **Falta:** rodar
-  as **tramitações** (passada própria fatiada); **presença** (sem coletor — construir); paridade
-  (frentes Senado, blocos Câmara, votações do Senado nos anos históricos); juntar as 2 pernas de
-  tramitação; curadoria (linhagem de partidos); top-up opcional de **2020 votação** (=1.663).
+- **Parte 2 — completar os dados (2ª rodada):** atividade (proposições/votações/discursos/eventos)
+  **2018–2026 COMPLETA** ✅; **tramitações da Câmara 2018–2026 COMPLETAS** ✅. **Falta:**
+  **tramitações do Senado** (precisam do `id_processo` da matéria — coletor/persistência a ajustar);
+  **presença** (sem coletor — construir); paridade (frentes Senado, blocos Câmara, votações do
+  Senado nos anos históricos); juntar as 2 pernas de tramitação; curadoria (linhagem de partidos);
+  top-up opcional de **2020 votação** (=1.663).
 - **Partes 3–5** (produto/social → monetização/mobile → DaaS): detalhe no `PLANO.md`.
 
 ## 9. Notas de ambiente
