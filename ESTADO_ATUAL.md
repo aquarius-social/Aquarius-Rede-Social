@@ -53,11 +53,11 @@ Prometeus) e o deploy são os próximos grandes passos.
 - **Fundação de identidade** (`profiles`, `id_externo`, `vinculo_temporal`, partido canônico
   com linhagem) + **pipeline em 3 camadas** (bronze imutável → prata tratada → ouro servida)
   com portão de qualidade e quarentena.
-- **9/9 áreas com coletor** (a última, **presença**, foi construída — ver `ONDA-1-PRESENCA-LEIA-ME.md`).
-  **Servidas (dado real):** despesas (Câmara CEAP + Senado CEAPS), emendas (Portal da Transparência),
-  eventos (agenda bicameral), **proposições/votações/discursos/tramitações** (backfill 2018–2026
-  completo desta sessão). **Presença (Área E):** coletor + migration `0019` prontos; **falta aplicar a
-  migration `0019` e rodar** (`backfill-presenca.yml`) — só Câmara neste passe, Senado a pesquisar.
+- **9/9 áreas com coletor, TODAS servidas com dado real.** despesas (Câmara CEAP + Senado CEAPS),
+  emendas (Portal da Transparência), eventos (agenda bicameral), **proposições/votações/discursos/
+  tramitações** (backfill 2018–2026 completo) e **presença (Área E)** — a última área, construída e
+  no ar nesta sessão (Câmara: **1.141 sessões, 496.959 registros de presença**; view `presenca_publica`
+  com % realistas). Só a presença do **Senado** fica a pesquisar. Ver `ONDA-1-PRESENCA-LEIA-ME.md`.
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
 - **Cobertura real hoje (contagem das views ouro, 2026-09-22):** despesa **~1,88 mi** (Câmara +
@@ -195,8 +195,8 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 **Segurança / infra:**
 4. **Revogar o PAT do GitHub** que circulou no chat (se ainda não).
 5. **Rotacionar a service key do Supabase** (também circulou no chat; prioridade segurança).
-6. **Rodar as migrations `0018_follows`** (sem ela o "seguir" não persiste) **e `0019_presenca`**
-   (tabelas `sessao`/`presenca` + view `presenca_publica`; sem ela o backfill de presença falha).
+6. **Rodar a migration `0018_follows`** (sem ela o "seguir" não persiste). *(A `0019_presenca` já foi
+   aplicada e o backfill de presença rodou — ver §Feito recentemente.)*
 
 **Parqueado (dependências externas / decisão futura):**
 8. **E-mail de produção — comprar domínio + verificar no Resend.** Sem domínio verificado, só o
@@ -204,6 +204,11 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 9. **WhatsApp Business** — habilitação Meta em paralelo (dependência externa mais longa).
 
 **Feito recentemente:**
+- ✅ **Presença (Área E) — construída e no ar** (Câmara): migration `0019` aplicada + backfill na
+  nuvem (`backfill-presenca.yml`, 9 anos, success). **1.141 sessões, 496.959 registros**; view ouro
+  `presenca_publica` com % realistas (ex.: 92,2% / 87,8% / 74,1%). Era a última área sem coletor →
+  **9/9 áreas servidas**. 8 testes novos (suíte 335). Senado da presença fica a pesquisar.
+- ✅ **Tramitações BICAMERAIS completas** (Câmara 544.930 + Senado 160.166 = 705.096 linhas).
 - ✅ **Supabase Free → Pro** (plano pago ativo — mais espaço).
 - ✅ **Chave da Anthropic criada**; **projeto GCP `aquarius-prometeus` + APIs (Cloud Run, Cloud
   Build) ativas**; crédito grátis do GCP ligado.
@@ -244,10 +249,10 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   p/ ingestão agendada; **segurança** (revogar PAT + rotacionar service key); wire dos botões de IA.
 - **Parte 2 — completar os dados (2ª rodada):** atividade (proposições/votações/discursos/eventos)
   **2018–2026 COMPLETA** ✅; **tramitações BICAMERAIS (Câmara + Senado) 2018–2026 COMPLETAS** ✅.
-  **presença (Área E) construída** (Câmara) — **falta aplicar a migration `0019` + rodar**
-  `backfill-presenca.yml`. **Falta ainda:** **presença do Senado** (fonte a pesquisar) + justificadas;
-  paridade (frentes Senado, blocos Câmara, votações do Senado nos anos históricos); juntar as 2 pernas
-  de tramitação (Câmara↔Senado da mesma matéria); curadoria (linhagem de partidos); top-ups opcionais
+  **presença (Área E) da Câmara COMPLETA** ✅ (1.141 sessões / 496.959 registros / `presenca_publica`).
+  **Falta ainda:** **presença do Senado** (fonte a pesquisar) + justificadas; paridade (frentes Senado,
+  blocos Câmara, votações do Senado nos anos históricos); juntar as 2 pernas de tramitação
+  (Câmara↔Senado da mesma matéria); curadoria (linhagem de partidos); top-ups opcionais
   (**2020 votação**=1.663; **2018 matérias do Senado**=21).
 - **Partes 3–5** (produto/social → monetização/mobile → DaaS): detalhe no `PLANO.md`.
 
