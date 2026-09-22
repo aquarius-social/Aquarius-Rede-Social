@@ -894,3 +894,69 @@ def salvar_votos_nominais(
     } for r in resolvidos]
     cliente.upsert("voto_nominal", linhas, conflito="votacao_id,perfil_id")
     return len(linhas)
+
+
+# -----------------------------------------------------------------------------
+# Presença — sessões do Plenário + comparecimento (Área E, §11/§4)
+# -----------------------------------------------------------------------------
+
+def salvar_sessoes(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    *,
+    source: str = "camara.sessoes",
+    source_url: str = BASE_CAMARA,
+) -> int:
+    """Persiste sessões deliberativas. Upsert por (casa, id_fonte)."""
+    linhas = [{
+        "casa": s["casa"],
+        "id_fonte": s["id_fonte"],
+        "tipo": s.get("tipo"),
+        "data_hora": s.get("data_hora"),
+        "orgao_sigla": s.get("orgao_sigla"),
+        "source": source,
+        "source_url": source_url,
+    } for s in aprovados]
+    if not linhas:
+        return 0
+    cliente.upsert("sessao", linhas, conflito="casa,id_fonte")
+    return len(linhas)
+
+
+def salvar_presencas(
+    cliente: ClienteBanco,
+    sessao_id_fonte: str,
+    aprovados: Sequence[dict],
+    lookup,
+    *,
+    casa: str = "camara",
+    source: str = "camara.presenca",
+    source_url: str = BASE_CAMARA,
+) -> int:
+    """Persiste a presença de UMA sessão. Resolve a sessão (uuid) e o perfil de
+    cada presente por id_externo (a PESSOA, na data da sessão §4). Deputado não
+    resolvido é PULADO (sem perfil não há a quem prender — não inventa fantasma).
+    Upsert por (sessao_id, perfil_id).
+    """
+    if not aprovados:
+        return 0
+    sessao = cliente.selecionar_um("sessao", {"casa": casa, "id_fonte": sessao_id_fonte})
+    if sessao is None:
+        return 0
+    sid = sessao["id"]
+    linhas: list[dict] = []
+    for p in aprovados:
+        perfil_id = lookup(casa, p["id_camara"]) if p.get("id_camara") else None
+        if perfil_id is None:
+            continue
+        linhas.append({
+            "sessao_id": sid,
+            "perfil_id": perfil_id,
+            "presente": bool(p.get("presente", True)),
+            "source": source,
+            "source_url": source_url,
+        })
+    if not linhas:
+        return 0
+    cliente.upsert("presenca", linhas, conflito="sessao_id,perfil_id")
+    return len(linhas)

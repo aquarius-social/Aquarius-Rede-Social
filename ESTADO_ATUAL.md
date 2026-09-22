@@ -53,10 +53,11 @@ Prometeus) e o deploy são os próximos grandes passos.
 - **Fundação de identidade** (`profiles`, `id_externo`, `vinculo_temporal`, partido canônico
   com linhagem) + **pipeline em 3 camadas** (bronze imutável → prata tratada → ouro servida)
   com portão de qualidade e quarentena.
-- **8/9 áreas com coletor.** **Servidas (dado real):** despesas (Câmara CEAP + Senado CEAPS),
-  emendas (Portal da Transparência), eventos (agenda bicameral). **Truncadas** (coletor pronto,
-  dados incompletos por espaço): proposições, votações, tramitações, discursos. **Sem coletor:**
-  presença.
+- **9/9 áreas com coletor** (a última, **presença**, foi construída — ver `ONDA-1-PRESENCA-LEIA-ME.md`).
+  **Servidas (dado real):** despesas (Câmara CEAP + Senado CEAPS), emendas (Portal da Transparência),
+  eventos (agenda bicameral), **proposições/votações/discursos/tramitações** (backfill 2018–2026
+  completo desta sessão). **Presença (Área E):** coletor + migration `0019` prontos; **falta aplicar a
+  migration `0019` e rodar** (`backfill-presenca.yml`) — só Câmara neste passe, Senado a pesquisar.
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
 - **Cobertura real hoje (contagem das views ouro, 2026-09-22):** despesa **~1,88 mi** (Câmara +
@@ -90,7 +91,7 @@ Prometeus) e o deploy são os próximos grandes passos.
   `despesa_publica.perfil_id` funciona; proveniência presente). **Achado:** `emenda.autor_profile_id`
   já está **88% populado** (17.135/19.476) — a ressalva do código que diz "chave ainda não
   carregada" ficou desatualizada (task `task_5e142e49` aberta pra melhorar a atribuição).
-- **Testes:** **315**, sem rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`).
+- **Testes:** **335**, sem rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`).
 
 ## 4. Prometeus (Onda 2) — o agente de IA  [FOCO ATUAL]
 
@@ -194,7 +195,8 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 **Segurança / infra:**
 4. **Revogar o PAT do GitHub** que circulou no chat (se ainda não).
 5. **Rotacionar a service key do Supabase** (também circulou no chat; prioridade segurança).
-6. **Rodar a migration `0018_follows`** (sem ela o "seguir" não persiste).
+6. **Rodar as migrations `0018_follows`** (sem ela o "seguir" não persiste) **e `0019_presenca`**
+   (tabelas `sessao`/`presenca` + view `presenca_publica`; sem ela o backfill de presença falha).
 
 **Parqueado (dependências externas / decisão futura):**
 8. **E-mail de produção — comprar domínio + verificar no Resend.** Sem domínio verificado, só o
@@ -242,16 +244,17 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   p/ ingestão agendada; **segurança** (revogar PAT + rotacionar service key); wire dos botões de IA.
 - **Parte 2 — completar os dados (2ª rodada):** atividade (proposições/votações/discursos/eventos)
   **2018–2026 COMPLETA** ✅; **tramitações BICAMERAIS (Câmara + Senado) 2018–2026 COMPLETAS** ✅.
-  **Falta:** **presença** (sem coletor — construir); paridade (frentes Senado, blocos Câmara,
-  votações do Senado nos anos históricos); juntar as 2 pernas de tramitação (Câmara↔Senado da mesma
-  matéria); curadoria (linhagem de partidos); top-ups opcionais (**2020 votação**=1.663; **2018
-  matérias do Senado**=21).
+  **presença (Área E) construída** (Câmara) — **falta aplicar a migration `0019` + rodar**
+  `backfill-presenca.yml`. **Falta ainda:** **presença do Senado** (fonte a pesquisar) + justificadas;
+  paridade (frentes Senado, blocos Câmara, votações do Senado nos anos históricos); juntar as 2 pernas
+  de tramitação (Câmara↔Senado da mesma matéria); curadoria (linhagem de partidos); top-ups opcionais
+  (**2020 votação**=1.663; **2018 matérias do Senado**=21).
 - **Partes 3–5** (produto/social → monetização/mobile → DaaS): detalhe no `PLANO.md`.
 
 ## 9. Notas de ambiente
 
 - Interpretador Python é **`py`** (não `python`, alias fantasma da Microsoft Store).
-- **Testes sem rede:** ingestão **315** + Prometeus **21** = **336** verdes. Rodar dentro de cada
+- **Testes sem rede:** ingestão **335** + Prometeus **21** = **356** verdes. Rodar dentro de cada
   serviço: `py -m unittest discover -s . -t .`.
 - **Padrão da ingestão (fixado no código):** segredos no `.env` de `codigo/services/ingestao/`
   (lido por `env_local.carregar_env`; nunca colar chave à mão — foi assim que a service key vazou).

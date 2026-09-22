@@ -1,0 +1,55 @@
+name: Backfill de presença (Área E)
+
+# Frequência dos deputados nas sessões deliberativas do Plenário da Câmara.
+# ~93 sessões/ano; para cada uma, a lista de presentes (/eventos/{id}/deputados).
+# Leve (~2 chamadas por sessão) — via run_presenca.py.
+#
+# PRÉ-REQUISITO: migration 0019_presenca aplicada (tabelas sessao/presenca + view).
+# Sem as tabelas o job FALHA — aplicar a migration antes de disparar.
+#
+# Matriz por ano; runner RESUMÍVEL (pula sessão que já tem presença) e idempotente.
+on:
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos a rodar (array JSON). Padrão = 2018–2026.'
+        type: string
+        default: '["2018","2019","2020","2021","2022","2023","2024","2025","2026"]'
+
+concurrency:
+  group: backfill-presenca
+  cancel-in-progress: false
+
+jobs:
+  presenca:
+    name: Presença ${{ matrix.ano }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        ano: ${{ fromJSON(github.event.inputs.anos) }}
+    defaults:
+      run:
+        working-directory: codigo/services/ingestao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências de runtime
+        run: pip install -r requirements.txt
+
+      - name: Presença — ano ${{ matrix.ano }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AQUARIUS_PRESENCA_ANO: ${{ matrix.ano }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::notice::Secrets do Supabase ausentes — presença pulada (workflow segue verde)."
+            exit 0
+          fi
+          echo "::notice::Presença ${{ matrix.ano }} (requer migration 0019 aplicada)"
+          python run_presenca.py
