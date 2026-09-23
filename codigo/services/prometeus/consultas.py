@@ -42,15 +42,23 @@ RESSALVA_ESTAGIOS = (
 
 RESSALVA_AUTOR_CHAVE = (
     "Atribuição por CHAVE VERIFICADA (autor_profile_id, resolvido na curadoria de "
-    "identidade). Bancada estadual tem PERFIL COLETIVO próprio — a emenda é da "
-    "bancada, nunca somada ao total individual de um parlamentar. Comissão e "
-    "Relator-Geral podem ainda não ter perfil (autoria coletiva/rotativa) (regra 2)."
+    "identidade). Bancada estadual e Relator-Geral (RP9) têm PERFIL COLETIVO/"
+    "INSTITUCIONAL próprio — a emenda é do coletivo, NUNCA somada ao total individual "
+    "de um parlamentar. Comissão pode ainda não ter perfil (autoria coletiva) (regra 2)."
 )
 
 RESSALVA_BANCADA = (
     "Emenda de BANCADA (autoria coletiva estadual, RP7): pertence à bancada, não a "
     "um parlamentar. Não some com emendas individuais dos membros — são baldes "
     "distintos (regra 2)."
+)
+
+RESSALVA_RELATOR = (
+    "Emenda de RELATOR (RP9 / 'orçamento secreto'): pertence ao PERFIL INSTITUCIONAL "
+    "'Relator-Geral do Orçamento', NÃO a uma pessoa — nunca some ao total individual de "
+    "nenhum parlamentar. `relator_geral_orcamento` diz quem foi o relator FORMAL de cada "
+    "exercício (responsabilidade funcional, não autoria pessoal dele). O SOLICITANTE real "
+    "de cada emenda não está na fonte ingerida — é ausência honesta, não zero (regra 2)."
 )
 
 RESSALVA_AUTOR_NOME = (
@@ -133,6 +141,21 @@ def buscar_bancada(gw: Gateway, *, termo: str) -> Resultado:
         dados=linhas,
         proveniencia=proveniencia_das_linhas(linhas),
         ressalvas=[RESSALVA_BANCADA] if linhas else [],
+    )
+
+
+def relator_geral_orcamento(gw: Gateway, *, ano: int | None = None) -> Resultado:
+    """Quem foi o Relator-Geral FORMAL do Orçamento por exercício (RP9 / 'orçamento
+    secreto'). Responsabilidade funcional — NÃO autoria individual: a emenda de relator
+    pertence ao perfil institucional, nunca ao total do relator formal. `ano` opcional."""
+    filtros = [Filtro("ano", "eq", ano)] if ano is not None else []
+    linhas = gw.buscar(
+        Consulta(view="relatoria_geral_publico", filtros=filtros, ordem="ano.asc", limite=20)
+    )
+    return Resultado(
+        dados=linhas,
+        proveniencia=proveniencia_das_linhas(linhas),
+        ressalvas=[RESSALVA_RELATOR],
     )
 
 

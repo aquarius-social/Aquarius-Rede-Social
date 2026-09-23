@@ -59,11 +59,16 @@ Prometeus) e o deploy são os próximos grandes passos.
   como PERFIL COLETIVO** — 27 perfis `tipo='bancada'`, ligação 71xx→bancada, **1.882 emendas de
   bancada**, + views `bancada_publica`/`bancada_membro_publico` (composição atual por UF, **sem
   colunas de dinheiro**). **Anti-duplicidade:** cada emenda tem 1 dono (pessoa OU bancada, disjuntos);
-  emenda de bancada nunca soma ao total individual. **Ainda sem autor (~727):** comissões (~250;
-  5xxx/6xxx → perfis `comissao` já existem, falta ligar), Relator-Geral (8100, ~296; papel rotativo —
-  decisão de modelo pendente), ~10 individuais (perfis DUPLICADOS → dedup). Migrations **0020**
-  (autor_nome_norm) + **0021** (enum bancada) + **0022** (bancadas). Ferramentas Prometeus
-  `emendas_por_autor_perfil` + `buscar_bancada`. Re-resolução: `run_reresolver_autores_emendas.py`.
+  emenda de bancada nunca soma ao total individual. **Relator-Geral (RP9 / "orçamento secreto") —
+  resolvido (mesma disjunção):** as **295 Emendas de Relator** (8100, R$19,4bi, 2020–2022) viram
+  donas de um **perfil INSTITUCIONAL** `tipo='relatoria'`, nunca somadas a ninguém; a tabela
+  `relatoria_geral` liga cada exercício ao **relator formal** verificável (2020 Domingos Neto / 2021
+  Marcio Bittar / 2022 Hugo Leal) como **responsabilidade**, não autoria pessoal (migrations
+  **0023/0024**, *a aplicar*). O **solicitante real** de cada RP9 fica honestamente ausente (fora da
+  fonte). **Ainda sem autor (~260):** comissões (~250; 5xxx/6xxx → perfis `comissao` já existem, falta
+  ligar) e ~10 individuais (perfis DUPLICADOS → dedup). Migrations **0020**–**0024**. Ferramentas
+  Prometeus `emendas_por_autor_perfil` + `buscar_bancada` + `relator_geral_orcamento`. Re-resolução:
+  `run_reresolver_autores_emendas.py`.
 - **9/9 áreas com coletor, TODAS servidas com dado real — bicameral.** despesas (Câmara CEAP +
   Senado CEAPS), emendas (Portal da Transparência), eventos (agenda bicameral), **proposições/votações/
   discursos/tramitações** (backfill 2018–2026 completo) e **presença (Área E) — a última área,
@@ -104,7 +109,7 @@ Prometeus) e o deploy são os próximos grandes passos.
   `despesa_publica.perfil_id` funciona; proveniência presente). **Achado:** `emenda.autor_profile_id`
   já está **88% populado** (17.135/19.476) — a ressalva do código que diz "chave ainda não
   carregada" ficou desatualizada (task `task_5e142e49` aberta pra melhorar a atribuição).
-- **Testes:** ingestão **345** + Prometeus **27**, sem rede (`cd codigo/services/<serviço> && py -m unittest discover -s . -t .`).
+- **Testes:** ingestão **345** + Prometeus **29**, sem rede (`cd codigo/services/<serviço> && py -m unittest discover -s . -t .`).
 
 ## 4. Prometeus (Onda 2) — o agente de IA  [FOCO ATUAL]
 
@@ -189,11 +194,11 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 
 ## 7. ⚠️ Ações pendentes
 
-**Emendas — autoria (o que ainda falta atribuir, ~727 emendas):**
+**Emendas — autoria (o que ainda falta atribuir, ~260 emendas):**
+- **APLICAR as migrations `0023_profile_tipo_relatoria` + `0024_relatoria_geral`** (SQL Editor) — elas
+  atribuem as 295 Emendas de Relator (RP9) ao perfil institucional + gravam o relator formal por ano.
 - **Comissões** (~250) — ligar códigos 5xxx/6xxx aos perfis `tipo='comissao'` (já existem); match por
   nome curado (não automático às cegas).
-- **Relator-Geral** (8100, ~296) — papel rotativo; **decisão de modelagem pendente** (perfil
-  institucional? por ano? categoria?).
 - **~10 individuais** — perfis DUPLICADOS no cadastro → **dedup** (decidir qual manter) ou criar perfil.
 - **~675 `pendente_conferencia`** em `id_externo` (autor_orcamentario) — **sign-off humano** (casamento
   por nome = 1 sinal); ao conferir, marcar `conferido_por_humano` e re-rodar (não editar id_externo cru).
@@ -286,7 +291,7 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 ## 9. Notas de ambiente
 
 - Interpretador Python é **`py`** (não `python`, alias fantasma da Microsoft Store).
-- **Testes sem rede:** ingestão **345** + Prometeus **27** = **372** verdes. Rodar dentro de cada
+- **Testes sem rede:** ingestão **345** + Prometeus **29** = **374** verdes. Rodar dentro de cada
   serviço: `py -m unittest discover -s . -t .`.
 - **Padrão da ingestão (fixado no código):** segredos no `.env` de `codigo/services/ingestao/`
   (lido por `env_local.carregar_env`; nunca colar chave à mão — foi assim que a service key vazou).

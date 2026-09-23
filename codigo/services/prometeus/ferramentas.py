@@ -54,6 +54,16 @@ FERRAMENTAS: list[Ferramenta] = [
         lambda gw, a: consultas.buscar_bancada(gw, termo=a.get("termo", "")),
     ),
     Ferramenta(
+        "relator_geral_orcamento",
+        "Quem foi o Relator-Geral FORMAL do Orçamento por exercício (Emenda de Relator / "
+        "RP9, 'orçamento secreto'). Responsabilidade funcional, NÃO autoria pessoal — a "
+        "emenda de relator é do perfil institucional, nunca somada ao total individual do "
+        "relator formal. `ano` opcional (2020–2022).",
+        {"ano": _s("integer", "Exercício (opcional, ex.: 2021).")},
+        [],
+        lambda gw, a: consultas.relator_geral_orcamento(gw, ano=a.get("ano")),
+    ),
+    Ferramenta(
         "despesas_parlamentar",
         "Lançamentos de cota parlamentar (CEAP Câmara / CEAPS Senado) de um parlamentar. "
         "EXIGE ano. Use o perfil_id vindo de buscar_parlamentar.",

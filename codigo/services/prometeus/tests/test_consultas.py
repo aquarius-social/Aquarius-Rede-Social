@@ -75,6 +75,14 @@ DADOS = {
          "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
          "synced_at": "2026-08-11T00:00:00Z"},
     ],
+    "relatoria_geral_publico": [
+        {"ano": 2021, "relator_profile_id": "p-bittar", "relator_nome": "Marcio Bittar",
+         "relator_slug": "marcio-bittar-sen-285", "source": "curadoria.relator_geral",
+         "source_url": "https://www12.senado.leg.br/x", "synced_at": "2026-09-23T00:00:00Z"},
+        {"ano": 2020, "relator_profile_id": "p-domingos", "relator_nome": "Domingos Neto",
+         "relator_slug": "domingos-neto-143632", "source": "curadoria.relator_geral",
+         "source_url": "https://www.camara.leg.br/x", "synced_at": "2026-09-23T00:00:00Z"},
+    ],
 }
 
 
@@ -110,6 +118,23 @@ class TestBuscarBancada(unittest.TestCase):
 
     def test_recusa_vazio(self):
         self.assertIsNotNone(consultas.buscar_bancada(gw(), termo="  ").recusa)
+
+
+class TestRelatorGeral(unittest.TestCase):
+    def test_lista_com_ressalva_rp9(self):  # regra 2: RP9 não é autoria individual
+        r = consultas.relator_geral_orcamento(gw())
+        self.assertIsNone(r.recusa)
+        self.assertEqual(len(r.dados), 2)
+        self.assertEqual(r.dados[0]["ano"], 2020)          # ordenado por ano
+        self.assertTrue(r.proveniencia)                    # regra 1: nada sem fonte
+        texto = " ".join(r.ressalvas).lower()
+        self.assertIn("rp9", texto)
+        self.assertIn("individual", texto)                 # nunca soma ao individual
+
+    def test_filtra_por_ano(self):
+        r = consultas.relator_geral_orcamento(gw(), ano=2021)
+        self.assertEqual(len(r.dados), 1)
+        self.assertEqual(r.dados[0]["relator_nome"], "Marcio Bittar")
 
 
 class TestDespesas(unittest.TestCase):
