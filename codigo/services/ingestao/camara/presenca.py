@@ -151,7 +151,8 @@ def transformar_presenca(payload: dict, sessao_id_fonte: str) -> dict:
     return {
         "sessao_id_fonte": str(sessao_id_fonte),
         "casa": "camara",
-        "id_camara": str(id_dep) if id_dep is not None else None,
+        # id do parlamentar na fonte (casa-neutro): resolve o perfil no save.
+        "id_parlamentar": str(id_dep) if id_dep is not None else None,
         "presente": True,
     }
 
@@ -162,14 +163,14 @@ VERIFICADORES_SESSAO = [
 ]
 
 
-def _id_camara_presente(registro: dict) -> Violacao | None:
-    if not registro.get("id_camara"):
+def _id_parlamentar_presente(registro: dict) -> Violacao | None:
+    if not registro.get("id_parlamentar"):
         return Violacao("integridade_referencial",
-                        "presença sem id de deputado — não é resolvível")
+                        "presença sem id de parlamentar — não é resolvível")
     return None
 
 
-VERIFICADORES_PRESENCA = [_id_camara_presente]
+VERIFICADORES_PRESENCA = [_id_parlamentar_presente]
 
 
 def processar_sessoes_para_prata(bronze: list[RegistroBronze]) -> ResultadoPortao:

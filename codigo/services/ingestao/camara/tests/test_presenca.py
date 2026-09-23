@@ -71,12 +71,12 @@ class TestColetorPresencas(unittest.TestCase):
         r = rodada_presencas(cli, "71957", canario_validado=True, linha_base=None)
         self.assertEqual(len(r.prata.aprovados), 2)     # os 2 com id
         self.assertEqual(len(r.prata.quarentena), 1)    # o sem id
-        self.assertEqual(r.prata.aprovados[0]["id_camara"], "62881")
+        self.assertEqual(r.prata.aprovados[0]["id_parlamentar"], "62881")
 
     def test_transform_presenca(self):
         p = transformar_presenca({"id": 62881}, "71957")
         self.assertEqual(p, {"sessao_id_fonte": "71957", "casa": "camara",
-                             "id_camara": "62881", "presente": True})
+                             "id_parlamentar": "62881", "presente": True})
 
 
 # ----------------------------- persistência ---------------------------------
@@ -121,8 +121,8 @@ class TestPersistencia(unittest.TestCase):
                                 "data_hora": "2024-03-05T17:04", "orgao_sigla": "PLEN"}])
         # lookup resolve só o deputado 62881
         lookup = lambda casa, idc: "P-ANA" if (casa, idc) == ("camara", "62881") else None
-        aprovados = [{"id_camara": "62881", "presente": True},
-                     {"id_camara": "999", "presente": True}]   # não resolve
+        aprovados = [{"id_parlamentar": "62881", "presente": True},
+                     {"id_parlamentar": "999", "presente": True}]   # não resolve
         n = salvar_presencas(banco, "71957", aprovados, lookup)
         self.assertEqual(n, 1)                                    # só o resolvido
         self.assertEqual(len(banco.tabelas["presenca"]), 1)
@@ -130,7 +130,7 @@ class TestPersistencia(unittest.TestCase):
 
     def test_salvar_presencas_sem_sessao_persistida_nao_salva(self):
         banco = _FakeBanco()   # sessão 71957 NÃO existe
-        n = salvar_presencas(banco, "71957", [{"id_camara": "62881"}],
+        n = salvar_presencas(banco, "71957", [{"id_parlamentar": "62881"}],
                              lambda c, i: "P-ANA")
         self.assertEqual(n, 0)
 

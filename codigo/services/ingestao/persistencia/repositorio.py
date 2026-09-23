@@ -946,7 +946,7 @@ def salvar_presencas(
     sid = sessao["id"]
     linhas: list[dict] = []
     for p in aprovados:
-        perfil_id = lookup(casa, p["id_camara"]) if p.get("id_camara") else None
+        perfil_id = lookup(casa, p["id_parlamentar"]) if p.get("id_parlamentar") else None
         if perfil_id is None:
             continue
         linhas.append({
