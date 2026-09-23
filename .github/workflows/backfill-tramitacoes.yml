@@ -1,0 +1,58 @@
+name: Backfill de tramitações (histórico)
+
+# A cauda cara da atividade legislativa: a tramitação (cadeia de despachos) de
+# CADA proposição da Câmara — uma chamada de API por proposição (~41 mil).
+# Desacoplada da coleta de proposições (que já estão no banco) via run_tramitacoes.py.
+#
+# Cada ANO é um job independente (fatiamento). max-parallel BAIXO de propósito:
+# a API da Câmara faz rate-limit sob volume alto e concorrência (lição do backfill
+# de votações). Poucos jobs por vez = menos throttle. Como o runner é RESUMÍVEL
+# (pula proposição que já tem tramitação) e ISOLADO por proposição, re-disparar
+# preenche o que o throttle deixou de fora — converge em poucas passadas.
+#
+# Idempotente. Disparo MANUAL só (pesado). Input `anos` re-roda seletivo.
+on:
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos a rodar (array JSON). Padrão = 2018–2026.'
+        type: string
+        default: '["2018","2019","2020","2021","2022","2023","2024","2025","2026"]'
+
+concurrency:
+  group: backfill-tramitacoes
+  cancel-in-progress: false
+
+jobs:
+  tramitacoes:
+    name: Tramitações ${{ matrix.ano }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350        # guarda sob o teto de 6h do runner
+    strategy:
+      fail-fast: false          # um ano que falha não derruba os outros
+      max-parallel: 3           # gentil com a API da Câmara (evita rate-limit)
+      matrix:
+        ano: ${{ fromJSON(github.event.inputs.anos) }}
+    defaults:
+      run:
+        working-directory: codigo/services/ingestao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências de runtime
+        run: pip install -r requirements.txt
+
+      - name: Tramitações do ano ${{ matrix.ano }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AQUARIUS_TRAM_ANO: ${{ matrix.ano }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::notice::Secrets do Supabase ausentes — tramitações puladas (workflow segue verde)."
+            exit 0
+          fi
+          echo "::notice::Tramitações ${{ matrix.ano }} (uma passada; re-disparar preenche o resto)"
+          python run_tramitacoes.py

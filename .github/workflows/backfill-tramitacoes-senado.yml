@@ -1,0 +1,56 @@
+name: Backfill de tramitações do Senado (histórico)
+
+# A perna do Senado da tramitação (§11 bicameral). Para CADA matéria do Senado
+# no banco, recupera o idProcesso pelo detalhe da matéria e busca a tramitação
+# em /processo/{idProcesso} (via run_tramitacoes_senado.py). ~11,8 mil matérias.
+#
+# API do Senado é OUTRO host (legis.senado.leg.br) — o rate-limit da Câmara não
+# se aplica aqui, mas mantemos max-parallel baixo por prudência. Runner RESUMÍVEL
+# (pula matéria que já tem tramitação) e ISOLADO por matéria; re-disparar preenche.
+#
+# Idempotente. Disparo MANUAL só. Input `anos` re-roda seletivo.
+on:
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos a rodar (array JSON). Padrão = 2018–2026.'
+        type: string
+        default: '["2018","2019","2020","2021","2022","2023","2024","2025","2026"]'
+
+concurrency:
+  group: backfill-tramitacoes-senado
+  cancel-in-progress: false
+
+jobs:
+  tramitacoes-senado:
+    name: Tramitações Senado ${{ matrix.ano }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        ano: ${{ fromJSON(github.event.inputs.anos) }}
+    defaults:
+      run:
+        working-directory: codigo/services/ingestao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências de runtime
+        run: pip install -r requirements.txt
+
+      - name: Tramitações do Senado — ano ${{ matrix.ano }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AQUARIUS_TRAM_ANO: ${{ matrix.ano }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::notice::Secrets do Supabase ausentes — tramitações do Senado puladas (workflow segue verde)."
+            exit 0
+          fi
+          echo "::notice::Tramitações do Senado ${{ matrix.ano }} (re-disparar preenche o resto)"
+          python run_tramitacoes_senado.py

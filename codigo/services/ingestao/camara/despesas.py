@@ -54,6 +54,7 @@ def coletar_bronze_despesas(
     deputado_id_fonte: str,
     *,
     ano: int,
+    id_legislatura: int | None = None,
     politica: PoliticaRetry = PoliticaRetry(),
     itens_por_pagina: int = 100,
     limite_paginas: int = 200,
@@ -62,6 +63,11 @@ def coletar_bronze_despesas(
     url = f"{BASE}/deputados/{deputado_id_fonte}/despesas"
     params: dict[str, Any] = {"ano": ano, "itens": itens_por_pagina,
                               "ordem": "DESC", "ordenarPor": "dataDocumento"}
+    # A API passou a EXIGIR idLegislatura: sem ele o endpoint devolve 200 com lista
+    # VAZIA (sucesso enganoso, §21 modo 1) — verificado ao vivo 2026-09. Com ele,
+    # despesas (inclusive históricas) voltam normalmente.
+    if id_legislatura is not None:
+        params["idLegislatura"] = id_legislatura
     bronze: list[RegistroBronze] = []
     pagina = 1
     proximo: str | None = None
@@ -180,6 +186,7 @@ def rodada_despesas(
     deputado_id_fonte: str,
     *,
     ano: int,
+    id_legislatura: int | None = None,
     canario_validado: bool,
     linha_base: frozenset[str] | None,
     politica: PoliticaRetry = PoliticaRetry(),
@@ -188,6 +195,7 @@ def rodada_despesas(
     bronze: list[RegistroBronze] = []
     try:
         bronze = coletar_bronze_despesas(cliente, deputado_id_fonte, ano=ano,
+                                         id_legislatura=id_legislatura,
                                          politica=politica)
     except ErroFalha as e:
         erro_falha = str(e)

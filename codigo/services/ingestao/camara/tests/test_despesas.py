@@ -8,6 +8,7 @@ import unittest
 from typing import Any
 
 from camara.despesas import (
+    coletar_bronze_despesas,
     processar_despesas_para_prata,
     rodada_despesas,
     transformar_despesa,
@@ -46,6 +47,33 @@ def _despesa(doc=2000.0, glosa=0.0, liq=2000.0, cod=123, parcela=0):
 
 def _bronze(payload):
     return RegistroBronze.de("camara.despesas", "https://x", payload)
+
+
+class _ClienteCaptura:
+    """Captura os params de cada GET, para checar a query montada."""
+    def __init__(self, corpo):
+        self.corpo = corpo
+        self.chamadas: list[tuple[str, Any]] = []
+    def get(self, url, params=None):
+        self.chamadas.append((url, params))
+        return _Resp(200, self.corpo)
+
+
+class TestQueryDespesa(unittest.TestCase):
+    def test_inclui_idlegislatura_quando_fornecida(self):
+        # A API exige idLegislatura; sem ele volta 200 vazio (§21 modo 1). O
+        # coletor DEVE mandá-lo — senão o backfill traz zero em silêncio.
+        cli = _ClienteCaptura({"dados": [_despesa()], "links": []})
+        coletar_bronze_despesas(cli, "204379", ano=2018, id_legislatura=55)
+        _, params = cli.chamadas[0]
+        self.assertEqual(params.get("idLegislatura"), 55)
+        self.assertEqual(params.get("ano"), 2018)
+
+    def test_omite_idlegislatura_quando_ausente(self):
+        cli = _ClienteCaptura({"dados": [], "links": []})
+        coletar_bronze_despesas(cli, "204379", ano=2018)
+        _, params = cli.chamadas[0]
+        self.assertNotIn("idLegislatura", params)
 
 
 class TestTransformacaoDespesa(unittest.TestCase):

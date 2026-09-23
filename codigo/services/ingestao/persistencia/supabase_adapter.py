@@ -57,15 +57,43 @@ def _e_erro_conexao(e: Exception) -> bool:
     return "ConnectionTerminated" in txt or "Server disconnected" in txt
 
 
+# Erros TRANSITÓRIOS de gateway/proxy: o Cloudflare na frente do Supabase às vezes
+# devolve 502/503/504 (HTML de erro), que o postgrest converte em APIError. NÃO é
+# erro de dado — a re-tentativa resolve. Sem isto, UM único 502 no meio de dezenas
+# de milhares de reads derrubava o ano inteiro (visto no backfill de atividade:
+# um read de id_externo por voto → o ano de 2023 abortou num 502 avulso).
+_TEXTO_GATEWAY = (
+    "bad gateway", "gateway time-out", "gateway timeout",
+    "service unavailable", "temporarily unavailable",
+)
+_CODIGOS_GATEWAY = ("502", "503", "504")
+
+
+def _e_gateway_transitorio(e: Exception) -> bool:
+    txt = str(e).lower()
+    if any(t in txt for t in _TEXTO_GATEWAY):
+        return True
+    codigo = getattr(e, "code", None)
+    if str(codigo) in _CODIGOS_GATEWAY:
+        return True
+    # postgrest.APIError carrega o código dentro do texto do dict ({'code': 502}).
+    return any(f"'code': {c}" in txt or f'"code": {c}' in txt for c in _CODIGOS_GATEWAY)
+
+
+def _e_transitorio(e: Exception) -> bool:
+    return _e_erro_conexao(e) or _e_gateway_transitorio(e)
+
+
 def _com_retry(fn: Callable[[], Any], *, tentativas: int = 5, espera: float = 1.0) -> Any:
-    """Executa `fn`, repetindo só em erro de conexão (com backoff). Outros erros
-    (constraint, etc.) sobem imediatamente."""
+    """Executa `fn`, repetindo só em erro TRANSITÓRIO — conexão HTTP/2 encerrada
+    ou gateway 5xx do proxy (com backoff). Erros de dado (constraint, etc.) sobem
+    imediatamente para quem chama tratar."""
     ultima: Exception | None = None
     for i in range(tentativas):
         try:
             return fn()
         except Exception as e:  # noqa: BLE001
-            if not _e_erro_conexao(e):
+            if not _e_transitorio(e):
                 raise
             ultima = e
             time.sleep(espera * (i + 1))

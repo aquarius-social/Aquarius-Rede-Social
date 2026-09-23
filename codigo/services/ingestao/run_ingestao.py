@@ -22,6 +22,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 
+from env_local import carregar_env
 from orquestracao.orquestrador import ingerir
 from persistencia.supabase_adapter import criar_banco_supabase
 from pipeline.coletor import JanelaMovel
@@ -42,6 +43,7 @@ def _flag(nome: str, padrao: bool = True) -> bool:
 
 
 def main() -> None:
+    carregar_env()  # segredos do .env local (padrão); não sobrescreve o ambiente
     url = os.environ["SUPABASE_URL"]
     key = os.environ["SUPABASE_SERVICE_KEY"]
     janela_dias = int(os.environ.get("AQUARIUS_JANELA_DIAS", "30"))

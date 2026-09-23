@@ -227,13 +227,30 @@ def lookup_id_externo(cliente: ClienteBanco):
     coletores recebiam injetado, mas agora respaldado pela tabela.
 
         (sistema, identificador) -> profile_id | None
-    """
+
+    MEMOIZADO (só ACERTOS): a mesma pessoa é resolvida MUITAS vezes numa rodada
+    (um deputado vota em centenas de votações → o mesmo id_externo seria lido do
+    banco a cada voto). Sem cache, um ano de votações fazia dezenas de milhares de
+    reads sequenciais ao Supabase — o gargalo de tempo (horas) e a superfície de
+    falha (um 502 avulso derrubava o ano). Cacheia só o ACERTO (profile_id != None)
+    porque a MISSA pode ser transitória dentro da rodada: o fallback de emenda por
+    nome resolve-e-INSERE o autor e relê esperando achar (miss → insert → hit).
+    Uma vez existente, um id_externo não é removido nem re-apontado numa rodada."""
+    cache: dict[tuple[str, str], str] = {}
+
     def _l(sistema: str, identificador: str) -> str | None:
+        chave = (sistema, str(identificador))
+        acerto = cache.get(chave)
+        if acerto is not None:
+            return acerto
         row = cliente.selecionar_um(
             "id_externo",
             {"sistema": sistema, "identificador": str(identificador)},
         )
-        return row["profile_id"] if row else None
+        pid = row["profile_id"] if row else None
+        if pid is not None:
+            cache[chave] = pid
+        return pid
     return _l
 
 
@@ -631,6 +648,7 @@ def salvar_vinculos_temporais(
     fica None e a sigla-fonte é preservada; resolver por linhagem é curadoria (§4).
     """
     salvos = 0
+    pulados_sobrepostos = 0
     for v in vinculos:
         # A casa do vínculo é também o sistema do id_externo (camara↔camara,
         # senado↔senado) — resolve bicameral sem hardcode.
@@ -647,7 +665,7 @@ def salvar_vinculos_temporais(
         titular_profile_id = None
         if v.get("titular_id_fonte"):
             titular_profile_id = lookup(v.get("casa", "camara"), v["titular_id_fonte"])
-        cliente.upsert("vinculo_temporal", [{
+        linha = {
             "profile_id": perfil_id,
             "casa": v["casa"],
             "legislatura": v.get("legislatura"),
@@ -660,8 +678,24 @@ def salvar_vinculos_temporais(
             "vigencia": _daterange(v["vigencia_inicio"], v.get("vigencia_fim")),
             "source": source,
             "source_url": source_url,
-        }], conflito="profile_id,casa,vigencia")
+        }
+        try:
+            cliente.upsert("vinculo_temporal", [linha], conflito="profile_id,casa,vigencia")
+        except Exception as e:  # noqa: BLE001 — só a sobreposição é engolida; o resto sobe
+            # A constraint de EXCLUSÃO `vinculo_sem_sobreposicao` rejeita um período que
+            # SE SOBREPÕE a um já gravado — o que o ON CONFLICT (chave exata) não resolve.
+            # Ocorre ao rebackfillar uma legislatura antiga cujos deputados já têm vínculos
+            # MAIS FINOS de uma ingestão anterior (ex.: troca de partido no meio do período).
+            # Mantém-se o existente (mais informativo) e pula-se o grosseiro: débito
+            # declarado, não crash (§4/§5.1). Erro que NÃO é sobreposição sobe.
+            if "vinculo_sem_sobreposicao" in str(e) or "23P01" in str(e):
+                pulados_sobrepostos += 1
+                continue
+            raise
         salvos += 1
+    if pulados_sobrepostos:
+        print(f"  [{pulados_sobrepostos} vínculo(s) '{source}' pulado(s) por sobreposição "
+              "com período já gravado — mantido o existente (§4/§5.1)]")
     return salvos
 
 
@@ -905,4 +939,70 @@ def salvar_votos_nominais(
         "grau_atribuicao": r.grau_atribuicao,
     } for r in resolvidos]
     cliente.upsert("voto_nominal", linhas, conflito="votacao_id,perfil_id")
+    return len(linhas)
+
+
+# -----------------------------------------------------------------------------
+# Presença — sessões do Plenário + comparecimento (Área E, §11/§4)
+# -----------------------------------------------------------------------------
+
+def salvar_sessoes(
+    cliente: ClienteBanco,
+    aprovados: Sequence[dict],
+    *,
+    source: str = "camara.sessoes",
+    source_url: str = BASE_CAMARA,
+) -> int:
+    """Persiste sessões deliberativas. Upsert por (casa, id_fonte)."""
+    linhas = [{
+        "casa": s["casa"],
+        "id_fonte": s["id_fonte"],
+        "tipo": s.get("tipo"),
+        "data_hora": s.get("data_hora"),
+        "orgao_sigla": s.get("orgao_sigla"),
+        "source": source,
+        "source_url": source_url,
+    } for s in aprovados]
+    if not linhas:
+        return 0
+    cliente.upsert("sessao", linhas, conflito="casa,id_fonte")
+    return len(linhas)
+
+
+def salvar_presencas(
+    cliente: ClienteBanco,
+    sessao_id_fonte: str,
+    aprovados: Sequence[dict],
+    lookup,
+    *,
+    casa: str = "camara",
+    source: str = "camara.presenca",
+    source_url: str = BASE_CAMARA,
+) -> int:
+    """Persiste a presença de UMA sessão. Resolve a sessão (uuid) e o perfil de
+    cada presente por id_externo (a PESSOA, na data da sessão §4). Deputado não
+    resolvido é PULADO (sem perfil não há a quem prender — não inventa fantasma).
+    Upsert por (sessao_id, perfil_id).
+    """
+    if not aprovados:
+        return 0
+    sessao = cliente.selecionar_um("sessao", {"casa": casa, "id_fonte": sessao_id_fonte})
+    if sessao is None:
+        return 0
+    sid = sessao["id"]
+    linhas: list[dict] = []
+    for p in aprovados:
+        perfil_id = lookup(casa, p["id_parlamentar"]) if p.get("id_parlamentar") else None
+        if perfil_id is None:
+            continue
+        linhas.append({
+            "sessao_id": sid,
+            "perfil_id": perfil_id,
+            "presente": bool(p.get("presente", True)),
+            "source": source,
+            "source_url": source_url,
+        })
+    if not linhas:
+        return 0
+    cliente.upsert("presenca", linhas, conflito="sessao_id,perfil_id")
     return len(linhas)

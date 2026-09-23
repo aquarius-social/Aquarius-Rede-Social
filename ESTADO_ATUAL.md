@@ -5,16 +5,21 @@ ler (depois do `CLAUDE.md`). Complementos: `PLANO.md` (roadmap em ondas),
 `RELATORIO_DESENVOLVIMENTO.md` (fotografia por camada, também publicada como página),
 `MELHORIAS.md` (backlog A–I), `HISTORICO.md` (marcos e números de ingestão).
 
-Atualização: 2026-09-11.
+Atualização: 2026-09-23.
 
 ## Resumo executivo
 
 O Aquarius tem **app (Expo) e admin (Next.js) no ar na Vercel**, com a camada de leitura
 navegando dado oficial real (despesas, emendas, eventos) e login por OTP funcionando. A
 peça em construção é o **Prometeus (Onda 2)** — o agente de IA. O **backend do Prometeus
-está pronto e testado** (servidor MCP de consultas seguras + agente ReAct + endpoint),
-faltando só **publicar (deploy no GCP)** e a **chave da Anthropic** para ligá-lo ao vivo. A
-geração de posts (2ª face do Prometeus) e o deploy são os próximos grandes passos.
+está pronto, testado e agora VALIDADO contra o banco real** (as 7 ferramentas foram
+conferidas ao vivo via Supabase MCP — schema bate 100%, dado e proveniência presentes).
+Falta só **publicar (deploy no GCP Cloud Run)** e **colar a chave da Anthropic** — a chave
+**já foi criada** e o **projeto GCP já existe com as APIs ativas**; o deploy será feito
+**pelo dev** (máquina mais robusta). Novidade estrutural: o **Supabase migrou para o plano
+Pago (Pro)**, com muito mais espaço — o que **destrava o backfill** das áreas truncadas e a
+extensão de despesa/emenda para anos anteriores a 2023. A geração de posts (2ª face do
+Prometeus) e o deploy são os próximos grandes passos.
 
 ## 1. App (Expo / React Native) — camada de leitura pronta
 
@@ -30,8 +35,8 @@ geração de posts (2ª face do Prometeus) e o deploy são os próximos grandes 
   própria conta Resend — produção depende de **domínio verificado** (ver pendências).
 - **Prometeus chat ligado ao endpoint:** `chat.tsx` chama `POST {EXPO_PUBLIC_PROMETEUS_URL}
   /perguntar`, renderiza resposta + **fontes clicáveis** + ressalvas, com fallback honesto
-  enquanto não publicado. ⚠️ Esse arquivo está **commitado localmente, ainda não pushado** —
-  o app publicado na Vercel segue com o placeholder até o push.
+  enquanto não publicado. ✅ **Já pushado** (`ae0019f`). O app publicado só mostrará o chat
+  real quando `EXPO_PUBLIC_PROMETEUS_URL` for setado (após o deploy); até lá, o fallback honesto.
 - **Deploy:** app web na Vercel (`aquarius-rede-social-app.vercel.app`). Mobile (EAS): não
   iniciado (`eas.json`/`app.json` prontos).
 
@@ -48,33 +53,58 @@ geração de posts (2ª face do Prometeus) e o deploy são os próximos grandes 
 - **Fundação de identidade** (`profiles`, `id_externo`, `vinculo_temporal`, partido canônico
   com linhagem) + **pipeline em 3 camadas** (bronze imutável → prata tratada → ouro servida)
   com portão de qualidade e quarentena.
-- **8/9 áreas com coletor.** **Servidas (dado real):** despesas (Câmara CEAP + Senado CEAPS),
-  emendas (Portal da Transparência), eventos (agenda bicameral). **Truncadas** (coletor pronto,
-  dados incompletos por espaço): proposições, votações, tramitações, discursos. **Sem coletor:**
-  presença.
-- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos). Autor preenchido em
-  **98,5%** (48.239). A resolução vive em `id_externo` (sistema='autor_orcamentario') + backfill do
-  `autor_profile_id`. Feito em 11–20/09: (a) **individuais** — backfill de já-resolvidas + 95
-  casados por nome + 3 conferidos à mão (Allan Garcês, Luizão Goulart, Fernando Francischini);
-  (b) **bancadas estaduais como PERFIL COLETIVO** — 27 perfis `tipo='bancada'`, ligação 71xx→bancada
-  em `id_externo` (fonte_direta/direto), **1.882 emendas de bancada** atribuídas, + views
-  `bancada_publica` e `bancada_membro_publico` (composição atual por UF: dep+senadores, sem
-  licenciados, **sem colunas de dinheiro**). **Invariante anti-duplicidade:** cada emenda tem 1 dono
-  (pessoa OU bancada, disjuntos); emenda de bancada NUNCA soma ao total individual do membro —
-  aparece na página dele por JOIN (exibição), não por cópia. Ainda sem autor (~727): **comissões**
-  (~250; códigos 5xxx/6xxx — perfis `tipo='comissao'` já existem, falta ligar), **Relator-Geral**
-  (código 8100, ~296 — papel rotativo, decisão de modelo pendente) e **~10 individuais** (perfis
-  DUPLICADOS no cadastro → dedup, ou perfil ausente). Re-resolução canônica:
-  `run_reresolver_autores_emendas.py`. Migrations: **0019** (autor_nome_norm), **0020** (enum
-  bancada) + **0021** (bancadas) — aplicadas no banco via conector; arquivos no repo para
-  `supabase db push`. (0016/0017/0018 já eram de outras frentes — suplente/admin/follows.)
+- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos), autor em **98,5%** (48.239)
+  — resolução em `id_externo` (sistema='autor_orcamentario') + backfill do `autor_profile_id`.
+  **Individuais** ~100% (backfill + casamento por nome + conferências à mão); **bancadas estaduais
+  como PERFIL COLETIVO** — 27 perfis `tipo='bancada'`, ligação 71xx→bancada, **1.882 emendas de
+  bancada**, + views `bancada_publica`/`bancada_membro_publico` (composição atual por UF, **sem
+  colunas de dinheiro**). **Anti-duplicidade:** cada emenda tem 1 dono (pessoa OU bancada, disjuntos);
+  emenda de bancada nunca soma ao total individual. **Ainda sem autor (~727):** comissões (~250;
+  5xxx/6xxx → perfis `comissao` já existem, falta ligar), Relator-Geral (8100, ~296; papel rotativo —
+  decisão de modelo pendente), ~10 individuais (perfis DUPLICADOS → dedup). Migrations **0020**
+  (autor_nome_norm) + **0021** (enum bancada) + **0022** (bancadas). Ferramentas Prometeus
+  `emendas_por_autor_perfil` + `buscar_bancada`. Re-resolução: `run_reresolver_autores_emendas.py`.
+- **9/9 áreas com coletor, TODAS servidas com dado real — bicameral.** despesas (Câmara CEAP +
+  Senado CEAPS), emendas (Portal da Transparência), eventos (agenda bicameral), **proposições/votações/
+  discursos/tramitações** (backfill 2018–2026 completo) e **presença (Área E) — a última área,
+  construída e no ar nas DUAS casas** nesta sessão: **1.580 sessões, 528.495 registros** (Câmara 1.141
+  sessões / lista de presença; Senado 439 / comparecimento em votações — `source` distingue). View
+  `presenca_publica` com % realistas nas duas casas. Ver `ONDA-1-PRESENCA-LEIA-ME.md`.
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
-- **Banco no teto do Free (~476/500 MB).** Subir pro Pro destrava a reingestão das áreas
-  truncadas.
-- **Testes:** ingestão **314** + Prometeus **27** (novas ferramentas `emendas_por_autor_perfil`,
-  `buscar_bancada`; guarda de código de bancada na resolução), sem rede
-  (`cd codigo/services/<serviço> && py -m unittest discover -s . -t .`).
+- **Cobertura real hoje (contagem das views ouro, 2026-09-22):** despesa **~1,88 mi** (Câmara +
+  Senado, **2018–2026**), emenda **48.369** (88% com perfil), **tramitação 705.096** (bicameral
+  2018–2026: Câmara 544.930 + Senado 160.166), **voto_nominal ~997 mil**, **discurso 155.984**,
+  **votação 65.623**, **proposição 52.869**, evento ~4 mil, frente 1.443, comissao 90, partido 22.
+  `parlamentar_publico` segue **624** (a view só traz vigentes; os ex-parlamentares do backfill
+  entram como perfil **inativo**, fora do app, só memória do Prometeus).
+- **Atividade — COMPLETA 2018–2026 (backfill desta sessão, verificado no banco 2026-09-20).**
+  Contagens ouro atuais: **despesa 1,88 mi**, **proposição 52.869**, **votação 65.623**,
+  **discurso 155.984**, **voto_nominal ~997 mil**. Todos os 9 anos têm proposição + votação +
+  discurso reais (antes só 2024). Rodou na nuvem (workflow `backfill-atividade.yml`, matriz por
+  ano); só as votações de **2021 e 2023** foram fechadas numa passada local (a API da Câmara
+  limitava o IP do runner nos 2 anos mais pesados — código correto, throttle de ambiente).
+- **Tramitações — BICAMERAIS COMPLETAS 2018–2026** (verificado 2026-09-22): **705.096 linhas**
+  (Câmara 544.930 / Senado 160.166). **Câmara:** 41.046 proposições, via `run_tramitacoes.py` +
+  `backfill-tramitacoes.yml`; a nuvem fez ~66% (rate-limit por IP de runner) e o resto fechou local.
+  **Senado:** ~11.826 matérias, via `run_tramitacoes_senado.py` + `backfill-tramitacoes-senado.yml`
+  (recupera o `id_processo` pelo detalhe da matéria, não persistido) — a nuvem **fechou 100% sozinha**
+  (API do Senado é outro host, sem o throttle da Câmara; 0 falhas). *(Presença — Área E — já está
+  completa nas duas casas; ver bullet acima.)* Top-ups opcionais: **2020 votação=1.663** e **2018
+  matérias do Senado (só 21)**.
+- **Banco agora no Supabase Pro (plano PAGO)** — muito mais espaço. Isso **destrava**: (a) o
+  **backfill de despesa/emenda para 2018–2022**; (b) completar as **áreas truncadas**; (c) a
+  **paridade Senado** onde falta. **Diagnóstico (mapeamento desta sessão):** as lacunas são de
+  **execução, não de código** — o dinheiro rodou só na leg 57 e as áreas de atividade foram
+  **desligadas por flag** pra caber no Free. Correção é **re-execução** (mudar env), sem código
+  novo. Decisão: **fatia de valor primeiro** (identidade + dinheiro 2018–2022) — runbook em
+  `RUNBOOK-BACKFILL.md`. Atividade + paridade ficam pra 2ª rodada.
+- **Validação 2026-09-08:** as 7 ferramentas do Prometeus foram conferidas contra o dado real
+  (schema das 5 views consumidas bate 100%; encadeamento `parlamentar_publico.id` →
+  `despesa_publica.perfil_id` funciona; proveniência presente). **Achado:** `emenda.autor_profile_id`
+  já está **88% populado** (17.135/19.476) — a ressalva do código que diz "chave ainda não
+  carregada" ficou desatualizada (task `task_5e142e49` aberta pra melhorar a atribuição).
+- **Testes:** ingestão **345** + Prometeus **27**, sem rede (`cd codigo/services/<serviço> && py -m unittest discover -s . -t .`).
 
 ## 4. Prometeus (Onda 2) — o agente de IA  [FOCO ATUAL]
 
@@ -100,9 +130,9 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 |---|---|
 | **2.0 Fundação e decisões** | ✅ Feito (arquitetura + contrato lido + ferramentas definidas) |
 | **2.1 Servidor MCP (consultas seguras)** | ✅ Feito — 14 testes; no repo |
-| **2.2 Agente ReAct + endpoint + ligar no app** | ✅ Código pronto — 21 testes; falta deploy + chave p/ ao vivo |
+| **2.2 Agente ReAct + endpoint + ligar no app** | ✅ Código pronto **e validado contra o banco real** (21 testes + 7 ferramentas conferidas ao vivo); falta só deploy p/ ao vivo |
 | **2.3 Pipeline de posts + freio editorial** | ⬜ Não iniciado |
-| **2.4 Deploy (GCP Cloud Run)** | ⬜ Não iniciado (precisa chave Anthropic + GCP) |
+| **2.4 Deploy (GCP Cloud Run)** | 🟡 Pré-requisitos quase prontos: **chave Anthropic criada**, **projeto GCP `aquarius-prometeus` + APIs ativas**; falta instalar `gcloud` (no PC do dev) + rodar o deploy |
 | **2.5 Refino (roteamento Haiku/Opus, RAG, rate limit, custo)** | ⬜ Pós-MVP |
 
 ### O serviço `codigo/services/prometeus/`
@@ -123,78 +153,152 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   `servidor_mcp.py` é a interface MCP reutilizável externa. Trocar o agente para o cliente MCP é
   um adaptador fino, se um dia forem separados.
 
-### O que falta pra ligar o Prometeus ao vivo
+### O que falta pra ligar o Prometeus ao vivo (a fazer **pelo dev**)
 
-1. **Chave da Anthropic** (Console + crédito + teto) — o motor.
-2. **Deploy no GCP Cloud Run** (via `gcloud` local, sem GitHub — evita Actions).
-3. Setar `EXPO_PUBLIC_PROMETEUS_URL` (app: env na Vercel + `.env` local) pra URL do Cloud Run.
-4. **Pushar o `chat.tsx`** (hoje local) pra o app web publicado usar o chat real.
+1. **Instalar o `gcloud`** no PC do dev + `gcloud init` (login + escolher o projeto
+   `aquarius-prometeus`).
+2. **Deploy no GCP Cloud Run** (`gcloud run deploy` a partir de `codigo/services/prometeus/`,
+   sem GitHub — evita Actions). Env já conhecidos: `SUPABASE_URL` + `SUPABASE_ANON_KEY` (seguros,
+   protegidos por RLS).
+3. **Colar a chave da Anthropic** (`ANTHROPIC_API_KEY`) no campo **Variáveis** do painel do
+   Cloud Run — nunca no chat nem no comando.
+4. Setar `EXPO_PUBLIC_PROMETEUS_URL` (app: env na Vercel + `.env` local) pra URL do Cloud Run.
+5. **Teste ao vivo** do chat com pergunta real (dado + fonte).
 
 ## 5. Deploys (o que está no ar)
 
 - **Admin → Vercel** (produção). ✅
 - **App web → Vercel** (`aquarius-rede-social-app.vercel.app`). ✅
-- **Prometeus (serviço) → GCP:** ⬜ não deployado (Etapa 2.4).
+- **Prometeus (serviço) → GCP:** 🟡 não deployado, mas pré-requisitos quase prontos (Etapa 2.4).
 - **App mobile → EAS:** ⬜ não iniciado.
 
 ## 6. Estado do git / repositórios
 
-- **Repo de código** (`Aquarius-Rede-Social`): `origin/main` em `1861d90`. **Local está 2 commits
-  À FRENTE, não pushados:**
-  - `ae0019f` — `chat.tsx` + `requirements.txt` + `Procfile` (os "pusháveis").
-  - `cd9b001` — `ci.yml` (economia de Actions; **precisa do escopo `workflow` no token** pra pushar).
-  - Motivo de segurar o push: **GitHub Actions no limite do mês**; validação feita **localmente**
-    pelos testes.
+- **Ownership transferida para a organização `aquarius-social`.** Remote do repo de código:
+  `github.com/aquarius-social/Aquarius-Rede-Social.git`.
+- **Repo de código:** `origin/main` e local **em `b1d6898`** (sincronizados) — os commits do
+  backfill de despesa 2018–2022, dos 2 fixes de ingestão e do loader de `.env` foram **pushados**.
+  Working tree limpo, **exceto `.mcp.json` não versionado** (commitar é opcional).
+- **Repo agora PÚBLICO** (Actions grátis/ilimitado) — resolveu o billing que travava a ingestão
+  agendada. Histórico varrido: **nenhum segredo commitado**. Docs de negócio ficam no repo separado
+  `aquarius-contexto` (não afetado).
 - **Repo de contexto** (`aquarius-contexto`): separado, sem alteração nesta sessão (prints/telas,
   docs-fonte, marketing, protótipo).
+- **Segurança:** um **PAT do GitHub circulou no chat** na sessão anterior — **precisa ser revogado**
+  se ainda não foi (ver pendências).
 
-## 7. ⚠️ Ações pendentes do usuário (fora do código)
+## 7. ⚠️ Ações pendentes
 
-1. **Chave da Anthropic** (Console + crédito US$5–10 + teto ~US$20/mês) → destrava o teste ao vivo
-   da 2.2 e o deploy 2.4. *(O plano Claude Max NÃO dá crédito de API — é cobrança separada.)*
-2. **Projeto no GCP** → deploy do Prometeus (Cloud Run).
-3. **GitHub Actions no limite** → reseta no próximo mês (ou tornar o repo de código público =
-   Actions ilimitado, ou pagar). Até lá, **pushes segurados**.
-4. **Escopo `workflow` no token do GitHub** → pra pushar o commit do `ci.yml`.
-5. **E-mail de produção — comprar domínio + verificar no Resend** *(parqueado)*. Sem domínio
-   verificado, só o e-mail da conta Resend recebe o código.
-6. **Rotacionar a service key do Supabase** (circulou no chat; prioridade segurança).
-7. **Rodar a migration `0018_follows`** (sem ela o "seguir" não persiste).
-8. **Secrets do repo** (`SUPABASE_URL`/`SUPABASE_SERVICE_KEY`) pro agendador `ingestao.yml`.
-9. **Supabase Free → Pro** — destrava a reingestão das áreas truncadas + várias frentes.
-10. **WhatsApp Business** — habilitação Meta em paralelo (dependência externa mais longa).
-11. **Conferência da autoria de emendas** — revisar os **675 `pendente_conferencia`** de `id_externo`
-    (sistema='autor_orcamentario'; casamento por nome = 1 sinal). 560 são de 11/09 (backfill + as 95
-    do re-casamento). Listar: `select x.identificador, p.nome from id_externo x join profiles p on
-    p.id=x.profile_id where x.sistema='autor_orcamentario' and x.pendente_conferencia order by p.nome;`
-    Ao conferir, marcar `conferido_por_humano` no mapa curado e re-rodar (não editar id_externo cru).
-12. **13 autores individuais de emenda sem match** — criar/ajustar perfil e religar: Allan Garcês
-    ("DR."), Delegado Francischini, Luizão Goulart, Pedro D'Alua, Pedro Chaves (2 códigos), Rocha
-    (genérico), Jean Paul Prates, Arolde de Oliveira, Lindbergh Farias, Eunício Oliveira, Jorginho
-    Mello, Renzo Braz.
-13. **Modelagem de autoria coletiva** (bancada/comissão) — 2.351 emendas sem autor por design; decidir
-    como representar a entidade coletiva (não é pessoa) antes de expô-las no Prometeus.
+**Emendas — autoria (o que ainda falta atribuir, ~727 emendas):**
+- **Comissões** (~250) — ligar códigos 5xxx/6xxx aos perfis `tipo='comissao'` (já existem); match por
+  nome curado (não automático às cegas).
+- **Relator-Geral** (8100, ~296) — papel rotativo; **decisão de modelagem pendente** (perfil
+  institucional? por ano? categoria?).
+- **~10 individuais** — perfis DUPLICADOS no cadastro → **dedup** (decidir qual manter) ou criar perfil.
+- **~675 `pendente_conferencia`** em `id_externo` (autor_orcamentario) — **sign-off humano** (casamento
+  por nome = 1 sinal); ao conferir, marcar `conferido_por_humano` e re-rodar (não editar id_externo cru).
+
+**Deploy do Prometeus (com o dev):**
+1. Instalar `gcloud` + deploy no Cloud Run + colar a **chave Anthropic** (já criada) no painel +
+   setar `EXPO_PUBLIC_PROMETEUS_URL`. *(Claude Max NÃO dá crédito de API — cobrança separada; teto
+   de gasto já recomendado no Console.)*
+
+**Dados (destravado pelo Supabase Pro):**
+2. **Backfill de despesa — FEITO (2018–2022, as duas casas).** ~1,1 mi de lançamentos novos
+   (total ~1,86 mi). Ex-parlamentares entram como **perfil inativo** (modelo escolhido: fora do
+   app, memória do Prometeus). Emendas 2018–2022 **também FEITAS** (+29 mil; total **48.369**,
+   88% com perfil) — **fatia de valor 100% completa**. Dois bugs corrigidos no caminho (com teste): crash de sobreposição de
+   vínculo e a mudança da API da Câmara (`idLegislatura`, que também derrubava a ingestão de
+   produção). **2ª rodada (depois):** religar atividade (proposições/votações/discursos — precisa
+   do canário) + paridade (frentes Senado, blocos Câmara). Ver `RUNBOOK-BACKFILL.md`.
+3. Melhorar **atribuição de emendas** usando `autor_profile_id` (88% populado) — decisão de
+   produto; task `task_5e142e49` aberta.
+
+**Segurança / infra:**
+4. **Revogar o PAT do GitHub** que circulou no chat (se ainda não).
+5. **Rotacionar a service key do Supabase** (também circulou no chat; prioridade segurança).
+6. **Rodar a migration `0018_follows`** (sem ela o "seguir" não persiste). *(A `0019_presenca` já foi
+   aplicada e o backfill de presença rodou — ver §Feito recentemente.)*
+
+**Parqueado (dependências externas / decisão futura):**
+8. **E-mail de produção — comprar domínio + verificar no Resend.** Sem domínio verificado, só o
+   e-mail da conta Resend recebe o código.
+9. **WhatsApp Business** — habilitação Meta em paralelo (dependência externa mais longa).
+
+**Feito recentemente:**
+- ✅ **Presença (Área E) — construída e no ar, BICAMERAL.** migration `0019` aplicada + backfill na
+  nuvem (`backfill-presenca.yml` + `backfill-presenca-senado.yml`, 9 anos cada, success). **1.580
+  sessões, 528.495 registros** (Câmara 1.141 = lista de presença; Senado 439 = comparecimento em
+  votações — sem lista de presença por sessão na fonte do Senado). View ouro `presenca_publica` com %
+  realistas nas duas casas. Era a última área sem coletor → **9/9 áreas servidas**. 12 testes novos
+  (suíte 339).
+- ✅ **Tramitações BICAMERAIS completas** (Câmara 544.930 + Senado 160.166 = 705.096 linhas).
+- ✅ **Emendas — autoria fechada (98,5%):** individuais ~100% + **bancadas estaduais como perfil
+  coletivo** (27 perfis `tipo='bancada'`, 1.882 emendas, views `bancada_*` + ferramentas Prometeus
+  `buscar_bancada`/`emendas_por_autor_perfil`). Migrations 0020–0022.
+- ✅ **Supabase Free → Pro** (plano pago ativo — mais espaço).
+- ✅ **Chave da Anthropic criada**; **projeto GCP `aquarius-prometeus` + APIs (Cloud Run, Cloud
+  Build) ativas**; crédito grátis do GCP ligado.
+- ✅ **Supabase MCP conectado** (via Conectores da GUI) — usado nesta sessão pra validar o dado.
+- ✅ **Repo PÚBLICO** (Actions grátis/ilimitado) + **secrets do repo setados** (`SUPABASE_URL`/
+  `SUPABASE_SERVICE_KEY`, via API) → a **ingestão incremental roda na NUVEM** 2×/dia (leve) +
+  1×/semana (completa), sem PC ligado. Confirmado ao vivo: run #100 verde gravou
+  proposições/eventos/discursos frescos no Supabase (2026-09-17 18:xx UTC).
+- ✅ **2 fixes de coleta** pushados: API Câmara exige `idLegislatura` (despesa) e janela de data
+  larga dá HTTP 400 (proposições/votações → fatiamento em pedaços ≤60 dias).
+- ✅ **Backfill de ATIVIDADE histórico na nuvem — proposições + discursos FEITOS 2018–2026.**
+  Novo flag `AQUARIUS_TRAMITACOES=0` (desacopla a cauda cara) + workflow `backfill-atividade.yml`
+  (**matriz por ano em paralelo**, sem PC). Run #1 encheu **proposições** (~34 mil) e **discursos**
+  (~92 mil) de todos os anos.
+- ✅ **Votações — COMPLETAS 2018–2026** (total 65.623). Dois consertos no caminho (`fdb3fac`,
+  **327 testes verdes**): (a) o lookup voto→perfil fazia **um SELECT ao Supabase por voto**
+  (44 mil/ano) → **memoizado** (45k reads → ~600), matando o gargalo de tempo; (b) **retry em
+  502/503/504** de gateway (um 502 avulso derrubava o ano). Achado de ambiente: nos **2 anos mais
+  pesados (2021, 2023)** a API da Câmara **rate-limita o IP do runner** quando as votações rodam
+  por último (após ~7k proposições + ~25k discursos); fechados numa passada **votações-primeiro
+  local** (2021: 308.971 votos nominais; 2023: 123.525).
+
+> **GitHub Actions:** repo público = **grátis e ilimitado**. Workflows na nuvem (sem PC):
+> `ingestao.yml` (incremental, 2×/dia leve + 1×/semana completo), `backfill-atividade.yml`
+> (proposições/votações/discursos histórico), `backfill-tramitacoes.yml` e
+> `backfill-tramitacoes-senado.yml`, `backfill-presenca.yml` e `backfill-presenca-senado.yml` (matriz
+> por ano). Atividade + tramitações + **presença BICAMERAIS COMPLETAS** (2018–2026). **Falta ainda:**
+> ajustar o diário "leve" pra ser mesmo leve. **Lição de ambiente:** a API da **Câmara** rate-limita
+> por IP de runner sob volume alto (a nuvem faz o grosso, o rabo teimoso fecha local); a API do
+> **Senado** (outro host) NÃO tem esse throttle — fechou 100% na nuvem.
 
 ## 8. Próximo passo
 
-- **Imediato (caminho "ao vivo"):** usuário cria a **chave Anthropic** → **deploy do Prometeus no
-  GCP (2.4)** → setar a URL no app → **teste ao vivo** do chat.
-- **Em paralelo (sem pré-requisitos):** construir a **2.3 (pipeline de posts + freio editorial)** —
-  Python, testável local.
-- **Dados:** subir pro Pro e reingerir as áreas truncadas (destrava proposições/votações → mais
-  ferramentas do Prometeus).
+**Plano refeito em 5 partes — detalhe no `PLANO.md` (topo). Ordem decidida: 1 → 2 → 3 → 4 → 5.**
+
+- **Parte 1 — ligar o que já está pronto:** rodar migration `0018`; **deploy do Prometeus (2.4)**
+  pelo dev (gcloud + `ANTHROPIC_API_KEY` no painel + `EXPO_PUBLIC_PROMETEUS_URL`); secrets do repo
+  p/ ingestão agendada; **segurança** (revogar PAT + rotacionar service key); wire dos botões de IA.
+- **Parte 2 — completar os dados (2ª rodada):** atividade (proposições/votações/discursos/eventos)
+  **2018–2026 COMPLETA** ✅; **tramitações BICAMERAIS (Câmara + Senado) 2018–2026 COMPLETAS** ✅.
+  **presença (Área E) BICAMERAL COMPLETA** ✅ (1.580 sessões / 528.495 registros / `presenca_publica`).
+  **Falta ainda:** "justificadas" (a fonte do Senado até distingue os motivos de ausência — dá pra
+  extrair depois); paridade (frentes Senado, blocos Câmara, votações do Senado nos anos históricos);
+  juntar as 2 pernas de tramitação (Câmara↔Senado da mesma matéria); curadoria (linhagem de partidos);
+  top-ups opcionais (**2020 votação**=1.663; **2018 matérias do Senado**=21).
+- **Partes 3–5** (produto/social → monetização/mobile → DaaS): detalhe no `PLANO.md`.
 
 ## 9. Notas de ambiente
 
 - Interpretador Python é **`py`** (não `python`, alias fantasma da Microsoft Store).
-- **Testes sem rede:** ingestão **313** (era 308; +5 da curadoria de autoria — neste worktree) +
-  Prometeus **21** = **334** verdes. Rodar dentro de cada serviço: `py -m unittest discover -s . -t .`.
+- **Testes sem rede:** ingestão **345** + Prometeus **27** = **372** verdes. Rodar dentro de cada
+  serviço: `py -m unittest discover -s . -t .`.
+- **Padrão da ingestão (fixado no código):** segredos no `.env` de `codigo/services/ingestao/`
+  (lido por `env_local.carregar_env`; nunca colar chave à mão — foi assim que a service key vazou).
+  Rodar `py run_backfill.py` (histórico) / `run_ingestao.py` (incremental). Ver `RUNBOOK-BACKFILL.md`.
 - **RAM limitada:** Metro (Expo web) e `tsc` estouram memória; parar preview antes do `tsc`. Ver a
-  memória do projeto `ambiente-ram-limitada`.
-- **GitHub Actions:** só `git push` dispara Actions; `git commit` local **não**. Estamos
-  committando local e segurando os pushes até o limite resetar.
+  memória do projeto `ambiente-ram-limitada`. **Relevante pro backfill:** rodar ingestão pesada
+  pode competir por memória — avaliar rodar por domínio/ano e/ou na máquina do dev.
+- **GitHub Actions:** só `git push` dispara Actions; `git commit` local **não**.
 - **Push ao GitHub** funciona via credencial de arquivo (memória `github-push-acesso`); alterar
-  `.github/workflows/` exige o escopo `workflow` no token.
+  `.github/workflows/` exige o escopo `workflow` no token. Remote agora na org `aquarius-social`.
+- **Supabase MCP** conectado (project ref `nqebfmyzchpkufsytvyf`) — usar só operações de leitura
+  sem pedido explícito (permissões amplas: database/functions/branching).
 
 ## 10. O que NÃO fazer (resumo — detalhe no `CLAUDE.md`)
 

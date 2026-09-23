@@ -32,6 +32,7 @@ import os
 import traceback
 from datetime import date
 
+from env_local import carregar_env
 from orquestracao.orquestrador import ingerir
 from persistencia.supabase_adapter import criar_banco_supabase
 from pipeline.coletor import JanelaMovel
@@ -51,6 +52,7 @@ def legislatura_do_ano(ano: int) -> int:
 
 
 def main() -> None:
+    carregar_env()  # segredos do .env local (padrão); não sobrescreve o ambiente
     url = os.environ["SUPABASE_URL"]
     key = os.environ["SUPABASE_SERVICE_KEY"]
     inicio = int(os.environ.get("AQUARIUS_BACKFILL_INICIO", "2018"))
@@ -70,6 +72,9 @@ def main() -> None:
     # camada ouro, não do bronze), AQUARIUS_PROPOSICOES=0, AQUARIUS_VOTACOES=0,
     # AQUARIUS_DISCURSOS=0, AQUARIUS_EVENTOS=0, AQUARIUS_SENADO=0. Mantenha
     # AQUARIUS_DESPESAS=1 (e a chave da Transparência para emendas).
+    # AQUARIUS_TRAMITACOES=0 desliga a cauda cara (1 chamada/proposição, ~14,7h/ano)
+    # — use no backfill de ATIVIDADE na nuvem para caber em <6h/job; as tramitações
+    # entram numa passada própria depois.
     def _flag(nome: str, padrao: bool = True) -> bool:
         v = os.environ.get(nome)
         if v is None:
@@ -102,6 +107,7 @@ def main() -> None:
                 persistir_bronze=_flag("AQUARIUS_BRONZE"),
                 coletar_proposicoes=_flag("AQUARIUS_PROPOSICOES"),
                 coletar_votacoes=_flag("AQUARIUS_VOTACOES"),
+                coletar_tramitacoes=_flag("AQUARIUS_TRAMITACOES"),
                 baixar_ceaps=baixar_ceaps_urllib,
                 anos_ceaps=[ano],
                 abrir_mapa_autores=abrir_mapa_padrao,
