@@ -86,6 +86,14 @@ class FakeBanco:
                 return dict(r)
         return None
 
+    def selecionar_muitos(self, tabela, onde=None, colunas="*", *, ordem=None):
+        onde = onde or {}
+        linhas = [dict(r) for r in self._t(tabela)
+                  if all(r.get(k) == v for k, v in onde.items())]
+        if ordem:
+            linhas.sort(key=lambda r: (r.get(ordem) is None, r.get(ordem)))
+        return linhas
+
 
 def _dep(did=204379, nome="Acácio Favacho", partido="MDB", uf="AP"):
     return {"id": did, "nome": nome, "siglaPartido": partido, "siglaUf": uf,
@@ -441,6 +449,45 @@ class TestEmendas(unittest.TestCase):
         self.assertIsNone(por_cod["E2"]["autor_profile_id"])   # bancada → null
         self.assertIsNone(por_cod["E2b"]["autor_profile_id"])  # comissão (COM.) → null
         self.assertIsNone(por_cod["E3"]["autor_profile_id"])   # homônimo → null
+
+    def test_rebackfill_so_vincula_codigos_ja_resolvidos(self):
+        """Re-backfill preenche `autor_profile_id` SÓ das emendas cujo código já
+        tem `id_externo(autor_orcamentario)` — a atribuição vem da resolução
+        graduada, não de join cru. ACEITA o código resolvido; RECUSA o sem mapa
+        (fica sem escrever, honesto). Idempotente."""
+        from persistencia.repositorio import (
+            lookup_id_externo, rebackfill_autor_profile_id)
+        banco = FakeBanco()
+        banco.tabelas.setdefault("id_externo", []).append({
+            "sistema": "autor_orcamentario", "identificador": "4484",
+            "profile_id": "P-ZUCCO"})
+        lookup = lookup_id_externo(banco)
+        nulos = [
+            {"codigo_emenda": "E1", "autor_codigo": "4484", "autor_nome": "ZUCCO"},
+            {"codigo_emenda": "E2", "autor_codigo": "9999", "autor_nome": "SEM MAPA"},
+        ]
+        self.assertEqual(rebackfill_autor_profile_id(banco, nulos, lookup), 1)  # só E1
+        por = {e["codigo_emenda"]: e for e in banco.tabelas["emenda"]}
+        self.assertEqual(por["E1"]["autor_profile_id"], "P-ZUCCO")
+        self.assertNotIn("E2", por)                        # sem mapa → não escreve
+        # idempotente: rerodar não muda o resultado
+        self.assertEqual(rebackfill_autor_profile_id(banco, nulos, lookup), 1)
+        self.assertEqual(len(banco.tabelas["emenda"]), 1)
+
+    def test_codigo_bancada_71xx_nao_casa_pessoa(self):
+        """Guarda por código: emenda 71xx com nome atípico (não 'BANCADA...') NÃO é
+        casada a uma pessoa pelo resolvedor por nome — a bancada é o autor coletivo."""
+        from persistencia.repositorio import (
+            _codigo_bancada, lookup_id_externo, resolver_autores_emenda_por_nome)
+        self.assertTrue(_codigo_bancada("7125"))    # bancada SP
+        self.assertFalse(_codigo_bancada("2295"))   # individual (José Serra)
+        banco = FakeBanco()
+        lookup = lookup_id_externo(banco)
+        lookup_nome = lambda nome: "P-QUALQUER"      # casaria qualquer nome, se tentasse
+        emendas = [{"codigo_emenda": "E1", "autor_codigo": "7125", "autor_nome": "SP"}]
+        self.assertEqual(
+            resolver_autores_emenda_por_nome(banco, emendas, lookup, lookup_nome), 0)
+        self.assertEqual(banco.tabelas.get("id_externo", []), [])  # não virou pessoa
 
 
 def _senador(cod="5672", nome="Alan Rick", civil="Alan Rick Miranda",

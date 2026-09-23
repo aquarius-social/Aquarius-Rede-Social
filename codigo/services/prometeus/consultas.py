@@ -40,10 +40,24 @@ RESSALVA_ESTAGIOS = (
     "(regra 5)."
 )
 
+RESSALVA_AUTOR_CHAVE = (
+    "Atribuição por CHAVE VERIFICADA (autor_profile_id, resolvido na curadoria de "
+    "identidade). Bancada estadual tem PERFIL COLETIVO próprio — a emenda é da "
+    "bancada, nunca somada ao total individual de um parlamentar. Comissão e "
+    "Relator-Geral podem ainda não ter perfil (autoria coletiva/rotativa) (regra 2)."
+)
+
+RESSALVA_BANCADA = (
+    "Emenda de BANCADA (autoria coletiva estadual, RP7): pertence à bancada, não a "
+    "um parlamentar. Não some com emendas individuais dos membros — são baldes "
+    "distintos (regra 2)."
+)
+
 RESSALVA_AUTOR_NOME = (
-    "Atribuição por NOME, não por chave verificada — a correspondência "
-    "autor↔perfil ainda não está carregada no banco; pode haver homônimos. "
-    "Grau: com ressalva (regra 2)."
+    "Atribuição por NOME, não por chave verificada: pode trazer homônimos. A busca "
+    "é insensível a acento/caixa, mas grafias divergentes ainda podem escapar. "
+    "Quando houver perfil_id, prefira emendas_por_autor_perfil (buscar_parlamentar "
+    "resolve o perfil). Grau: com ressalva (regra 2)."
 )
 
 RESSALVA_EVENTOS = (
@@ -99,6 +113,27 @@ def buscar_partido(gw: Gateway, *, termo: str) -> Resultado:
         )
     )
     return Resultado(dados=linhas, proveniencia=proveniencia_das_linhas(linhas))
+
+
+def buscar_bancada(gw: Gateway, *, termo: str) -> Resultado:
+    """Encontra bancada(s) estadual(is) por UF (ex.: 'SP') ou nome ('São Paulo').
+    Devolve o perfil coletivo — use o id em emendas_por_autor_perfil."""
+    termo = (termo or "").strip()
+    if not termo:
+        return recusar("Informe a UF (ex.: SP) ou o nome do estado da bancada.")
+    t = termo.upper()
+    if len(t) == 2 and t.isalpha():
+        filtro = Filtro("uf", "eq", t)
+    else:
+        filtro = Filtro("nome", "ilike", termo)
+    linhas = gw.buscar(
+        Consulta(view="bancada_publica", filtros=[filtro], ordem="uf.asc", limite=30)
+    )
+    return Resultado(
+        dados=linhas,
+        proveniencia=proveniencia_das_linhas(linhas),
+        ressalvas=[RESSALVA_BANCADA] if linhas else [],
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -201,13 +236,36 @@ def emendas_por_municipio(
     )
 
 
+def emendas_por_autor_perfil(
+    gw: Gateway, *, perfil_id: str, ano: int | None = None
+) -> Resultado:
+    """Emendas de um autor por CHAVE VERIFICADA (autor_profile_id). Use o perfil_id
+    vindo de buscar_parlamentar — atribuição sem ambiguidade de nome."""
+    if not (perfil_id or "").strip():
+        return recusar("Informe o perfil_id do autor (use buscar_parlamentar antes).")
+    filtros = [Filtro("autor_profile_id", "eq", perfil_id.strip())]
+    if ano:
+        filtros.append(Filtro("ano", "eq", int(ano)))
+    linhas = gw.buscar(Consulta(view="emenda_publica", filtros=filtros, ordem="ano.desc"))
+    ressalvas = [RESSALVA_AUTOR_CHAVE, RESSALVA_ESTAGIOS]
+    if not linhas:
+        ressalvas.append(RESSALVA_AUSENCIA)
+    return Resultado(
+        dados={"emendas": linhas, "totais_por_estagio": _totais_estagios(linhas)},
+        proveniencia=proveniencia_das_linhas(linhas),
+        ressalvas=ressalvas,
+    )
+
+
 def emendas_por_autor_nome(
     gw: Gateway, *, nome: str, ano: int | None = None
 ) -> Resultado:
-    """Emendas de um autor, casadas por NOME (com ressalva — chave ainda não existe)."""
+    """Emendas de um autor casadas por NOME (fallback, com ressalva). Insensível a
+    acento/caixa (casa sobre `autor_nome_norm`). Prefira emendas_por_autor_perfil
+    quando houver perfil_id."""
     if not (nome or "").strip():
         return recusar("Informe o nome do autor da emenda.")
-    filtros = [Filtro("autor_nome", "ilike", nome.strip())]
+    filtros = [Filtro("autor_nome_norm", "ilike", _sem_acento(nome.strip()))]
     if ano:
         filtros.append(Filtro("ano", "eq", int(ano)))
     linhas = gw.buscar(Consulta(view="emenda_publica", filtros=filtros, ordem="ano.desc"))
@@ -264,6 +322,17 @@ def _num(v: Any) -> float:
         return float(v)
     except (TypeError, ValueError):
         return 0.0
+
+
+# Espelha `autor_nome_norm` da view (migration 0020): minúsculas + sem acento via
+# translate. Manter as duas pontas idênticas — senão a busca por nome fura.
+_ACENTOS_DE = "áàâãäéèêëíìîïóòôõöúùûüç"
+_ACENTOS_PARA = "aaaaaeeeeiiiiooooouuuuc"
+_TABELA_ACENTOS = str.maketrans(_ACENTOS_DE, _ACENTOS_PARA)
+
+
+def _sem_acento(s: Any) -> str:
+    return str(s or "").lower().translate(_TABELA_ACENTOS)
 
 
 def _max_valor(linhas: list[dict], coluna: str) -> str | None:

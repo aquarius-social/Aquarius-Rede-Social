@@ -65,7 +65,7 @@ codigo/
 ├── services/
 │   └── ingestao/   Coletores em Python 3.12 (Câmara/Senado/Portal) + pipeline.
 └── supabase/
-    └── migrations/ 18 migrations SQL (0001 … 0018).
+    └── migrations/ 21 migrations SQL (0001 … 0021; 0019 autor_nome_norm, 0020–0021 bancadas).
 ```
 
 ### 2.2 Decisões de stack (travadas — não reabrir sem discussão)

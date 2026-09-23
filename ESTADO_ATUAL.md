@@ -53,6 +53,17 @@ Prometeus) e o deploy são os próximos grandes passos.
 - **Fundação de identidade** (`profiles`, `id_externo`, `vinculo_temporal`, partido canônico
   com linhagem) + **pipeline em 3 camadas** (bronze imutável → prata tratada → ouro servida)
   com portão de qualidade e quarentena.
+- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos), autor em **98,5%** (48.239)
+  — resolução em `id_externo` (sistema='autor_orcamentario') + backfill do `autor_profile_id`.
+  **Individuais** ~100% (backfill + casamento por nome + conferências à mão); **bancadas estaduais
+  como PERFIL COLETIVO** — 27 perfis `tipo='bancada'`, ligação 71xx→bancada, **1.882 emendas de
+  bancada**, + views `bancada_publica`/`bancada_membro_publico` (composição atual por UF, **sem
+  colunas de dinheiro**). **Anti-duplicidade:** cada emenda tem 1 dono (pessoa OU bancada, disjuntos);
+  emenda de bancada nunca soma ao total individual. **Ainda sem autor (~727):** comissões (~250;
+  5xxx/6xxx → perfis `comissao` já existem, falta ligar), Relator-Geral (8100, ~296; papel rotativo —
+  decisão de modelo pendente), ~10 individuais (perfis DUPLICADOS → dedup). Migrations **0020**
+  (autor_nome_norm) + **0021** (enum bancada) + **0022** (bancadas). Ferramentas Prometeus
+  `emendas_por_autor_perfil` + `buscar_bancada`. Re-resolução: `run_reresolver_autores_emendas.py`.
 - **9/9 áreas com coletor, TODAS servidas com dado real — bicameral.** despesas (Câmara CEAP +
   Senado CEAPS), emendas (Portal da Transparência), eventos (agenda bicameral), **proposições/votações/
   discursos/tramitações** (backfill 2018–2026 completo) e **presença (Área E) — a última área,
@@ -93,7 +104,7 @@ Prometeus) e o deploy são os próximos grandes passos.
   `despesa_publica.perfil_id` funciona; proveniência presente). **Achado:** `emenda.autor_profile_id`
   já está **88% populado** (17.135/19.476) — a ressalva do código que diz "chave ainda não
   carregada" ficou desatualizada (task `task_5e142e49` aberta pra melhorar a atribuição).
-- **Testes:** **339**, sem rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`).
+- **Testes:** ingestão **345** + Prometeus **27**, sem rede (`cd codigo/services/<serviço> && py -m unittest discover -s . -t .`).
 
 ## 4. Prometeus (Onda 2) — o agente de IA  [FOCO ATUAL]
 
@@ -178,6 +189,15 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 
 ## 7. ⚠️ Ações pendentes
 
+**Emendas — autoria (o que ainda falta atribuir, ~727 emendas):**
+- **Comissões** (~250) — ligar códigos 5xxx/6xxx aos perfis `tipo='comissao'` (já existem); match por
+  nome curado (não automático às cegas).
+- **Relator-Geral** (8100, ~296) — papel rotativo; **decisão de modelagem pendente** (perfil
+  institucional? por ano? categoria?).
+- **~10 individuais** — perfis DUPLICADOS no cadastro → **dedup** (decidir qual manter) ou criar perfil.
+- **~675 `pendente_conferencia`** em `id_externo` (autor_orcamentario) — **sign-off humano** (casamento
+  por nome = 1 sinal); ao conferir, marcar `conferido_por_humano` e re-rodar (não editar id_externo cru).
+
 **Deploy do Prometeus (com o dev):**
 1. Instalar `gcloud` + deploy no Cloud Run + colar a **chave Anthropic** (já criada) no painel +
    setar `EXPO_PUBLIC_PROMETEUS_URL`. *(Claude Max NÃO dá crédito de API — cobrança separada; teto
@@ -213,6 +233,9 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   realistas nas duas casas. Era a última área sem coletor → **9/9 áreas servidas**. 12 testes novos
   (suíte 339).
 - ✅ **Tramitações BICAMERAIS completas** (Câmara 544.930 + Senado 160.166 = 705.096 linhas).
+- ✅ **Emendas — autoria fechada (98,5%):** individuais ~100% + **bancadas estaduais como perfil
+  coletivo** (27 perfis `tipo='bancada'`, 1.882 emendas, views `bancada_*` + ferramentas Prometeus
+  `buscar_bancada`/`emendas_por_autor_perfil`). Migrations 0020–0022.
 - ✅ **Supabase Free → Pro** (plano pago ativo — mais espaço).
 - ✅ **Chave da Anthropic criada**; **projeto GCP `aquarius-prometeus` + APIs (Cloud Run, Cloud
   Build) ativas**; crédito grátis do GCP ligado.
@@ -238,11 +261,11 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 > **GitHub Actions:** repo público = **grátis e ilimitado**. Workflows na nuvem (sem PC):
 > `ingestao.yml` (incremental, 2×/dia leve + 1×/semana completo), `backfill-atividade.yml`
 > (proposições/votações/discursos histórico), `backfill-tramitacoes.yml` e
-> `backfill-tramitacoes-senado.yml` (tramitações, matriz por ano). Backfill de atividade **COMPLETO**
-> e tramitações **BICAMERAIS COMPLETAS** (2018–2026). **Falta ainda:** (a) **presença** (sem
-> coletor); (b) ajustar o diário "leve" pra ser mesmo leve. **Lição de ambiente:** a API da **Câmara**
-> rate-limita por IP de runner sob volume alto (a nuvem faz o grosso, o rabo teimoso fecha local); a
-> API do **Senado** (outro host) NÃO tem esse throttle — fechou 100% na nuvem.
+> `backfill-tramitacoes-senado.yml`, `backfill-presenca.yml` e `backfill-presenca-senado.yml` (matriz
+> por ano). Atividade + tramitações + **presença BICAMERAIS COMPLETAS** (2018–2026). **Falta ainda:**
+> ajustar o diário "leve" pra ser mesmo leve. **Lição de ambiente:** a API da **Câmara** rate-limita
+> por IP de runner sob volume alto (a nuvem faz o grosso, o rabo teimoso fecha local); a API do
+> **Senado** (outro host) NÃO tem esse throttle — fechou 100% na nuvem.
 
 ## 8. Próximo passo
 
@@ -263,7 +286,7 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 ## 9. Notas de ambiente
 
 - Interpretador Python é **`py`** (não `python`, alias fantasma da Microsoft Store).
-- **Testes sem rede:** ingestão **339** + Prometeus **21** = **360** verdes. Rodar dentro de cada
+- **Testes sem rede:** ingestão **345** + Prometeus **27** = **372** verdes. Rodar dentro de cada
   serviço: `py -m unittest discover -s . -t .`.
 - **Padrão da ingestão (fixado no código):** segredos no `.env` de `codigo/services/ingestao/`
   (lido por `env_local.carregar_env`; nunca colar chave à mão — foi assim que a service key vazou).

@@ -46,6 +46,14 @@ FERRAMENTAS: list[Ferramenta] = [
         lambda gw, a: consultas.buscar_partido(gw, termo=a.get("termo", "")),
     ),
     Ferramenta(
+        "buscar_bancada",
+        "Encontra a bancada estadual (autoria coletiva de emenda, RP7) por UF ('SP') "
+        "ou nome do estado. Devolve o perfil coletivo; use o id em emendas_por_autor_perfil.",
+        {"termo": _s("string", "UF (ex.: SP) ou nome do estado.")},
+        ["termo"],
+        lambda gw, a: consultas.buscar_bancada(gw, termo=a.get("termo", "")),
+    ),
+    Ferramenta(
         "despesas_parlamentar",
         "Lançamentos de cota parlamentar (CEAP Câmara / CEAPS Senado) de um parlamentar. "
         "EXIGE ano. Use o perfil_id vindo de buscar_parlamentar.",
@@ -90,9 +98,25 @@ FERRAMENTAS: list[Ferramenta] = [
         ),
     ),
     Ferramenta(
+        "emendas_por_autor_perfil",
+        "Emendas de um autor por CHAVE VERIFICADA (autor_profile_id). Atribuição sem "
+        "ambiguidade — PREFIRA esta: use buscar_parlamentar (pessoa) ou buscar_bancada "
+        "(bancada estadual) para obter o perfil_id e então consulte aqui. Emenda de "
+        "bancada é da bancada, não somada a um parlamentar.",
+        {
+            "perfil_id": _s("string", "id do parlamentar (de buscar_parlamentar)."),
+            "ano": _s("integer", "Ano (opcional)."),
+        },
+        ["perfil_id"],
+        lambda gw, a: consultas.emendas_por_autor_perfil(
+            gw, perfil_id=a.get("perfil_id", ""), ano=a.get("ano")
+        ),
+    ),
+    Ferramenta(
         "emendas_por_autor_nome",
-        "Emendas de um autor, casadas por NOME (com ressalva — a chave autor↔perfil "
-        "ainda não está carregada; homônimos possíveis).",
+        "Emendas de um autor casadas por NOME (fallback, com ressalva de homônimo). "
+        "Insensível a acento/caixa. Use só quando não houver perfil_id; do contrário "
+        "prefira emendas_por_autor_perfil (mais confiável).",
         {
             "nome": _s("string", "Nome do autor."),
             "ano": _s("integer", "Ano (opcional)."),
