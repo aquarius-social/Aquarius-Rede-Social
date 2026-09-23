@@ -324,7 +324,7 @@ def _num(v: Any) -> float:
         return 0.0
 
 
-# Espelha `autor_nome_norm` da view (migration 0019): minúsculas + sem acento via
+# Espelha `autor_nome_norm` da view (migration 0020): minúsculas + sem acento via
 # translate. Manter as duas pontas idênticas — senão a busca por nome fura.
 _ACENTOS_DE = "áàâãäéèêëíìîïóòôõöúùûüç"
 _ACENTOS_PARA = "aaaaaeeeeiiiiooooouuuuc"

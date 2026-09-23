@@ -50,7 +50,7 @@ DADOS = {
          "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
          "synced_at": "2026-08-11T00:00:00Z"},
         # Autor gravado SEM acento pela fonte (como o Portal manda) — a busca por
-        # nome acentuado precisa casar sobre autor_nome_norm (migration 0019).
+        # nome acentuado precisa casar sobre autor_nome_norm (migration 0020).
         {"id": "e2", "autor_nome": "JOSE SERRA", "autor_nome_norm": "jose serra",
          "ano": 2023, "localidade_gasto": "Sao Paulo - SP", "funcao": "Educacao",
          "valor_empenhado": 200000.0, "valor_liquidado": 100000.0, "valor_pago": 50000.0,

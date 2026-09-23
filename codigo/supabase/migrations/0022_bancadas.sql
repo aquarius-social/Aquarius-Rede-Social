@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Aquarius · §6.3/§13 — bancadas estaduais como PERFIL COLETIVO (emenda de bancada, RP7)
 -- =============================================================================
--- Depende da 0020 (valor de enum 'bancada' já commitado numa migration anterior).
+-- Depende da 0021 (valor de enum 'bancada' já commitado numa migration anterior).
 --
 -- INVARIANTE ANTI-DUPLICIDADE (o ponto crítico): cada emenda tem UM dono só
 -- (autor_profile_id) — uma pessoa OU uma bancada, conjuntos DISJUNTOS. A emenda de
