@@ -5,7 +5,7 @@ ler (depois do `CLAUDE.md`). Complementos: `PLANO.md` (roadmap em ondas),
 `RELATORIO_DESENVOLVIMENTO.md` (fotografia por camada, também publicada como página),
 `MELHORIAS.md` (backlog A–I), `HISTORICO.md` (marcos e números de ingestão).
 
-Atualização: 2026-09-18.
+Atualização: 2026-09-23.
 
 ## Resumo executivo
 
@@ -53,11 +53,12 @@ Prometeus) e o deploy são os próximos grandes passos.
 - **Fundação de identidade** (`profiles`, `id_externo`, `vinculo_temporal`, partido canônico
   com linhagem) + **pipeline em 3 camadas** (bronze imutável → prata tratada → ouro servida)
   com portão de qualidade e quarentena.
-- **9/9 áreas com coletor, TODAS servidas com dado real.** despesas (Câmara CEAP + Senado CEAPS),
-  emendas (Portal da Transparência), eventos (agenda bicameral), **proposições/votações/discursos/
-  tramitações** (backfill 2018–2026 completo) e **presença (Área E)** — a última área, construída e
-  no ar nesta sessão (Câmara: **1.141 sessões, 496.959 registros de presença**; view `presenca_publica`
-  com % realistas). Só a presença do **Senado** fica a pesquisar. Ver `ONDA-1-PRESENCA-LEIA-ME.md`.
+- **9/9 áreas com coletor, TODAS servidas com dado real — bicameral.** despesas (Câmara CEAP +
+  Senado CEAPS), emendas (Portal da Transparência), eventos (agenda bicameral), **proposições/votações/
+  discursos/tramitações** (backfill 2018–2026 completo) e **presença (Área E) — a última área,
+  construída e no ar nas DUAS casas** nesta sessão: **1.580 sessões, 528.495 registros** (Câmara 1.141
+  sessões / lista de presença; Senado 439 / comparecimento em votações — `source` distingue). View
+  `presenca_publica` com % realistas nas duas casas. Ver `ONDA-1-PRESENCA-LEIA-ME.md`.
 - **Camada ouro = VIEWS** (`*_publico`/`*_publica`) com GRANT SELECT p/ `anon` — é o que o app
   e o Prometeus leem. Toda view carrega `source`/`source_url`/`synced_at`. PII nunca é projetada.
 - **Cobertura real hoje (contagem das views ouro, 2026-09-22):** despesa **~1,88 mi** (Câmara +
@@ -77,8 +78,9 @@ Prometeus) e o deploy são os próximos grandes passos.
   `backfill-tramitacoes.yml`; a nuvem fez ~66% (rate-limit por IP de runner) e o resto fechou local.
   **Senado:** ~11.826 matérias, via `run_tramitacoes_senado.py` + `backfill-tramitacoes-senado.yml`
   (recupera o `id_processo` pelo detalhe da matéria, não persistido) — a nuvem **fechou 100% sozinha**
-  (API do Senado é outro host, sem o throttle da Câmara; 0 falhas). **Ainda pendente:** **presença**
-  (sem coletor); **2020 votação=1.663** e **2018 matérias do Senado (só 21)** podem valer top-up.
+  (API do Senado é outro host, sem o throttle da Câmara; 0 falhas). *(Presença — Área E — já está
+  completa nas duas casas; ver bullet acima.)* Top-ups opcionais: **2020 votação=1.663** e **2018
+  matérias do Senado (só 21)**.
 - **Banco agora no Supabase Pro (plano PAGO)** — muito mais espaço. Isso **destrava**: (a) o
   **backfill de despesa/emenda para 2018–2022**; (b) completar as **áreas truncadas**; (c) a
   **paridade Senado** onde falta. **Diagnóstico (mapeamento desta sessão):** as lacunas são de
@@ -91,7 +93,7 @@ Prometeus) e o deploy são os próximos grandes passos.
   `despesa_publica.perfil_id` funciona; proveniência presente). **Achado:** `emenda.autor_profile_id`
   já está **88% populado** (17.135/19.476) — a ressalva do código que diz "chave ainda não
   carregada" ficou desatualizada (task `task_5e142e49` aberta pra melhorar a atribuição).
-- **Testes:** **335**, sem rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`).
+- **Testes:** **339**, sem rede (`cd codigo/services/ingestao && py -m unittest discover -s . -t .`).
 
 ## 4. Prometeus (Onda 2) — o agente de IA  [FOCO ATUAL]
 
@@ -204,10 +206,12 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 9. **WhatsApp Business** — habilitação Meta em paralelo (dependência externa mais longa).
 
 **Feito recentemente:**
-- ✅ **Presença (Área E) — construída e no ar** (Câmara): migration `0019` aplicada + backfill na
-  nuvem (`backfill-presenca.yml`, 9 anos, success). **1.141 sessões, 496.959 registros**; view ouro
-  `presenca_publica` com % realistas (ex.: 92,2% / 87,8% / 74,1%). Era a última área sem coletor →
-  **9/9 áreas servidas**. 8 testes novos (suíte 335). Senado da presença fica a pesquisar.
+- ✅ **Presença (Área E) — construída e no ar, BICAMERAL.** migration `0019` aplicada + backfill na
+  nuvem (`backfill-presenca.yml` + `backfill-presenca-senado.yml`, 9 anos cada, success). **1.580
+  sessões, 528.495 registros** (Câmara 1.141 = lista de presença; Senado 439 = comparecimento em
+  votações — sem lista de presença por sessão na fonte do Senado). View ouro `presenca_publica` com %
+  realistas nas duas casas. Era a última área sem coletor → **9/9 áreas servidas**. 12 testes novos
+  (suíte 339).
 - ✅ **Tramitações BICAMERAIS completas** (Câmara 544.930 + Senado 160.166 = 705.096 linhas).
 - ✅ **Supabase Free → Pro** (plano pago ativo — mais espaço).
 - ✅ **Chave da Anthropic criada**; **projeto GCP `aquarius-prometeus` + APIs (Cloud Run, Cloud
@@ -249,17 +253,17 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   p/ ingestão agendada; **segurança** (revogar PAT + rotacionar service key); wire dos botões de IA.
 - **Parte 2 — completar os dados (2ª rodada):** atividade (proposições/votações/discursos/eventos)
   **2018–2026 COMPLETA** ✅; **tramitações BICAMERAIS (Câmara + Senado) 2018–2026 COMPLETAS** ✅.
-  **presença (Área E) da Câmara COMPLETA** ✅ (1.141 sessões / 496.959 registros / `presenca_publica`).
-  **Falta ainda:** **presença do Senado** (fonte a pesquisar) + justificadas; paridade (frentes Senado,
-  blocos Câmara, votações do Senado nos anos históricos); juntar as 2 pernas de tramitação
-  (Câmara↔Senado da mesma matéria); curadoria (linhagem de partidos); top-ups opcionais
-  (**2020 votação**=1.663; **2018 matérias do Senado**=21).
+  **presença (Área E) BICAMERAL COMPLETA** ✅ (1.580 sessões / 528.495 registros / `presenca_publica`).
+  **Falta ainda:** "justificadas" (a fonte do Senado até distingue os motivos de ausência — dá pra
+  extrair depois); paridade (frentes Senado, blocos Câmara, votações do Senado nos anos históricos);
+  juntar as 2 pernas de tramitação (Câmara↔Senado da mesma matéria); curadoria (linhagem de partidos);
+  top-ups opcionais (**2020 votação**=1.663; **2018 matérias do Senado**=21).
 - **Partes 3–5** (produto/social → monetização/mobile → DaaS): detalhe no `PLANO.md`.
 
 ## 9. Notas de ambiente
 
 - Interpretador Python é **`py`** (não `python`, alias fantasma da Microsoft Store).
-- **Testes sem rede:** ingestão **335** + Prometeus **21** = **356** verdes. Rodar dentro de cada
+- **Testes sem rede:** ingestão **339** + Prometeus **21** = **360** verdes. Rodar dentro de cada
   serviço: `py -m unittest discover -s . -t .`.
 - **Padrão da ingestão (fixado no código):** segredos no `.env` de `codigo/services/ingestao/`
   (lido por `env_local.carregar_env`; nunca colar chave à mão — foi assim que a service key vazou).

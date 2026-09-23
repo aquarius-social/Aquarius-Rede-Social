@@ -46,8 +46,19 @@ Vira o stat "Presença %" no topo do perfil.
 2. Disparar `backfill-presenca.yml` (Actions) — ou local: `py run_presenca.py`.
    Leve (~2 chamadas por sessão, ~93 sessões/ano). Idempotente/resumível.
 
+## Senado (feito — derivado do comparecimento em votações)
+
+O Senado **não expõe lista de presença por sessão** (confirmado no catálogo de
+dados abertos). A presença oficial vive no `comparecimento` das votações nominais
+(`/votacao` traz os 81 senadores por votação). Derivação: **sessão = sessão com
+≥1 votação nominal; senador presente = presente em ≥1 votação dela**. Difere do
+método da Câmara (lista por sessão) — o `source` (`camara.presenca` ×
+`senado.presenca`) distingue as duas na view. Código: `senado/presenca.py`,
+`run_presenca_senado.py`, `backfill-presenca-senado.yml`, 4 testes. Reusa
+`sessao`/`presenca` (casa='senado') — sem migration nova.
+
 ## Pendente
 
-- **Senado** (comparecimento no Plenário do Senado) — fonte a pesquisar (outro
-  host); a tabela já é `casa`-agnóstica.
-- **Justificadas** — de um recurso de justificativas de ausência (passe futuro).
+- **Justificadas** — a fonte do Senado até **distingue os motivos de ausência**
+  (licença, missão, atividade parlamentar…), então dá para popular `justificadas`
+  do Senado num passe futuro; a Câmara precisa de outro recurso.
