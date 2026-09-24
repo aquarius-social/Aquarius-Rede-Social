@@ -110,6 +110,37 @@ def _limpar_texto_livre(v: Any) -> str | None:
     return texto or None
 
 
+def _achar_primeiro(obj: Any, chave: str) -> str | None:
+    """Primeiro valor string de `chave` em qualquer nível — robusto à estrutura
+    aninhada (Situacao pode vir lista ou dict conforme a matéria)."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == chave and isinstance(v, str) and v.strip():
+                return v
+            achado = _achar_primeiro(v, chave)
+            if achado is not None:
+                return achado
+    elif isinstance(obj, list):
+        for x in obj:
+            achado = _achar_primeiro(x, chave)
+            if achado is not None:
+                return achado
+    return None
+
+
+def extrair_enriquecimento_materia(detalhe: dict, situacao_atual: dict) -> dict:
+    """Do DETALHE (`/materia/{codigo}`) e da SITUAÇÃO ATUAL
+    (`/materia/situacaoatual/{codigo}`), os campos que a pesquisa-lista não traz:
+    `situacao` (`DescricaoSituacao`) e `tema` (`IndexacaoMateria`). Ausente vira
+    None (§1). Espelha o enriquecimento de proposição da Câmara, `casa='senado'`."""
+    mat = (detalhe.get("DetalheMateria") or {}).get("Materia") or {}
+    db = mat.get("DadosBasicosMateria") or {}
+    return {
+        "situacao": _achar_primeiro(situacao_atual, "DescricaoSituacao"),
+        "tema": _limpar_texto_livre(db.get("IndexacaoMateria")),
+    }
+
+
 def transformar_materia(payload: dict) -> dict:
     sigla = payload.get("Sigla")
     numero = _int(payload.get("Numero"))

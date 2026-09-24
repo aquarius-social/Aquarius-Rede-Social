@@ -10,6 +10,7 @@ from contrato.canario import EstadoContrato
 from pipeline.camadas import RegistroBronze
 from senado.materias import (
     _aaaammdd,
+    extrair_enriquecimento_materia,
     processar_materias_para_prata,
     rodada_materias,
     transformar_materia,
@@ -17,6 +18,22 @@ from senado.materias import (
 
 BASE = "https://legis.senado.leg.br/dadosabertos"
 URL = f"{BASE}/materia/pesquisa/lista"
+
+
+class TestEnriquecimentoMateria(unittest.TestCase):
+    def test_extrai_situacao_e_tema(self):
+        det = {"DetalheMateria": {"Materia": {"DadosBasicosMateria": {
+            "IndexacaoMateria": " CRIAÇÃO ,  LEI FEDERAL ;\n MILITAR "}}}}
+        # Situacao aninhada (pode vir lista) — o extrator acha em qualquer nível
+        sit = {"SituacaoAtualMateria": {"Materia": {"Situacao": [
+            {"DescricaoSituacao": "AGUARDANDO DESIGNAÇÃO DO RELATOR"}]}}}
+        e = extrair_enriquecimento_materia(det, sit)
+        self.assertEqual(e["situacao"], "AGUARDANDO DESIGNAÇÃO DO RELATOR")
+        self.assertEqual(e["tema"], "CRIAÇÃO , LEI FEDERAL , MILITAR")  # ; -> , e espaços colapsados
+
+    def test_ausente_vira_none(self):  # §1
+        e = extrair_enriquecimento_materia({}, {})
+        self.assertEqual(e, {"situacao": None, "tema": None})
 
 
 class _Resp:
