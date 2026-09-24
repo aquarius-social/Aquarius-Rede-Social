@@ -53,7 +53,7 @@ Prometeus) e o deploy são os próximos grandes passos.
 - **Fundação de identidade** (`profiles`, `id_externo`, `vinculo_temporal`, partido canônico
   com linhagem) + **pipeline em 3 camadas** (bronze imutável → prata tratada → ouro servida)
   com portão de qualidade e quarentena.
-- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos), autor em **99,3%** (48.602)
+- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos), autor em **99,45%** (48.697)
   — resolução em `id_externo` (sistema='autor_orcamentario') + backfill do `autor_profile_id`.
   **Individuais** ~100% (backfill + casamento por nome + conferências à mão); **bancadas estaduais
   como PERFIL COLETIVO** — 27 perfis `tipo='bancada'`, ligação 71xx→bancada, **1.882 emendas de
@@ -65,12 +65,20 @@ Prometeus) e o deploy são os próximos grandes passos.
   `relatoria_geral` liga cada exercício ao **relator formal** verificável (2020 Domingos Neto / 2021
   Marcio Bittar / 2022 Hugo Leal) como **responsabilidade**, não autoria pessoal (migrations
   **0023/0024**, *a aplicar*). O **solicitante real** de cada RP9 fica honestamente ausente (fora da
-  fonte). **Comissões — alta confiança FEITAS:** 13 códigos (5xxx Câmara / 6xxx Senado) ligados aos
-  perfis `comissao` por **sigla-na-fonte + casa + nome** (68 emendas; migration **0025**), mesma
-  disjunção. **Ainda sem autor (~370):** ~160 comissões **ambíguas** (sigla truncada/abreviada — ex.
-  "COM. DA SAUDE" — curadoria à mão) + ~10 individuais (perfis DUPLICADOS → dedup). Migrations
-  **0020**–**0025**. Ferramentas Prometeus `emendas_por_autor_perfil` + `buscar_bancada` +
-  `relator_geral_orcamento`. Re-resolução: `run_reresolver_autores_emendas.py`.
+  fonte). **Comissões — FEITAS:** 13 códigos por **sigla-na-fonte + casa** (determinístico, migration
+  **0025**) + ~19 por **nome** (cobertura bidirecional + vencedor claro; `metodo='convergencia'`,
+  `pendente_conferencia=true` — via PostgREST, provisório). **Ainda sem autor (~269):** ~65 comissões
+  **truly-ambíguas** (nome muito abreviado — curadoria à mão) + ~204 individuais (perfis DUPLICADOS →
+  **dedup**, decisão de qual manter). Migrations **0020**–**0025**. Ferramentas Prometeus
+  `emendas_por_autor_perfil` + `buscar_bancada` + `relator_geral_orcamento`. Re-resolução:
+  `run_reresolver_autores_emendas.py`.
+- **Auditoria de fill-rate (2026-09-23):** a maioria dos campos está 100%. **Preenchível em curso:**
+  `proposicao.tema/situacao/inteiro_teor_url` (era 0% — enriquecimento pelo detalhe `/proposicoes/{id}`,
+  `run_proposicao_detalhe.py` + workflow, rodando na nuvem). **Piso honesto da FONTE (não preencher =
+  não inventar, §1):** placar de votação (sim/não/abstenção — texto livre), `tramitacao.despacho` (77%),
+  `despesa.url_documento` (66%), foto de ex-parlamentar do Senado (fonte não tem). **Decisão de escopo:**
+  `votacao.proposicao_id` (32%) — o resto aponta a proposições fora do nosso escopo (REQ/PDC/antigas) ou
+  não tem matéria; preencher exige expandir a ingestão.
 - **9/9 áreas com coletor, TODAS servidas com dado real — bicameral.** despesas (Câmara CEAP +
   Senado CEAPS), emendas (Portal da Transparência), eventos (agenda bicameral), **proposições/votações/
   discursos/tramitações** (backfill 2018–2026 completo) e **presença (Área E) — a última área,
