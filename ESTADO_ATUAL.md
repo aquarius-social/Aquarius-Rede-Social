@@ -209,7 +209,10 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   atribuem as 295 Emendas de Relator (RP9) ao perfil institucional + gravam o relator formal por ano.
 - **Comissões ambíguas** (~160) — as de **alta confiança já foram** (13 códigos, migration `0025`);
   restam as de nome abreviado/truncado (ex. "COM. DA SAUDE", sigla não resolvível) → curadoria à mão.
-- **~10 individuais** — perfis DUPLICADOS no cadastro → **dedup** (decidir qual manter) ou criar perfil.
+- **~10 individuais (203 emendas)** — perfis DUPLICADOS ou ausentes → **dedup**. Lista pronta e
+  acionável em **`DEDUP-EMENDAS-INDIVIDUAIS.md`** (7 duplicados p/ escolher canônico + 3 sem perfil p/
+  criar). ⚠️ A fonte da emenda **não traz a casa** do autor → escolha pela casa do fato (§4/§6); a
+  maioria era **senador(a)** no ano (perfil `sen-*`), não o perfil ativo da Câmara.
 - **~675 `pendente_conferencia`** em `id_externo` (autor_orcamentario) — **sign-off humano** (casamento
   por nome = 1 sinal); ao conferir, marcar `conferido_por_humano` e re-rodar (não editar id_externo cru).
 
