@@ -1,0 +1,52 @@
+name: Backfill de detalhe de proposição (situação/tema/inteiro-teor)
+
+# Enriquece as proposições da Câmara com os campos que só vêm no DETALHE
+# (/proposicoes/{id}): situacao, tema (keywords), inteiro_teor_url. Era 0%.
+# Uma chamada por proposição (~41 mil) — matriz por ano, max-parallel baixo
+# (rate-limit da API da Câmara sob concorrência). RESUMÍVEL (pula quem já tem
+# situacao) e idempotente. Disparo manual.
+on:
+  workflow_dispatch:
+    inputs:
+      anos:
+        description: 'Anos a rodar (array JSON). Padrão = 2018–2026.'
+        type: string
+        default: '["2018","2019","2020","2021","2022","2023","2024","2025","2026"]'
+
+concurrency:
+  group: backfill-proposicao-detalhe
+  cancel-in-progress: false
+
+jobs:
+  detalhe:
+    name: Detalhe proposição ${{ matrix.ano }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        ano: ${{ fromJSON(github.event.inputs.anos) }}
+    defaults:
+      run:
+        working-directory: codigo/services/ingestao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências de runtime
+        run: pip install -r requirements.txt
+
+      - name: Detalhe de proposição — ano ${{ matrix.ano }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AQUARIUS_PROP_ANO: ${{ matrix.ano }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::notice::Secrets ausentes — pulado (workflow segue verde)."
+            exit 0
+          fi
+          echo "::notice::Detalhe de proposição ${{ matrix.ano }} (re-disparar preenche o resto)"
+          python run_proposicao_detalhe.py

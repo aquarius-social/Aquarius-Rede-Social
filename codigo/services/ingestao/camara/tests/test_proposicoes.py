@@ -12,10 +12,30 @@ from typing import Any
 
 from camara.proposicoes import (
     CAMPOS_CRITICOS_PROPOSICAO,
+    extrair_enriquecimento_proposicao,
     processar_para_prata,
     rodada,
     transformar_proposicao,
 )
+
+
+class TestEnriquecimentoDetalhe(unittest.TestCase):
+    def test_extrai_situacao_tema_inteiro_teor(self):
+        det = {"statusProposicao": {"descricaoSituacao": "Transformado em Norma Jurídica"},
+               "keywords": "saúde;  seguro,\n plano", "urlInteiroTeor": "http://x/pdf"}
+        e = extrair_enriquecimento_proposicao(det)
+        self.assertEqual(e["situacao"], "Transformado em Norma Jurídica")
+        self.assertEqual(e["tema"], "saúde, seguro, plano")   # texto livre limpo (; -> ,)
+        self.assertEqual(e["inteiro_teor_url"], "http://x/pdf")
+
+    def test_ausente_vira_none_nunca_inventa(self):  # §1: dado ausente != inventado
+        e = extrair_enriquecimento_proposicao({})
+        self.assertEqual(e, {"situacao": None, "tema": None, "inteiro_teor_url": None})
+
+    def test_situacao_cai_para_tramitacao_quando_sem_descricaoSituacao(self):
+        e = extrair_enriquecimento_proposicao(
+            {"statusProposicao": {"descricaoTramitacao": "Apresentação"}})
+        self.assertEqual(e["situacao"], "Apresentação")
 from contrato.canario import EstadoContrato, avaliar, extrair_campos
 from pipeline.camadas import RegistroBronze, hash_conteudo
 from pipeline.coletor import (

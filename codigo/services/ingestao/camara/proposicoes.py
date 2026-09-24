@@ -210,6 +210,17 @@ def _situacao(payload: dict) -> str | None:
     return None
 
 
+def extrair_enriquecimento_proposicao(detalhe: dict) -> dict:
+    """Do DETALHE (`/proposicoes/{id}`), os campos que a LISTA não traz (§3.2):
+    `situacao` (de `statusProposicao`), `tema` (de `keywords`) e `inteiro_teor_url`
+    (de `urlInteiroTeor`). Texto livre limpo; ausente vira None (nunca inventa)."""
+    return {
+        "situacao": _situacao(detalhe),
+        "tema": _limpar_texto_livre(detalhe.get("keywords")),
+        "inteiro_teor_url": detalhe.get("urlInteiroTeor") or None,
+    }
+
+
 # Verificadores extras específicos das proposições.
 
 def _numero_ano_positivos(registro: dict) -> Violacao | None:
