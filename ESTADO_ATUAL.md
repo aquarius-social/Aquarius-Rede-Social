@@ -53,9 +53,12 @@ Prometeus) e o deploy são os próximos grandes passos.
 - **Fundação de identidade** (`profiles`, `id_externo`, `vinculo_temporal`, partido canônico
   com linhagem) + **pipeline em 3 camadas** (bronze imutável → prata tratada → ouro servida)
   com portão de qualidade e quarentena.
-- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos), autor em **99,45%** (48.697)
+- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos), autor em **99,87%** (48.900)
   — resolução em `id_externo` (sistema='autor_orcamentario') + backfill do `autor_profile_id`.
-  **Individuais** ~100% (backfill + casamento por nome + conferências à mão); **bancadas estaduais
+  **Individuais 100%** (backfill + casamento por nome + **dedup dos 203 residuais**, migration
+  **0026**: casa na data do fato ancorada em mandato oficial + verificação adversarial de 10 agentes —
+  homônimo Pedro Chaves MS/GO separado, "Rocha"=Wherles Rocha, "Pedro Dalua"=DaLua do Rota; 0 perfil
+  criado); **bancadas estaduais
   como PERFIL COLETIVO** — 27 perfis `tipo='bancada'`, ligação 71xx→bancada, **1.882 emendas de
   bancada**, + views `bancada_publica`/`bancada_membro_publico` (composição atual por UF, **sem
   colunas de dinheiro**). **Anti-duplicidade:** cada emenda tem 1 dono (pessoa OU bancada, disjuntos);
@@ -67,9 +70,9 @@ Prometeus) e o deploy são os próximos grandes passos.
   **0023/0024**, *a aplicar*). O **solicitante real** de cada RP9 fica honestamente ausente (fora da
   fonte). **Comissões — FEITAS:** 13 códigos por **sigla-na-fonte + casa** (determinístico, migration
   **0025**) + ~19 por **nome** (cobertura bidirecional + vencedor claro; `metodo='convergencia'`,
-  `pendente_conferencia=true` — via PostgREST, provisório). **Ainda sem autor (~269):** ~65 comissões
-  **truly-ambíguas** (nome muito abreviado — curadoria à mão) + ~204 individuais (perfis DUPLICADOS →
-  **dedup**, decisão de qual manter). Migrations **0020**–**0025**. Ferramentas Prometeus
+  `pendente_conferencia=true` — via PostgREST, provisório). **Ainda sem autor (66, só COLETIVO):** 65
+  comissões **truly-ambíguas** (nome muito abreviado — curadoria à mão) + 1 Emenda de Relator; nenhum
+  individual pendente. Migrations **0020**–**0026**. Ferramentas Prometeus
   `emendas_por_autor_perfil` + `buscar_bancada` + `relator_geral_orcamento`. Re-resolução:
   `run_reresolver_autores_emendas.py`.
 - **Auditoria de fill-rate (2026-09-23):** a maioria dos campos está 100%. **Preenchível em curso:**
@@ -204,15 +207,13 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 
 ## 7. ⚠️ Ações pendentes
 
-**Emendas — autoria (o que ainda falta atribuir, ~260 emendas):**
+**Emendas — autoria (o que ainda falta atribuir, 66 emendas, só COLETIVO):**
 - **APLICAR as migrations `0023_profile_tipo_relatoria` + `0024_relatoria_geral`** (SQL Editor) — elas
   atribuem as 295 Emendas de Relator (RP9) ao perfil institucional + gravam o relator formal por ano.
-- **Comissões ambíguas** (~160) — as de **alta confiança já foram** (13 códigos, migration `0025`);
+- **Comissões ambíguas** (~65) — as de **alta confiança já foram** (13 códigos, migration `0025`);
   restam as de nome abreviado/truncado (ex. "COM. DA SAUDE", sigla não resolvível) → curadoria à mão.
-- **~10 individuais (203 emendas)** — perfis DUPLICADOS ou ausentes → **dedup**. Lista pronta e
-  acionável em **`DEDUP-EMENDAS-INDIVIDUAIS.md`** (7 duplicados p/ escolher canônico + 3 sem perfil p/
-  criar). ⚠️ A fonte da emenda **não traz a casa** do autor → escolha pela casa do fato (§4/§6); a
-  maioria era **senador(a)** no ano (perfil `sen-*`), não o perfil ativo da Câmara.
+- ✅ **Individuais — FECHADO (dedup dos 203 residuais):** migration `0026`, casa na data do fato por
+  mandato oficial + verificação adversarial (ver `DEDUP-EMENDAS-INDIVIDUAIS.md`). **0 individual pendente.**
 - **~675 `pendente_conferencia`** em `id_externo` (autor_orcamentario) — **sign-off humano** (casamento
   por nome = 1 sinal); ao conferir, marcar `conferido_por_humano` e re-rodar (não editar id_externo cru).
 
