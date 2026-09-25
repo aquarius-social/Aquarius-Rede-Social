@@ -67,7 +67,7 @@ Prometeus) e o deploy são os próximos grandes passos.
   donas de um **perfil INSTITUCIONAL** `tipo='relatoria'`, nunca somadas a ninguém; a tabela
   `relatoria_geral` liga cada exercício ao **relator formal** verificável (2020 Domingos Neto / 2021
   Marcio Bittar / 2022 Hugo Leal) como **responsabilidade**, não autoria pessoal (migrations
-  **0023/0024**, *a aplicar*). O **solicitante real** de cada RP9 fica honestamente ausente (fora da
+  **0023/0024**, *aplicadas*). O **solicitante real** de cada RP9 fica honestamente ausente (fora da
   fonte). **Comissões — FEITAS:** 13 códigos por **sigla-na-fonte + casa** (determinístico, migration
   **0025**) + ~19 por **nome** (cobertura bidirecional + vencedor claro; `metodo='convergencia'`,
   `pendente_conferencia=true` — via PostgREST, provisório). **Comissões — sucessão de órgão FEITA
@@ -216,9 +216,9 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 ## 7. ⚠️ Ações pendentes
 
 **Emendas — autoria (autoria FECHADA em 99,986%; resíduo explícito):**
-- **APLICAR as migrations `0023`/`0024` (relatoria) + `0030` (view `emenda_autoria_resumo_publico`)**
-  no SQL Editor — a view é DDL (não deu pra aplicar via PostgREST) e a tool `emendas_resumo` do
-  Prometeus depende dela. O resto de 0026–0029 já foi aplicado via PostgREST (DML).
+- ✅ **TODAS as migrations aplicadas** (0023–0030). `0023`/`0024` (relatoria) verificadas no banco:
+  perfil `relator-geral-orcamento` + 297 emendas + `relatoria_geral` (3 relatores) + views. `0030`
+  (view `emenda_autoria_resumo_publico`) aplicada no SQL Editor 2026-09-25; `emendas_resumo` operante.
 - ✅ **Comissões — FECHADAS:** 13 sigla+casa (`0025`) + 11 sucessão de órgão (`0027`) + 2 do Senado
   (`0028`) + 3 mistas criadas (`0029`) + S/I→Relator-Geral (`0030`). **Sobram 7 (R$9,5mi, 0,0045%):**
   rótulo 5035 (CFFC+CDC, sem órgão único) + CSF extinta — ficam como **resíduo explícito** (view acima),
@@ -242,8 +242,9 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
    vínculo e a mudança da API da Câmara (`idLegislatura`, que também derrubava a ingestão de
    produção). **2ª rodada (depois):** religar atividade (proposições/votações/discursos — precisa
    do canário) + paridade (frentes Senado, blocos Câmara). Ver `RUNBOOK-BACKFILL.md`.
-3. Melhorar **atribuição de emendas** usando `autor_profile_id` (88% populado) — decisão de
-   produto; task `task_5e142e49` aberta.
+3. ✅ **Atribuição de emendas — FECHADA (99,986%).** `autor_profile_id` resolvido para individuais,
+   bancadas, relatoria e comissões (incl. mistas); resíduo de 7 emendas tratado explícito (§1). Nada
+   mais a fazer aqui sem inventar. (Fecha o espírito da task `task_5e142e49`.)
 
 **Segurança / infra:**
 4. **Revogar o PAT do GitHub** que circulou no chat (se ainda não).
