@@ -226,11 +226,12 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   a atribuir sem inventar (§1).
 - ✅ **Individuais — FECHADO (dedup dos 203 residuais):** migration `0026`, casa na data do fato por
   mandato oficial + verificação adversarial (ver `DEDUP-EMENDAS-INDIVIDUAIS.md`). **0 individual pendente.**
-- ✅ **Sign-off dos pendentes — FEITO (710→247, migration `0031`):** 463 name-matches subiram a `direto`
-  por **2º sinal de UF** (UF do perfil/mandato oficial == UF dominante do gasto; teste que discrimina,
-  §5.2). Restam **247 `com_ressalva`** (honesto): 239 individuais sem UF corroborante (gasto nacional/
-  múltiplo ou perfil sem UF) + 8 comissões renomeadas + **9 conflitos** listados (matches corretos —
-  ex. Miro Teixeira, Carlos Marun — que só destinaram a SP/DF; upgrade manual se você concordar).
+- ✅ **Sign-off dos individuais — COMPLETO (710→36, migrations `0031`+`0032`):** 463 subiram por **2º
+  sinal de UF** (`0031`), 9 conflitos por **conferência humana** (matches corretos que gastaram fora do
+  estado — Miro Teixeira etc.), 202 por **mandato-cobre-o-ano** (`0032`, membro da legislatura da emenda
+  via lista oficial). Testes que DISCRIMINAM (§5.2). **Sobram 36 `com_ressalva` (nenhum indivíduo de
+  emenda real):** 1 órfão sem emendas (impacto zero) + 8 dedup bicameral do Senado (pré-existente, outro
+  tema) + 27 comissões name-matched (curadoria de comissão à parte). Autoria individual = `direto`.
 
 **Deploy do Prometeus (com o dev):**
 1. Instalar `gcloud` + deploy no Cloud Run + colar a **chave Anthropic** (já criada) no painel +
