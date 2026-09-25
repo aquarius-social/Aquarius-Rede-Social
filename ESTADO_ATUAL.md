@@ -226,8 +226,11 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
   a atribuir sem inventar (§1).
 - ✅ **Individuais — FECHADO (dedup dos 203 residuais):** migration `0026`, casa na data do fato por
   mandato oficial + verificação adversarial (ver `DEDUP-EMENDAS-INDIVIDUAIS.md`). **0 individual pendente.**
-- **~675 `pendente_conferencia`** em `id_externo` (autor_orcamentario) — **sign-off humano** (casamento
-  por nome = 1 sinal); ao conferir, marcar `conferido_por_humano` e re-rodar (não editar id_externo cru).
+- ✅ **Sign-off dos pendentes — FEITO (710→247, migration `0031`):** 463 name-matches subiram a `direto`
+  por **2º sinal de UF** (UF do perfil/mandato oficial == UF dominante do gasto; teste que discrimina,
+  §5.2). Restam **247 `com_ressalva`** (honesto): 239 individuais sem UF corroborante (gasto nacional/
+  múltiplo ou perfil sem UF) + 8 comissões renomeadas + **9 conflitos** listados (matches corretos —
+  ex. Miro Teixeira, Carlos Marun — que só destinaram a SP/DF; upgrade manual se você concordar).
 
 **Deploy do Prometeus (com o dev):**
 1. Instalar `gcloud` + deploy no Cloud Run + colar a **chave Anthropic** (já criada) no painel +
