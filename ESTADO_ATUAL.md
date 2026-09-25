@@ -53,7 +53,7 @@ Prometeus) e o deploy são os próximos grandes passos.
 - **Fundação de identidade** (`profiles`, `id_externo`, `vinculo_temporal`, partido canônico
   com linhagem) + **pipeline em 3 camadas** (bronze imutável → prata tratada → ouro servida)
   com portão de qualidade e quarentena.
-- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos), autor em **99,96%** (48.947)
+- **Emendas — autoria (§6.3/§13).** Base de **48.966** emendas (9 anos), autor em **99,986%** (48.959)
   — resolução em `id_externo` (sistema='autor_orcamentario') + backfill do `autor_profile_id`.
   **Individuais 100%** (backfill + casamento por nome + **dedup dos 203 residuais**, migration
   **0026**: casa na data do fato ancorada em mandato oficial + verificação adversarial de 10 agentes —
@@ -73,12 +73,15 @@ Prometeus) e o deploy são os próximos grandes passos.
   `pendente_conferencia=true` — via PostgREST, provisório). **Comissões — sucessão de órgão FEITA
   (migration `0027`):** 11 comissões renomeadas na reforma 2023 ligadas ao perfil do órgão CONTÍNUO
   (id `/orgaos/{id}` desde 2011, dataFim null — ex. CSSF→Saúde id 2014, CTASP→Trabalho id 2015) +
-  ' GE'→Relator-Geral; verificado por 18 agentes vs API de órgãos. **Ainda sem autor (19, só COLETIVO):**
-  9 de comissões **MISTAS** do Congresso (CCAI/CMMC/Migrações — sem perfil só-Câmara), 4 de comissões
-  do **SENADO** com código no range Câmara (CSF/CCDD/Defesa da Democracia — casa≠código, não forçado),
-  5 do rótulo 5035 (combina CFFC+CDC, sem órgão único) + 1 "Sem informação". Decisão de modelagem
-  (criar perfil misto/histórico), não furo. Migrations **0020**–**0027**. Ferramentas Prometeus
-  `emendas_por_autor_perfil` + `buscar_bancada` + `relator_geral_orcamento`. Re-resolução:
+  ' GE'→Relator-Geral; verificado por 18 agentes vs API de órgãos. **Mistas + Senado + resíduo FEITOS
+  (0028/0029/0030):** 3 perfis de comissão MISTA criados (CCAI/CMMC/Migrações, órgão oficial); CCDD e
+  Defesa da Democracia ligadas às comissões do Senado; a linha "Sem informação" (Emenda de Relator S/I,
+  R$459mi) → Relator-Geral (§13). **Ainda sem autor (7, só COLETIVO, R$9,5mi emp / 0,0045%):** rótulo
+  5035 (combina CFFC+CDC, sem órgão único) + CSF "Senado do Futuro" (comissão extinta 2019). **Resíduo
+  EXPLÍCITO (§1):** view `emenda_autoria_resumo_publico` + tool Prometeus `emendas_resumo` reportam
+  SEMPRE o total-geral com o split de autoria — o dinheiro sem-autor nunca some de um ranking.
+  Migrations **0020**–**0030**. **11 ferramentas** Prometeus: `emendas_por_autor_perfil` + `buscar_bancada`
+  + `relator_geral_orcamento` + `emendas_resumo` (total geral + resíduo de autoria). Re-resolução:
   `run_reresolver_autores_emendas.py`.
 - **Auditoria de fill-rate (2026-09-23):** a maioria dos campos está 100%. **Preenchível em curso:**
   `proposicao.tema/situacao/inteiro_teor_url` (era 0% — enriquecimento pelo detalhe `/proposicoes/{id}`,
@@ -212,14 +215,15 @@ Plano fechado em sub-etapas (detalhe na `PLANO.md`). **Arquitetura travada:**
 
 ## 7. ⚠️ Ações pendentes
 
-**Emendas — autoria (o que ainda falta atribuir, 66 emendas, só COLETIVO):**
-- **APLICAR as migrations `0023_profile_tipo_relatoria` + `0024_relatoria_geral`** (SQL Editor) — elas
-  atribuem as 295 Emendas de Relator (RP9) ao perfil institucional + gravam o relator formal por ano.
-- ✅ **Comissões — sucessão de órgão FECHADA:** 13 por sigla+casa (`0025`) + 11 por continuidade de
-  órgão na reforma 2023 (`0027`). Restam **18 emendas** que são decisão de MODELAGEM, não casamento:
-  criar (ou não) perfil para 3 comissões **MISTAS** (CCAI/CMMC/Migrações) e tratar 3 do **Senado**
-  com código no range Câmara (CSF/CCDD/Defesa da Democracia) + o rótulo 5035 (CFFC+CDC). Dados oficiais
-  já levantados (órgão id/sigla) — só falta você decidir se cria os perfis mistos/históricos.
+**Emendas — autoria (autoria FECHADA em 99,986%; resíduo explícito):**
+- **APLICAR as migrations `0023`/`0024` (relatoria) + `0030` (view `emenda_autoria_resumo_publico`)**
+  no SQL Editor — a view é DDL (não deu pra aplicar via PostgREST) e a tool `emendas_resumo` do
+  Prometeus depende dela. O resto de 0026–0029 já foi aplicado via PostgREST (DML).
+- ✅ **Comissões — FECHADAS:** 13 sigla+casa (`0025`) + 11 sucessão de órgão (`0027`) + 2 do Senado
+  (`0028`) + 3 mistas criadas (`0029`) + S/I→Relator-Geral (`0030`). **Sobram 7 (R$9,5mi, 0,0045%):**
+  rótulo 5035 (CFFC+CDC, sem órgão único) + CSF extinta — ficam como **resíduo explícito** (view acima),
+  contados no total geral e reportados pelo `emendas_resumo`, nunca somem de ranking. Não há mais nada
+  a atribuir sem inventar (§1).
 - ✅ **Individuais — FECHADO (dedup dos 203 residuais):** migration `0026`, casa na data do fato por
   mandato oficial + verificação adversarial (ver `DEDUP-EMENDAS-INDIVIDUAIS.md`). **0 individual pendente.**
 - **~675 `pendente_conferencia`** em `id_externo` (autor_orcamentario) — **sign-off humano** (casamento

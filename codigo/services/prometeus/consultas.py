@@ -73,6 +73,13 @@ RESSALVA_EVENTOS = (
     "Agendada / Realizada / Cancelada — não confunda agenda com realização (regra 3)."
 )
 
+RESSALVA_RESIDUAL_AUTORIA = (
+    "Este total é a POPULAÇÃO INTEIRA de emendas — inclui as SEM autoria identificada. "
+    "Numa agregação por autor (ranking, soma autor a autor) a soma das partes NÃO fecha "
+    "este total: o resíduo sem autoria não aparece em nenhum autor. Sempre reporte o "
+    "resíduo (valor e nº de emendas) — não o omita nem o distribua por ninguém (regra 1)."
+)
+
 ESTAGIOS = (
     "valor_empenhado",
     "valor_liquidado",
@@ -299,6 +306,54 @@ def emendas_por_autor_nome(
         dados={"emendas": linhas, "totais_por_estagio": _totais_estagios(linhas)},
         proveniencia=proveniencia_das_linhas(linhas),
         ressalvas=ressalvas,
+    )
+
+
+def emendas_resumo(gw: Gateway, *, ano: int | None = None) -> Resultado:
+    """Total GERAL de emendas (a população INTEIRA) por estágio + o split de
+    autoria: quanto tem autor identificado e quanto está SEM autoria na fonte.
+
+    É o número honesto de 'quanto foi destinado em emendas': a soma por autor
+    (ranking) nunca fecha sozinha, porque um resíduo fica sem `autor_profile_id`
+    (autoria combinada ou ausente). Aqui o resíduo é explícito. `ano` opcional."""
+    filtros = [Filtro("ano", "eq", int(ano))] if ano else []
+    linhas = gw.buscar(Consulta(
+        view="emenda_autoria_resumo_publico", filtros=filtros, ordem="ano.asc"))
+    if not linhas:
+        return Resultado(
+            dados=None, proveniencia=[], completude=Completude(),
+            ressalvas=[RESSALVA_AUSENCIA])
+
+    def _soma(col: str) -> float:
+        return round(sum(_num(l.get(col)) for l in linhas), 2)
+
+    n_total = int(sum(_num(l.get("n_emendas")) for l in linhas))
+    n_sem = int(sum(_num(l.get("n_sem_autor")) for l in linhas))
+    emp_tot, emp_sem = _soma("empenhado_total"), _soma("empenhado_sem_autor")
+    pago_tot, pago_sem = _soma("pago_total"), _soma("pago_sem_autor")
+    dados = {
+        "n_emendas": n_total,
+        "n_com_autor_identificado": n_total - n_sem,
+        "n_sem_autor_identificado": n_sem,
+        "cobertura_autoria_pct": (
+            round(100.0 * (n_total - n_sem) / n_total, 2) if n_total else None),
+        "empenhado": {
+            "total": emp_tot,
+            "com_autor_identificado": round(emp_tot - emp_sem, 2),
+            "sem_autor_identificado": emp_sem},
+        "pago": {
+            "total": pago_tot,
+            "com_autor_identificado": round(pago_tot - pago_sem, 2),
+            "sem_autor_identificado": pago_sem},
+        "por_ano": linhas,
+    }
+    return Resultado(
+        dados=dados,
+        proveniencia=proveniencia_das_linhas(linhas),
+        completude=Completude(
+            janela_inicio=(f"{int(ano):04d}-01-01" if ano else None),
+            janela_fim=(f"{int(ano):04d}-12-31" if ano else None)),
+        ressalvas=[RESSALVA_ESTAGIOS, RESSALVA_RESIDUAL_AUTORIA],
     )
 
 

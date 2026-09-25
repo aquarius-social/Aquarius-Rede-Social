@@ -137,6 +137,16 @@ FERRAMENTAS: list[Ferramenta] = [
         ),
     ),
     Ferramenta(
+        "emendas_resumo",
+        "Total GERAL de emendas parlamentares (quanto foi destinado) por estágio "
+        "orçamentário, COM o split de autoria: quanto tem autor identificado e quanto "
+        "está sem autoria identificada na fonte. Use isto para 'total de emendas' — a "
+        "soma por autor sozinha NÃO fecha o total (há resíduo sem autoria). `ano` opcional.",
+        {"ano": _s("integer", "Ano (opcional, ex.: 2021).")},
+        [],
+        lambda gw, a: consultas.emendas_resumo(gw, ano=a.get("ano")),
+    ),
+    Ferramenta(
         "agenda_eventos",
         "Agenda legislativa (eventos) num intervalo de datas AAAA-MM-DD. "
         "casa='camara'|'senado'; situacao (Agendada/Realizada/Cancelada) opcional.",

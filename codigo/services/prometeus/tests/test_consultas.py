@@ -59,6 +59,20 @@ DADOS = {
          "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
          "synced_at": "2026-08-11T00:00:00Z"},
     ],
+    "emenda_autoria_resumo_publico": [
+        {"ano": 2024, "n_emendas": 10, "n_com_autor": 9, "n_sem_autor": 1,
+         "empenhado_total": 1000000.0, "empenhado_sem_autor": 100000.0,
+         "pago_total": 500000.0, "pago_sem_autor": 40000.0,
+         "source": "transparencia.emendas",
+         "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
+         "synced_at": "2026-08-11T00:00:00Z"},
+        {"ano": 2023, "n_emendas": 5, "n_com_autor": 5, "n_sem_autor": 0,
+         "empenhado_total": 200000.0, "empenhado_sem_autor": 0.0,
+         "pago_total": 50000.0, "pago_sem_autor": 0.0,
+         "source": "transparencia.emendas",
+         "source_url": "https://api.portaldatransparencia.gov.br/api-de-dados",
+         "synced_at": "2026-08-11T00:00:00Z"},
+    ],
     "evento_publico": [
         {"id": "ev1", "casa": "camara", "tipo": "Audiencia", "titulo": "Debate X",
          "data_hora_inicio": "2024-05-10T14:00:00", "situacao": "Realizada", "orgao_sigla": "CFT",
@@ -219,6 +233,37 @@ class TestEventos(unittest.TestCase):
         r = consultas.agenda_eventos(gw(), data_inicio="2024-05-01", data_fim="2024-05-31", casa="senado")
         self.assertEqual(len(r.dados), 1)
         self.assertEqual(r.dados[0]["casa"], "senado")
+
+
+class TestEmendasResumo(unittest.TestCase):
+    def test_total_inclui_residuo_sem_autor(self):
+        # ACEITA: o total é a população inteira e o resíduo sem autoria é EXPLÍCITO.
+        r = consultas.emendas_resumo(gw())
+        self.assertEqual(r.dados["n_emendas"], 15)          # 10 + 5
+        self.assertEqual(r.dados["n_sem_autor_identificado"], 1)
+        self.assertEqual(r.dados["empenhado"]["total"], 1200000.0)
+        self.assertEqual(r.dados["empenhado"]["sem_autor_identificado"], 100000.0)
+        # com + sem == total (reconcilia, dinheiro não some)
+        self.assertEqual(
+            r.dados["empenhado"]["com_autor_identificado"]
+            + r.dados["empenhado"]["sem_autor_identificado"],
+            r.dados["empenhado"]["total"])
+        self.assertEqual(r.dados["cobertura_autoria_pct"], round(100 * 14 / 15, 2))
+        # a ressalva do resíduo é obrigatória (o modelo TEM de repassá-la)
+        self.assertIn(consultas.RESSALVA_RESIDUAL_AUTORIA, r.ressalvas)
+
+    def test_filtra_ano_sem_residuo(self):
+        # RECUSA do resíduo espúrio: 2023 não tem sem-autor → resíduo é zero, não sobra.
+        r = consultas.emendas_resumo(gw(), ano=2023)
+        self.assertEqual(r.dados["n_emendas"], 5)
+        self.assertEqual(r.dados["n_sem_autor_identificado"], 0)
+        self.assertEqual(r.dados["pago"]["sem_autor_identificado"], 0.0)
+
+    def test_vazio_vira_ausencia_nao_zero(self):
+        # Ausência (view vazia) NÃO vira total zero enganoso — devolve ressalva de ausência.
+        r = consultas.emendas_resumo(FakeGateway({}))
+        self.assertIsNone(r.dados)
+        self.assertIn(consultas.RESSALVA_AUSENCIA, r.ressalvas)
 
 
 if __name__ == "__main__":
